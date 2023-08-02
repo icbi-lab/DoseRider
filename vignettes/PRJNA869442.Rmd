@@ -1,0 +1,118 @@
+---
+title: "Using doseRider for studying Non-Linear Dose-Response in BPA."
+author: "Pablo Monfort-Lanzas"
+date: "2023-08-01"
+output: html_document
+---
+
+# Using doseRider for studying Non-Linear Dose-Response in BPA
+
+The doseRider package is a powerful tool for gene expression data analysis, making use of Generalized Additive Mixed Models (GAMMs) to study the relationship between dose-response and gene sets. This analysis will employ the doseRider function to evaluate transcriptomic data from a study on bisphenol A (BPA) and 15 BPA alternative chemicals on cultured breast cancer cells (MCF-7).
+
+We have preprocessed the data from study PRJNA869442, available on NCBI's Sequence Read Archive (SRA), locally. The goal is to use doseRider to detect potential non-linear dose-response relationships within the dataset.
+
+## RMarkdown Workflow for doseRider Analysis
+
+1. **Loading required packages**
+
+```{r}
+library(doseRider)
+```
+
+2. **Data import**
+
+
+The dataset PRJNA869442 was provided by a toxicogenomics study that aimed to evaluate potential hazards and compare potencies of bisphenol A (BPA) and 15 BPA alternative chemicals in cultured breast cancer cells. The study utilized MCF-7 cells and exposed them to BPA and the alternative chemicals at different concentrations ranging from 0.0005 µM to 100 µM for 48 hours. The dataset includes a total of 768 samples, which include technical controls, solvent controls (0.1% DMSO), and 10 concentrations of each bisphenol chemical tested in quadriplicate. In addition to the test chemicals, two reference chemicals, estradiol and dexamethasone, were also included in the study. The transcriptomic profiling of gene expression data was performed using TempO-Seq, a high-throughput assay that allows for targeted transcriptomic analysis of up to 6,144 samples in one run, without the need for RNA purification, cDNA synthesis, or capture of targeted RNA. TempO-Seq exhibits 99.6% specificity, single-cell sensitivity, and excellent correlation with fold differences measured by RNA-Seq for 20,629 target genes, making it a powerful tool for toxicological risk assessment and hazard evaluation of data-poor chemicals.
+
+```{r}
+load("../data/PRJNA869442.rda")
+```
+
+For each compound evaluated in the study, we carefully selected the doses based on multiple factors, including the presence of visible precipitation, activating two or more stress response biomarkers, and significant decreases in cell proliferation. These criteria were informed by additional results obtained from the publication and other relevant data. By considering these various factors, we ensured that the chosen doses were appropriate for the analysis and effectively captured the potential hazards and toxicological responses of the compounds under investigation. This meticulous dose selection process enhances the reliability and validity of our study's findings and allows for a comprehensive comparison of the compounds' potencies and gene expression responses.
+
+```{r}
+# Create a list to represent the compound doses
+compound_doses <- list(
+  "2,4'-BPF" = c(0.0005, 0.001, 0.01, 0.1, 0.5, 1, 5, 10),
+  "2,4'-BPS" = c(0.0005, 0.001, 0.01, 0.1, 0.5, 1, 5, 10, 50, 100),
+  "4,4'-BPF" = c(0.0005, 0.001, 0.01, 0.1, 0.5, 1, 5, 10, 50),
+  "BADGE" = c(0.0005, 0.001, 0.01, 0.1, 0.5, 1, 5, 10),
+  "BPA" = c(0.0005, 0.1, 0.5, 1, 5, 10),
+  "BPAF" = c(0.0005, 0.001, 0.01, 0.1, 0.5, 1, 5, 10),
+  "BPAP" = c(0.0005, 0.001, 0.01, 0.1, 0.5, 1, 5),
+  "BPC" = c(0.0005, 0.001, 0.01, 0.1, 0.5, 1, 5, 10),
+  "BPS" = c(0.0005, 0.001, 0.01, 0.1, 0.5, 1, 5, 10, 50, 100),
+  "BPS-MAE" = c(0.0005, 0.001, 0.01, 0.1, 0.5, 1, 5, 10),
+  "BPS-MPE" = c(0.0005, 0.001, 0.01, 0.1, 0.5, 1, 5, 10),
+  "BTUM" = c(0.0005, 0.001, 0.01, 0.1, 0.5, 1, 5, 10),
+  "D-8" = c(0.0005, 0.001, 0.01, 0.1, 0.5, 1, 5, 10),
+  "DDS" = c(0.0005, 0.001, 0.01, 0.1, 0.5, 1, 5),
+  "P201" = c(0.0005, 0.001, 0.01, 0.1, 0.5, 1, 5, 10, 50),
+  "TGSA" = c(0.0005, 0.001, 0.01, 0.1, 0.5, 1, 5, 10)
+)
+
+```
+
+**Filtering doses for each compound**
+
+```{r}
+library(DESeq2)
+PRJNA869442$dose <- unlist(as.numeric(PRJNA869442$`dose:ch1`))
+
+# Filter the PRJNA869442 for samples containing "BPAF" in the "title" column
+bpaf <- PRJNA869442[,grepl("BPAF", PRJNA869442$title) ]
+bpaf <- bpaf[,bpaf$dose %in% compound_doses$BPAF ]
+
+# Log-transform the count data in se_bfs
+dds <- DESeqDataSetFromMatrix(countData = assay(bpaf),
+                              colData   = colData(bpaf),
+                              design    = ~ dose + dose*dose)
+
+#dds <- dds[rowSums(counts(dds)) > 1]
+#dds <- DESeq(dds, parallel = TRUE)
+counts_normal <- assay(varianceStabilizingTransformation(dds))
+assay(bpaf) <- counts_normal
+bpaf$sample <- bpaf$description
+```
+
+3. **Load the genesets**
+
+```{r}
+
+gmt <- loadCPDB("Symbol")
+gmt <- filter_gmt_by_size(gmt = gmt, minGenesetSize = 5, maxGenesetSize = 200)  
+```
+
+3. **Setting the dose-response model**
+
+You can choose among various dose-response models that doseRider supports, like Linear, Polynomial, or Hill models.
+
+```{r}
+res <- DoseRider(bpaf, gmt = gmt, dose_col = "dose", sample_col = "description", omic = "proteomics", minGSsize = 5, maxGSsize = 300)
+View(as.data.frame(res))
+```
+
+5. **Plot significant geneset**
+
+```{r}
+plot_smooth(res,"MAPK signaling pathway - Homo sapiens (human)")
+res$`Pathways of neurodegeneration - multiple diseases - Homo sapiens (human)`$Smooth_Predictions
+```
+
+6. **Visualizing results**
+
+doseRider provides diverse plot options to understand data and model fits better.
+
+```R
+plot(results)
+```
+
+7. **Saving the results**
+
+```R
+write.csv(results, file = "doseRider_results.csv")
+```
+
+By following this workflow, you can investigate non-linear dose-response relationships in the high-throughput transcriptomic data. This could lead to vital insights about the impacts of BPA and its alternative chemicals on cellular processes, thereby informing risk assessment of these understudied chemicals.
+
+**Note:** The specifics of this RMarkdown document may need adjustments based on the actual preprocessed data. Always ensure a thorough data validation before proceeding with the analysis.

@@ -1,0 +1,20 @@
+Package: doseRider
+Title: DoseRider: Generalized Additive Mixed Models (GAMMs) for Analyzing Dose-Response Relationships in Gene Expression Data
+Version: 1.0.0
+Authors@R: 
+    person("Pablo", "Monfort-Lanzas", email = "pablo.monfort@i-med.ac.at", role = c("aut", "cre"))
+Description: The doseRider package provides tools for analyzing dose-response relationships in gene expression data using Generalized Additive Mixed Models (GAMMs). It allows users to model and analyze the relationship between gene expression and dose levels of different compounds, identify dose-response patterns, and extract breakpoints. The package is particularly useful for studying the impact of chemical compounds on gene expression profiles and assessing potential toxicological risks. 
+License: MIT + file LICENSE
+Encoding: UTF-8
+LazyData: true
+Depends:
+    R (>= 3.6.0)
+Imports:
+    ggplot2,
+    mgcv,
+    SummarizedExperiment
+RoxygenNote: 7.2.3
+Suggests:
+    testthat,
+    knitr,
+    rmarkdown

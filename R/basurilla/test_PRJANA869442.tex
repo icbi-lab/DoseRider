@@ -1,0 +1,458 @@
+% Options for packages loaded elsewhere
+\PassOptionsToPackage{unicode}{hyperref}
+\PassOptionsToPackage{hyphens}{url}
+%
+\documentclass[
+]{article}
+\usepackage{amsmath,amssymb}
+\usepackage{lmodern}
+\usepackage{iftex}
+\ifPDFTeX
+  \usepackage[T1]{fontenc}
+  \usepackage[utf8]{inputenc}
+  \usepackage{textcomp} % provide euro and other symbols
+\else % if luatex or xetex
+  \usepackage{unicode-math}
+  \defaultfontfeatures{Scale=MatchLowercase}
+  \defaultfontfeatures[\rmfamily]{Ligatures=TeX,Scale=1}
+\fi
+% Use upquote if available, for straight quotes in verbatim environments
+\IfFileExists{upquote.sty}{\usepackage{upquote}}{}
+\IfFileExists{microtype.sty}{% use microtype if available
+  \usepackage[]{microtype}
+  \UseMicrotypeSet[protrusion]{basicmath} % disable protrusion for tt fonts
+}{}
+\makeatletter
+\@ifundefined{KOMAClassName}{% if non-KOMA class
+  \IfFileExists{parskip.sty}{%
+    \usepackage{parskip}
+  }{% else
+    \setlength{\parindent}{0pt}
+    \setlength{\parskip}{6pt plus 2pt minus 1pt}}
+}{% if KOMA class
+  \KOMAoptions{parskip=half}}
+\makeatother
+\usepackage{xcolor}
+\usepackage[margin=1in]{geometry}
+\usepackage{color}
+\usepackage{fancyvrb}
+\newcommand{\VerbBar}{|}
+\newcommand{\VERB}{\Verb[commandchars=\\\{\}]}
+\DefineVerbatimEnvironment{Highlighting}{Verbatim}{commandchars=\\\{\}}
+% Add ',fontsize=\small' for more characters per line
+\usepackage{framed}
+\definecolor{shadecolor}{RGB}{248,248,248}
+\newenvironment{Shaded}{\begin{snugshade}}{\end{snugshade}}
+\newcommand{\AlertTok}[1]{\textcolor[rgb]{0.94,0.16,0.16}{#1}}
+\newcommand{\AnnotationTok}[1]{\textcolor[rgb]{0.56,0.35,0.01}{\textbf{\textit{#1}}}}
+\newcommand{\AttributeTok}[1]{\textcolor[rgb]{0.77,0.63,0.00}{#1}}
+\newcommand{\BaseNTok}[1]{\textcolor[rgb]{0.00,0.00,0.81}{#1}}
+\newcommand{\BuiltInTok}[1]{#1}
+\newcommand{\CharTok}[1]{\textcolor[rgb]{0.31,0.60,0.02}{#1}}
+\newcommand{\CommentTok}[1]{\textcolor[rgb]{0.56,0.35,0.01}{\textit{#1}}}
+\newcommand{\CommentVarTok}[1]{\textcolor[rgb]{0.56,0.35,0.01}{\textbf{\textit{#1}}}}
+\newcommand{\ConstantTok}[1]{\textcolor[rgb]{0.00,0.00,0.00}{#1}}
+\newcommand{\ControlFlowTok}[1]{\textcolor[rgb]{0.13,0.29,0.53}{\textbf{#1}}}
+\newcommand{\DataTypeTok}[1]{\textcolor[rgb]{0.13,0.29,0.53}{#1}}
+\newcommand{\DecValTok}[1]{\textcolor[rgb]{0.00,0.00,0.81}{#1}}
+\newcommand{\DocumentationTok}[1]{\textcolor[rgb]{0.56,0.35,0.01}{\textbf{\textit{#1}}}}
+\newcommand{\ErrorTok}[1]{\textcolor[rgb]{0.64,0.00,0.00}{\textbf{#1}}}
+\newcommand{\ExtensionTok}[1]{#1}
+\newcommand{\FloatTok}[1]{\textcolor[rgb]{0.00,0.00,0.81}{#1}}
+\newcommand{\FunctionTok}[1]{\textcolor[rgb]{0.00,0.00,0.00}{#1}}
+\newcommand{\ImportTok}[1]{#1}
+\newcommand{\InformationTok}[1]{\textcolor[rgb]{0.56,0.35,0.01}{\textbf{\textit{#1}}}}
+\newcommand{\KeywordTok}[1]{\textcolor[rgb]{0.13,0.29,0.53}{\textbf{#1}}}
+\newcommand{\NormalTok}[1]{#1}
+\newcommand{\OperatorTok}[1]{\textcolor[rgb]{0.81,0.36,0.00}{\textbf{#1}}}
+\newcommand{\OtherTok}[1]{\textcolor[rgb]{0.56,0.35,0.01}{#1}}
+\newcommand{\PreprocessorTok}[1]{\textcolor[rgb]{0.56,0.35,0.01}{\textit{#1}}}
+\newcommand{\RegionMarkerTok}[1]{#1}
+\newcommand{\SpecialCharTok}[1]{\textcolor[rgb]{0.00,0.00,0.00}{#1}}
+\newcommand{\SpecialStringTok}[1]{\textcolor[rgb]{0.31,0.60,0.02}{#1}}
+\newcommand{\StringTok}[1]{\textcolor[rgb]{0.31,0.60,0.02}{#1}}
+\newcommand{\VariableTok}[1]{\textcolor[rgb]{0.00,0.00,0.00}{#1}}
+\newcommand{\VerbatimStringTok}[1]{\textcolor[rgb]{0.31,0.60,0.02}{#1}}
+\newcommand{\WarningTok}[1]{\textcolor[rgb]{0.56,0.35,0.01}{\textbf{\textit{#1}}}}
+\usepackage{graphicx}
+\makeatletter
+\def\maxwidth{\ifdim\Gin@nat@width>\linewidth\linewidth\else\Gin@nat@width\fi}
+\def\maxheight{\ifdim\Gin@nat@height>\textheight\textheight\else\Gin@nat@height\fi}
+\makeatother
+% Scale images if necessary, so that they will not overflow the page
+% margins by default, and it is still possible to overwrite the defaults
+% using explicit options in \includegraphics[width, height, ...]{}
+\setkeys{Gin}{width=\maxwidth,height=\maxheight,keepaspectratio}
+% Set default figure placement to htbp
+\makeatletter
+\def\fps@figure{htbp}
+\makeatother
+\setlength{\emergencystretch}{3em} % prevent overfull lines
+\providecommand{\tightlist}{%
+  \setlength{\itemsep}{0pt}\setlength{\parskip}{0pt}}
+\setcounter{secnumdepth}{-\maxdimen} % remove section numbering
+\ifLuaTeX
+  \usepackage{selnolig}  % disable illegal ligatures
+\fi
+\IfFileExists{bookmark.sty}{\usepackage{bookmark}}{\usepackage{hyperref}}
+\IfFileExists{xurl.sty}{\usepackage{xurl}}{} % add URL line breaks if available
+\urlstyle{same} % disable monospaced font for URLs
+\hypersetup{
+  pdftitle={Test DoseRider},
+  pdfauthor={Pablo Monfort},
+  hidelinks,
+  pdfcreator={LaTeX via pandoc}}
+
+\title{Test DoseRider}
+\author{Pablo Monfort}
+\date{2023-06-29}
+
+\begin{document}
+\maketitle
+
+\begin{enumerate}
+\def\labelenumi{\arabic{enumi}.}
+\tightlist
+\item
+  Create a GAMM formula:
+\end{enumerate}
+
+\begin{Shaded}
+\begin{Highlighting}[]
+\CommentTok{\# Define the formulas for the models}
+
+\CommentTok{\# Define the formulas for the models}
+\NormalTok{base\_formula }\OtherTok{\textless{}{-}} \FunctionTok{create\_gamm\_formula}\NormalTok{(}\AttributeTok{response =} \StringTok{"counts"}\NormalTok{,}
+                                    \AttributeTok{fixed\_effects =} \StringTok{"dose"}\NormalTok{,}
+                                    \AttributeTok{random\_effects =} \StringTok{"gene"}\NormalTok{,}
+                                    \AttributeTok{model\_type =} \StringTok{"base"}\NormalTok{)}
+
+\NormalTok{linear\_formula }\OtherTok{\textless{}{-}} \FunctionTok{create\_gamm\_formula}\NormalTok{(}\AttributeTok{response =} \StringTok{"counts"}\NormalTok{,}
+                                      \AttributeTok{fixed\_effects =} \StringTok{"dose"}\NormalTok{,}
+                                      \AttributeTok{random\_effects =} \StringTok{"gene"}\NormalTok{,}
+                                      \AttributeTok{model\_type =} \StringTok{"linear"}\NormalTok{)}
+
+\NormalTok{cubic\_formula }\OtherTok{\textless{}{-}} \FunctionTok{create\_gamm\_formula}\NormalTok{(}\AttributeTok{response =} \StringTok{"counts"}\NormalTok{,}
+                                     \AttributeTok{fixed\_effects =} \StringTok{"dose"}\NormalTok{,}
+                                     \AttributeTok{random\_effects =} \StringTok{"gene"}\NormalTok{,}
+                                     \AttributeTok{model\_type =} \StringTok{"cubic"}\NormalTok{)}
+
+\FunctionTok{print}\NormalTok{(base\_formula)}
+\end{Highlighting}
+\end{Shaded}
+
+\begin{verbatim}
+## [1] "counts ~ s(gene, bs = 're') "
+\end{verbatim}
+
+\begin{Shaded}
+\begin{Highlighting}[]
+\FunctionTok{print}\NormalTok{(linear\_formula)}
+\end{Highlighting}
+\end{Shaded}
+
+\begin{verbatim}
+## [1] "counts ~  dose + s(gene, bs = 're') "
+\end{verbatim}
+
+\begin{Shaded}
+\begin{Highlighting}[]
+\FunctionTok{print}\NormalTok{(cubic\_formula)}
+\end{Highlighting}
+\end{Shaded}
+
+\begin{verbatim}
+## [1] "counts ~  dose + s(gene, bs = 're') + s(dose, bs = 'cr', k = 7) + s(gene,dose, bs = 're') "
+\end{verbatim}
+
+\begin{enumerate}
+\def\labelenumi{\arabic{enumi}.}
+\setcounter{enumi}{1}
+\tightlist
+\item
+  Create a summarized experiment:
+\end{enumerate}
+
+\begin{Shaded}
+\begin{Highlighting}[]
+\NormalTok{omic }\OtherTok{\textless{}{-}} \StringTok{"rnaseq"}
+\FunctionTok{load}\NormalTok{(}\StringTok{"../../Projects/TOX/ToxicoDataset/data/PRJNA869442/PRJNA869442.rda"}\NormalTok{)}
+\FunctionTok{View}\NormalTok{(}\FunctionTok{as.data.frame}\NormalTok{(}\FunctionTok{assay}\NormalTok{(se)))}
+\NormalTok{se\_bpf }\OtherTok{\textless{}{-}}\NormalTok{ se[se}\SpecialCharTok{$}\StringTok{\textasciigrave{}}\AttributeTok{cas{-}rn:ch1}\StringTok{\textasciigrave{}} \SpecialCharTok{==} \StringTok{"620{-}92{-}8"}\NormalTok{]}
+\NormalTok{se\_bpf}\SpecialCharTok{$}\NormalTok{dose }\OtherTok{\textless{}{-}} \FunctionTok{as.numeric}\NormalTok{(se\_bpf}\SpecialCharTok{$}\StringTok{\textasciigrave{}}\AttributeTok{dose:ch1}\StringTok{\textasciigrave{}}\NormalTok{)}
+
+\NormalTok{se\_bpf}\SpecialCharTok{$}\NormalTok{sample }\OtherTok{\textless{}{-}}\NormalTok{ se\_bpf}\SpecialCharTok{$}\NormalTok{description}
+\FunctionTok{View}\NormalTok{(}\FunctionTok{as.data.frame}\NormalTok{(}\FunctionTok{assay}\NormalTok{(se\_bpf)))}
+\end{Highlighting}
+\end{Shaded}
+
+Replace \texttt{proteomics\_data} with your actual proteomics data
+object and \texttt{metadata} with the corresponding metadata object.
+
+\begin{enumerate}
+\def\labelenumi{\arabic{enumi}.}
+\setcounter{enumi}{2}
+\tightlist
+\item
+  Estimate model parameters, only for RNASeq data:
+\end{enumerate}
+
+\begin{Shaded}
+\begin{Highlighting}[]
+\ControlFlowTok{if}\NormalTok{ ( omic }\SpecialCharTok{==} \StringTok{"rnaseq"}\NormalTok{)\{}
+\CommentTok{\# Log{-}transform the count data in se\_bfs}
+\NormalTok{  dds }\OtherTok{\textless{}{-}} \FunctionTok{DESeqDataSetFromMatrix}\NormalTok{(}\AttributeTok{countData =} \FunctionTok{assay}\NormalTok{(se\_bpf),}
+                                \AttributeTok{colData   =} \FunctionTok{colData}\NormalTok{(se\_bpf),}
+                                \AttributeTok{design    =} \SpecialCharTok{\textasciitilde{}}\NormalTok{ dose }\SpecialCharTok{+}\NormalTok{ dose}\SpecialCharTok{*}\NormalTok{dose)}
+  
+  \CommentTok{\#dds \textless{}{-} dds[rowSums(counts(dds)) \textgreater{} 1]}
+  \CommentTok{\#dds \textless{}{-} DESeq(dds, parallel = TRUE)}
+\NormalTok{  counts\_normal }\OtherTok{\textless{}{-}} \FunctionTok{assay}\NormalTok{(}\FunctionTok{varianceStabilizingTransformation}\NormalTok{(dds))}
+  \FunctionTok{assay}\NormalTok{(se\_bpf) }\OtherTok{\textless{}{-}}\NormalTok{ counts\_normal}
+\NormalTok{\}}
+\end{Highlighting}
+\end{Shaded}
+
+\begin{verbatim}
+##   the design formula contains one or more numeric variables that have mean or
+##   standard deviation larger than 5 (an arbitrary threshold to trigger this message).
+##   Including numeric variables with large mean can induce collinearity with the intercept.
+##   Users should center and scale numeric variables in the design to improve GLM convergence.
+\end{verbatim}
+
+\begin{enumerate}
+\def\labelenumi{\arabic{enumi}.}
+\setcounter{enumi}{3}
+\tightlist
+\item
+  Load gene sets from ConsensusPathDB:
+\end{enumerate}
+
+\begin{Shaded}
+\begin{Highlighting}[]
+\NormalTok{file\_path }\OtherTok{\textless{}{-}} \StringTok{"../data/CPDB\_pathways\_genes.tab"}
+\NormalTok{gmt }\OtherTok{\textless{}{-}} \FunctionTok{load\_consensupathdb\_genesets}\NormalTok{(file\_path)}
+\NormalTok{gmt }\OtherTok{\textless{}{-}} \FunctionTok{filter\_gmt\_by\_size}\NormalTok{(}\AttributeTok{gmt =}\NormalTok{ gmt, }\AttributeTok{minGenesetSize =} \DecValTok{1}\NormalTok{, }\AttributeTok{maxGenesetSize =} \DecValTok{300}\NormalTok{)}
+\end{Highlighting}
+\end{Shaded}
+
+\begin{enumerate}
+\def\labelenumi{\arabic{enumi}.}
+\setcounter{enumi}{4}
+\tightlist
+\item
+  Perform the analysis on gene sets:
+\end{enumerate}
+
+\begin{Shaded}
+\begin{Highlighting}[]
+\NormalTok{res }\OtherTok{\textless{}{-}} \FunctionTok{perform\_analysis}\NormalTok{(se\_bpf, }
+\NormalTok{                        gmt, }
+\NormalTok{                        base\_formula, }
+\NormalTok{                        linear\_formula, }
+\NormalTok{                        cubic\_formula, }
+                        \AttributeTok{dose\_col =} \StringTok{"dose"}\NormalTok{, }
+                        \AttributeTok{sample\_col =} \StringTok{"sample"}\NormalTok{, }
+                        \AttributeTok{omic =} \StringTok{"proteomic"}\NormalTok{)}
+
+\FunctionTok{save}\NormalTok{(res,}\AttributeTok{file =} \StringTok{"../data/res.rda"}\NormalTok{)}
+\end{Highlighting}
+\end{Shaded}
+
+\textbf{Check the results}
+
+\begin{Shaded}
+\begin{Highlighting}[]
+\FunctionTok{load}\NormalTok{(}\StringTok{"../data/res.rda"}\NormalTok{)}
+\FunctionTok{table}\NormalTok{(res}\SpecialCharTok{$}\NormalTok{FDR }\SpecialCharTok{\textless{}} \FloatTok{0.01}\NormalTok{)}
+\end{Highlighting}
+\end{Shaded}
+
+\begin{verbatim}
+## 
+## FALSE  TRUE 
+##   939   543
+\end{verbatim}
+
+\begin{Shaded}
+\begin{Highlighting}[]
+\FunctionTok{head}\NormalTok{(res[res}\SpecialCharTok{$}\NormalTok{FDR }\SpecialCharTok{\textless{}} \FloatTok{0.001} \SpecialCharTok{\&} \SpecialCharTok{!}\FunctionTok{is.na}\NormalTok{(res}\SpecialCharTok{$}\NormalTok{FDR),], }\DecValTok{25}\NormalTok{)}
+\end{Highlighting}
+\end{Shaded}
+
+\begin{verbatim}
+##                                                                        Geneset
+## 3                                 Tryptophan metabolism - Homo sapiens (human)
+## 6                            Non-small cell lung cancer - Homo sapiens (human)
+## 7                                   Platelet activation - Homo sapiens (human)
+## 16  Parathyroid hormone synthesis, secretion and action - Homo sapiens (human)
+## 19                  Aldosterone synthesis and secretion - Homo sapiens (human)
+## 20                Regulation of lipolysis in adipocytes - Homo sapiens (human)
+## 27                           TGF-beta signaling pathway - Homo sapiens (human)
+## 28                      Arginine and proline metabolism - Homo sapiens (human)
+## 34                      Fructose and mannose metabolism - Homo sapiens (human)
+## 35                                   Yersinia infection - Homo sapiens (human)
+## 37                              Glycerolipid metabolism - Homo sapiens (human)
+## 38                               Ether lipid metabolism - Homo sapiens (human)
+## 42                                    Cocaine addiction - Homo sapiens (human)
+## 43                                Amphetamine addiction - Homo sapiens (human)
+## 49                                    Adherens junction - Homo sapiens (human)
+## 50                                             Melanoma - Homo sapiens (human)
+## 55 AGE-RAGE signaling pathway in diabetic complications - Homo sapiens (human)
+## 56                                     Cushing syndrome - Homo sapiens (human)
+## 62                              beta-Alanine metabolism - Homo sapiens (human)
+## 63                               Dilated cardiomyopathy - Homo sapiens (human)
+## 66                          Hypertrophic cardiomyopathy - Homo sapiens (human)
+## 67      Arrhythmogenic right ventricular cardiomyopathy - Homo sapiens (human)
+## 72                            Thyroid hormone synthesis - Homo sapiens (human)
+## 73                               Small cell lung cancer - Homo sapiens (human)
+## 76                           Inflammatory bowel disease - Homo sapiens (human)
+##    Geneset_Size   GeneRatio     bgRatio Genes    Base_AIC    Base_BIC  Base_edf
+## 3            42 0.005328597 0.003360538     3  1411.24003  1434.09874  2.999574
+## 6            72 0.008880995 0.005760922     5  2176.76109  2214.11262  4.999406
+## 7           124 0.010657194 0.009921587     6  1175.83647  1220.69086  5.999884
+## 16          106 0.008880995 0.008481357     5  -439.42861  -402.07650  4.999638
+## 19           98 0.005328597 0.007841255     3    80.73156   103.59027  2.999891
+## 20           55 0.003552398 0.004400704     2  3019.34892  3035.27655  1.999428
+## 27           94 0.021314387 0.007521203    12  1510.22894  1602.53749 11.999259
+## 28           50 0.010657194 0.004000640     6  1165.88473  1210.73765  5.999442
+## 34           33 0.003552398 0.002640422     2   432.25876   448.18639  1.999896
+## 35          136 0.008880995 0.010881741     5   285.63591   322.98788  4.999585
+## 37           61 0.003552398 0.004880781     2  1527.48365  1538.10521  1.000296
+## 38           49 0.005328597 0.003920627     3  -441.80979  -418.95109  2.998557
+## 42           49 0.005328597 0.003920627     3  -566.37278  -543.51407  2.999857
+## 43           69 0.007104796 0.005520883     4  -751.76458  -721.78400  3.976082
+## 49           71 0.008880995 0.005680909     5    62.17051    99.52247  4.999579
+## 50           72 0.007104796 0.005760922     4  1926.16621  1956.17739  3.999519
+## 55          100 0.007104796 0.008001280     4  2171.93418  2201.94550  3.999621
+## 56          155 0.014209591 0.012401984     8  -803.45021  -743.19307  7.999447
+## 62           30 0.003552398 0.002400384     2  1527.48365  1538.10521  1.000296
+## 63           95 0.005328597 0.007601216     3  1783.94342  1806.80213  2.999751
+## 66           90 0.005328597 0.007201152     3  1783.94342  1806.80213  2.999751
+## 67           77 0.005328597 0.006160986     3  2202.69079  2225.54950  2.999728
+## 72           75 0.003552398 0.006000960     2 -1160.93441 -1145.00690  1.995186
+## 73           92 0.005328597 0.007361178     3  1510.12840  1532.98710  2.998502
+## 76           65 0.012433393 0.005200832     7   405.42698   457.91990  6.999264
+##     Linear_AIC Linear_BIC Linear_edf   Cubic_AIC   Cubic_BIC Cubic_edf
+## 3   1412.66614  1441.2395   3.999574  1373.11865  1423.02146  7.241099
+## 6   2176.12015  2219.6972   5.999406  2144.25045  2200.29835  7.971880
+## 7   1176.19631  1227.4585   6.999884  1109.05277  1173.14135  8.985486
+## 16  -437.48327  -393.9057   5.999638  -500.31794  -444.28187  7.984366
+## 19    80.69443   109.2678   3.999891    34.33348    80.67045  6.641010
+## 20  3007.89976  3029.1366   2.999433  2978.61706  3015.69119  5.825104
+## 27  1503.62024  1603.0298  12.999260   811.67339 -1201.15666 23.913978
+## 28  1167.57064  1218.8314   6.999442  1139.04787  1228.26671 12.086580
+## 34   431.79520   453.0320   2.999896   387.53091   419.38926  4.974143
+## 35   286.88423   330.4617   5.999585   243.15366   299.18695  7.978745
+## 37  1528.83326  1544.7638   2.000275  1491.19200  1522.35840  4.611680
+## 38  -439.81870  -411.2453   3.998557  -479.81965  -439.81479  5.973205
+## 42  -564.47966  -535.9063   3.999857  -598.11468  -558.11064  5.972305
+## 43  -749.80700  -713.8241   4.976083  -774.72411  -726.71194  6.934661
+## 49    63.95094   107.5284   5.999579    37.79863    93.82335  7.963818
+## 50  1927.01795  1963.0315   4.999519  1889.57941  1937.61804  6.976303
+## 55  2172.65883  2208.6725   4.999621  2140.95380  2188.99644  6.969085
+## 56  -805.87461  -738.9220   8.999447  -858.73035  -767.87298 11.815024
+## 62  1528.83326  1544.7638   2.000275  1491.19200  1522.35840  4.611680
+## 63  1785.56626  1814.1396   3.999751  1724.29498  1764.30745  5.983559
+## 66  1785.56626  1814.1396   3.999751  1724.29498  1764.30745  5.983559
+## 67  2204.66072  2233.2341   3.999728  2169.82925  2209.83532  5.971732
+## 72 -1158.98645 -1137.7497   2.995186 -1187.10315 -1155.24885  4.960651
+## 73  1511.41760  1539.9910   3.998502  1472.10251  1512.10851  5.970301
+## 76   402.26975   461.3247   7.999265   370.92899   443.11250  9.967668
+##    P_Value_Linear P_Value_Cubic          FDR
+## 3       0.4490000     4.996e-07 2.526987e-06
+## 6       0.1040000     3.420e-06 1.439898e-05
+## 7       0.2010000     3.572e-13 6.786800e-12
+## 16      0.8150000     6.063e-12 9.076127e-11
+## 19      0.1540000     5.240e-09 3.863522e-08
+## 20      0.0002475     3.468e-07 1.809710e-06
+## 27      0.0030000     5.749e-14 1.468969e-12
+## 28      0.5750000     9.317e-05 3.343292e-04
+## 34      0.1170000     1.112e-08 7.810351e-08
+## 35      0.3860000     3.591e-08 2.208241e-07
+## 37      0.4200000     1.203e-06 5.452128e-06
+## 38      0.9250000     2.732e-07 1.440863e-06
+## 42      0.7440000     5.024e-06 2.062484e-05
+## 43      0.8370000     2.406e-04 8.178193e-04
+## 49      0.6400000     1.362e-04 4.840489e-04
+## 50      0.2840000     5.418e-07 2.731114e-06
+## 55      0.2590000     6.618e-06 2.687089e-05
+## 56      0.0360000     4.693e-11 5.003616e-10
+## 62      0.4200000     1.203e-06 5.452128e-06
+## 63      0.5390000     1.063e-11 1.406577e-10
+## 66      0.5390000     1.063e-11 1.406577e-10
+## 67      0.8620000     2.940e-06 1.241333e-05
+## 72      0.8200000     6.025e-05 2.226696e-04
+## 73      0.3990000     2.568e-07 1.368984e-06
+## 76      0.0230000     1.287e-06 5.797368e-06
+\end{verbatim}
+
+\begin{enumerate}
+\def\labelenumi{\arabic{enumi}.}
+\setcounter{enumi}{5}
+\tightlist
+\item
+  Plot smooth curves:
+\end{enumerate}
+
+\begin{Shaded}
+\begin{Highlighting}[]
+\NormalTok{lP }\OtherTok{\textless{}{-}}\FunctionTok{list}\NormalTok{()}
+\NormalTok{j }\OtherTok{=} \DecValTok{1}
+\CommentTok{\#se\_bpf$dose \textless{}{-} log(se\_bpf$dose)}
+\NormalTok{res\_filter }\OtherTok{\textless{}{-}}\NormalTok{ res[res}\SpecialCharTok{$}\NormalTok{FDR }\SpecialCharTok{\textless{}} \FloatTok{0.001} \SpecialCharTok{\&} \SpecialCharTok{!}\FunctionTok{is.na}\NormalTok{(res}\SpecialCharTok{$}\NormalTok{FDR) }\SpecialCharTok{\&}\NormalTok{ res}\SpecialCharTok{$}\NormalTok{Genes }\SpecialCharTok{\textgreater{}} \DecValTok{4}\NormalTok{,]}
+
+\NormalTok{res\_filter }\OtherTok{\textless{}{-}}\NormalTok{ res\_filter[}\FunctionTok{order}\NormalTok{(res\_filter}\SpecialCharTok{$}\NormalTok{GeneRatio, }\AttributeTok{decreasing =}\NormalTok{ F), ]}
+
+\ControlFlowTok{for}\NormalTok{ (geneset\_name }\ControlFlowTok{in} \FunctionTok{unique}\NormalTok{(res\_filter}\SpecialCharTok{$}\NormalTok{Geneset)) \{}
+  
+  \FunctionTok{print}\NormalTok{(geneset\_name)}
+\NormalTok{  i }\OtherTok{\textless{}{-}} \FunctionTok{find\_geneset\_index}\NormalTok{(}\AttributeTok{gmt =}\NormalTok{ gmt, }\AttributeTok{geneset\_name =}\NormalTok{ geneset\_name)}
+  
+\NormalTok{  geneset }\OtherTok{\textless{}{-}}\NormalTok{ gmt[[i]]}\SpecialCharTok{$}\NormalTok{genes}
+  
+\NormalTok{  geneset\_name }\OtherTok{\textless{}{-}} \FunctionTok{gsub}\NormalTok{(}\StringTok{" {-} Homo sapiens }\SpecialCharTok{\textbackslash{}\textbackslash{}}\StringTok{(human}\SpecialCharTok{\textbackslash{}\textbackslash{}}\StringTok{)"}\NormalTok{, }\StringTok{""}\NormalTok{, geneset\_name)}
+
+  \CommentTok{\#print(geneset)}
+\NormalTok{  long\_df }\OtherTok{\textless{}{-}} \FunctionTok{prepare\_data}\NormalTok{(se\_bpf, geneset, }\AttributeTok{dose\_col=}\StringTok{"dose"}\NormalTok{, }
+                          \AttributeTok{sample\_col =} \StringTok{"sample"}\NormalTok{, }\AttributeTok{omic =} \StringTok{"proteomics"}\NormalTok{)}
+  
+      \ControlFlowTok{if}\NormalTok{ (}\SpecialCharTok{!}\FunctionTok{is.null}\NormalTok{(long\_df) }\SpecialCharTok{\&\&}\NormalTok{ (}\FunctionTok{length}\NormalTok{(long\_df}\SpecialCharTok{$}\NormalTok{gene) }\SpecialCharTok{\textgreater{}} \DecValTok{2}\NormalTok{)) \{}
+
+\NormalTok{  cubic\_results }\OtherTok{\textless{}{-}} \FunctionTok{fit\_gam}\NormalTok{(cubic\_formula, long\_df)}
+  
+\NormalTok{  p }\OtherTok{\textless{}{-}} \FunctionTok{plot\_smooth}\NormalTok{(cubic\_results, long\_df) }\SpecialCharTok{+} \FunctionTok{ggtitle}\NormalTok{(stringr}\SpecialCharTok{::}\FunctionTok{str\_wrap}\NormalTok{(geneset\_name,}\DecValTok{15}\NormalTok{))}
+\NormalTok{  lP[[j]] }\OtherTok{\textless{}{-}}\NormalTok{ p}
+\NormalTok{  j }\OtherTok{=}\NormalTok{ j }\SpecialCharTok{+} \DecValTok{1}
+  \FunctionTok{ggsave}\NormalTok{(}\FunctionTok{paste0}\NormalTok{(}\StringTok{"../../plots/DoseRider/Significant\_Geneset\_"}\NormalTok{,geneset\_name,}\StringTok{".jpg"}\NormalTok{), }\AttributeTok{plot =}\NormalTok{ p, }\AttributeTok{width =} \DecValTok{6}\NormalTok{, }\AttributeTok{height =} \DecValTok{10}\NormalTok{, }\AttributeTok{limitsize =} \ConstantTok{FALSE}\NormalTok{)}
+\NormalTok{\}}
+\NormalTok{\}}
+
+\NormalTok{combined\_plot }\OtherTok{\textless{}{-}}\NormalTok{ cowplot}\SpecialCharTok{::}\FunctionTok{plot\_grid}\NormalTok{(}\AttributeTok{plotlist =}\NormalTok{ lP, }\AttributeTok{ncol =} \DecValTok{5}\NormalTok{)}
+
+\CommentTok{\# Save the combined plot}
+\FunctionTok{ggsave}\NormalTok{(}\StringTok{"../../plots/Significant\_Geneset.jpg"}\NormalTok{, }\AttributeTok{plot =}\NormalTok{ combined\_plot, }\AttributeTok{width =} \DecValTok{14}\NormalTok{, }\AttributeTok{height =} \DecValTok{22}\NormalTok{, }\AttributeTok{limitsize =} \ConstantTok{FALSE}\NormalTok{)}
+\end{Highlighting}
+\end{Shaded}
+
+\begin{figure}
+\centering
+\includegraphics{../../plots/Significant_Geneset.png}
+\caption{Smooth Curves for Significant Gene Sets. This figure showcases
+the smooth curves obtained for the gene sets identified as significant
+in the proteomic data analysis. Each subplot represents a distinct gene
+set, and the curves portray the relationship between dose and normalized
+expression levels. The analysis utilized the cubic model formula to fit
+the gene set data and employed a stringent false discovery rate (FDR)
+threshold of 0.05 to determine significance.}
+\end{figure}
+
+\begin{enumerate}
+\def\labelenumi{\arabic{enumi}.}
+\setcounter{enumi}{6}
+\tightlist
+\item
+  Obtain Trend Chande Dose (TCD)
+\end{enumerate}
+
+\end{document}
