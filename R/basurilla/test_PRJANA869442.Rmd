@@ -1,0 +1,198 @@
+---
+title: "Test DoseRider"
+author: "Pablo Monfort"
+date: "2023-06-29"
+output:
+  pdf_document: default
+  html_document: default
+---
+```{r, warning=FALSE, echo=FALSE, include=FALSE}
+library(mgcv)
+library(SummarizedExperiment)
+library(dplyr)
+library(ggplot2)
+library(DESeq2)
+source("../doseRider_functions.R")
+```
+
+
+
+1. Create a GAMM formula:
+
+```{r}
+# Define the formulas for the models
+
+# Define the formulas for the models
+base_formula <- create_gamm_formula(response = "counts",
+                                    fixed_effects = "log_dose",
+                                    random_effects = "gene",
+                                    model_type = "base")
+
+linear_formula <- create_gamm_formula(response = "counts",
+                                      fixed_effects = "log_dose",
+                                      random_effects = "gene",
+                                      model_type = "linear")
+
+cubic_formula <- create_gamm_formula(response = "counts",
+                                     fixed_effects = "log_dose",
+                                     random_effects = "gene",
+                                     model_type = "cubic")
+
+print(base_formula)
+print(linear_formula)
+print(cubic_formula)
+
+```
+
+2. Create a summarized experiment:
+
+```{r}
+omic <- "rnaseq"
+load("../../../Projects/TOX/ToxicoDataset/data/PRJNA869442/PRJNA869442.rda")
+View(as.data.frame(assay(se)))
+se_bpf <- se[se$`cas-rn:ch1` == "620-92-8"]
+se_bpf$dose <- as.numeric(se_bpf$`dose:ch1`)
+se_bpf$log_dose <- log((se_bpf$dose+1))
+se_bpf$sample <- se_bpf$description
+View(as.data.frame(assay(se_bpf)))
+
+```
+
+Replace `proteomics_data` with your actual proteomics data object and `metadata` with the corresponding metadata object.
+
+3. Estimate model parameters, only for RNASeq data:
+```{r}
+if ( omic == "rnaseq"){
+# Log-transform the count data in se_bfs
+  dds <- DESeqDataSetFromMatrix(countData = assay(se_bpf),
+                                colData   = colData(se_bpf),
+                                design    = ~ log_dose + log_dose*log_dose)
+  
+  #dds <- dds[rowSums(counts(dds)) > 1]
+  #dds <- DESeq(dds, parallel = TRUE)
+  counts_normal <- assay(varianceStabilizingTransformation(dds))
+  assay(se_bpf) <- counts_normal
+}
+```
+
+4. Load gene sets from ConsensusPathDB:
+
+```{r}
+file_path <- "../../data/CPDB_pathways_genes_symbol.tab"
+gmt <- load_consensupathdb_genesets(file_path)
+gmt <- filter_gmt_by_size(gmt = gmt, minGenesetSize = 20, maxGenesetSize = 200)
+```
+
+
+5. Perform the analysis on gene sets:
+```{r, warning=FALSE, eval = F}
+res <- perform_analysis(se_bpf, 
+                        gmt, 
+                        base_formula, 
+                        linear_formula, 
+                        cubic_formula, 
+                        dose_col = "log_dose", 
+                        sample_col = "sample", 
+                        omic = "proteomic")
+
+save(res,file = "../data/res.rda")
+```
+
+**Check the results**
+
+
+
+```{r}
+load("../data/res.rda")
+table(res$FDR < 0.01)
+```
+
+```{r}
+head(res[res$FDR < 0.001 & !is.na(res$FDR),], 25)
+```
+
+6. Plot smooth curves:
+
+```{r, warning=FALSE, eval=F}
+lP <-list()
+j = 1
+#se_bpf$dose <- log(se_bpf$dose)
+res_filter <- res[res$FDR < 0.001 & !is.na(res$FDR) & res$Genes > 4,]
+
+res_filter <- res_filter[order(res_filter$GeneRatio, decreasing = F), ]
+
+for (geneset_name in unique(res_filter$Geneset)) {
+  
+  print(geneset_name)
+  i <- find_geneset_index(gmt = gmt, geneset_name = geneset_name)
+  
+  geneset <- gmt[[i]]$genes
+  
+  geneset_name <- gsub(" - Homo sapiens \\(human\\)", "", geneset_name)
+
+  #print(geneset)
+  long_df <- prepare_data(se_bpf, geneset, dose_col="log_dose", 
+                          sample_col = "sample", omic = "proteomics")
+  
+      if (!is.null(long_df) && (length(long_df$gene) > 2)) {
+  #long_df$dose <- log((long_df$dose +1))
+  cubic_results <- fit_gam(cubic_formula, long_df)
+  
+  p <- plot_smooth(cubic_results, long_df, dose_col = "log_dose") + ggtitle(stringr::str_wrap(geneset_name,15))
+  lP[[j]] <- p
+  j = j + 1
+  ggsave(paste0("../../plots/DoseRider/Significant_Geneset_",geneset_name,".jpg"), plot = p, width = 6, height = 10, limitsize = FALSE)
+}
+}
+
+combined_plot <- cowplot::plot_grid(plotlist = lP, ncol = 5)
+
+# Save the combined plot
+ggsave("../../plots/Significant_Geneset.jpg", plot = combined_plot, width = 14, height = 22, limitsize = FALSE)
+```
+
+![Smooth Curves for Significant Gene Sets. This figure showcases the smooth curves obtained for the gene sets identified as significant in the proteomic data analysis. Each subplot represents a distinct gene set, and the curves portray the relationship between dose and normalized expression levels. The analysis utilized the cubic model formula to fit the gene set data and employed a stringent false discovery rate (FDR) threshold of 0.05 to determine significance.](../../plots/Significant_Geneset.png)
+
+7. Obtain Trend Chande Dose (TCD)
+```{r}
+library(gratia)
+
+geneset_name <- "Oxytocin signaling pathway - Homo sapiens (human)"
+print(geneset_name)
+i <- find_geneset_index(gmt = gmt, geneset_name = geneset_name)
+
+geneset <- gmt[[i]]$genes
+
+geneset_name <- gsub(" - Homo sapiens \\(human\\)", "", geneset_name)
+
+#print(geneset)
+long_df <- prepare_data(se_bpf, geneset, dose_col="log_dose", 
+                        sample_col = "sample", omic = "proteomics")
+library(gratia)
+#long_df$dose <- log((long_df$dose +1))
+cubic_results <- fit_gam(cubic_formula, long_df)
+sm <- smooth_estimates(cubic_results, smooth = "s(log_dose)")
+derivatives_result <- gratia::derivatives(cubic_results, term = "s(log_dose)", type = "central")
+
+derivatives_result <- derivatives_result %>%
+    mutate(change = if_else(lower < 0 & upper > 0, NA_real_, derivative))
+
+draw(derivatives_result) +
+  geom_line(data = derivatives_result, aes(x = data, y = change), lwd = 2)
+```
+
+```{r}
+fitted_values(cubic_results, data = long_df, scale = "response",
+    exclude = 's(gene, log_dose, bs = "re")') |>
+    ggplot(aes(x = log_dose, y = fitted, group = gene)) +
+    geom_point(data = plant |> filter(type == "Mississippi"),
+        mapping = aes(y = uptake, colour = treatment),
+        alpha = 0.8) +
+    geom_ribbon(aes(ymin = lower, ymax = upper, fill = treatment),
+        alpha = 0.2) +
+    geom_line(aes(colour = treatment)) +
+    labs(x = plant_xlab, y = plant_ylab,
+        title = expression(Estimated ~ CO[2] ~ uptake),
+        subtitle = "Comparison of treatment in plants of the Mississippi type",
+        colour = "Treatment", fill = "Treatment")
+```
