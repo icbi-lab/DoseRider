@@ -12,7 +12,10 @@ Depends:
 Imports:
     ggplot2,
     mgcv,
-    SummarizedExperiment
+    SummarizedExperiment,
+    DESeq2,
+    edgeR,
+    reshape
 RoxygenNote: 7.2.3
 Suggests:
     testthat,

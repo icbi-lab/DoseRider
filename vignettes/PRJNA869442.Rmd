@@ -17,6 +17,7 @@ We have preprocessed the data from study PRJNA869442, available on NCBI's Sequen
 
 ```{r}
 library(doseRider)
+library(DESeq2)
 ```
 
 2. **Data import**
@@ -56,7 +57,6 @@ compound_doses <- list(
 **Filtering doses for each compound**
 
 ```{r}
-library(DESeq2)
 PRJNA869442$dose <- unlist(as.numeric(PRJNA869442$`dose:ch1`))
 
 # Filter the PRJNA869442 for samples containing "BPAF" in the "title" column
@@ -73,6 +73,7 @@ dds <- DESeqDataSetFromMatrix(countData = assay(bpaf),
 counts_normal <- assay(varianceStabilizingTransformation(dds))
 assay(bpaf) <- counts_normal
 bpaf$sample <- bpaf$description
+bpaf$dose <- log(bpaf$dose + 1)
 ```
 
 3. **Load the genesets**
@@ -80,7 +81,7 @@ bpaf$sample <- bpaf$description
 ```{r}
 
 gmt <- loadCPDB("Symbol")
-gmt <- filter_gmt_by_size(gmt = gmt, minGenesetSize = 5, maxGenesetSize = 200)  
+gmt <- filter_gmt_by_size(gmt = gmt, minGenesetSize = 10, maxGenesetSize = 50)  
 ```
 
 3. **Setting the dose-response model**
@@ -88,15 +89,16 @@ gmt <- filter_gmt_by_size(gmt = gmt, minGenesetSize = 5, maxGenesetSize = 200)
 You can choose among various dose-response models that doseRider supports, like Linear, Polynomial, or Hill models.
 
 ```{r}
-res <- DoseRider(bpaf, gmt = gmt, dose_col = "dose", sample_col = "description", omic = "proteomics", minGSsize = 5, maxGSsize = 300)
-View(as.data.frame(res))
+res <- DoseRiderParallel(bpaf, gmt = gmt, omic = "proteomics", minGSsize = 10, maxGSsize = 200, num_cores = 30)
+resDf <- as.data.frame(res)
+table(resDf$Adjusted_P_Value < 0.05)
+resDf <- resDf[resDf$Adjusted_P_Value < 0.05,]
 ```
 
 5. **Plot significant geneset**
 
 ```{r}
-plot_smooth(res,"MAPK signaling pathway - Homo sapiens (human)")
-res$`Pathways of neurodegeneration - multiple diseases - Homo sapiens (human)`$Smooth_Predictions
+plot_smooth(res,"Interferon Signaling")
 ```
 
 6. **Visualizing results**
