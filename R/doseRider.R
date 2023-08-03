@@ -153,7 +153,7 @@ DoseRider <- function(se, gmt, dose_col = "dose", sample_col = "sample",
                                NA)
 
       # Check if base_results and cubic_results are not NaN before computing p-value
-      p_value_cubic <- ifelse(is.list(linear_results) & is.list(cubic_results),
+      p_value_cubic <- ifelse(is.list(base_results) & is.list(cubic_results),
                               as.numeric(compareGAMM(base_results, cubic_results)),
                               NA)
 
@@ -206,14 +206,11 @@ DoseRider <- function(se, gmt, dose_col = "dose", sample_col = "sample",
 
   # Add FDR adjustment to the results
   # Get the adjusted p-values
-  adjusted_cubic_p_values <- unlist(lapply(results, `[[`, "P_Value_Cubic"))
-  adjusted_linear_p_values <- unlist(lapply(results, `[[`, "P_Value_Linear"))
-  
+  adjusted_p_values <- unlist(lapply(results, `[[`, "P_Value_Cubic"))
+
   # Save the adjusted p-value inside each gene set
   for (i in seq_along(results)) {
-    results[[i]]$Adjusted_Cubic_P_Value <- adjusted_cubic_p_values[i]
-    results[[i]]$Adjusted_Linear_P_Value <- adjusted_linear_p_values[i]
-    
+    results[[i]]$Adjusted_P_Value <- adjusted_p_values[i]
   }
 
   # Add the adjusted p-values to the results object
@@ -280,33 +277,3 @@ print.DoseRider <- function(x, ...) {
   cat("Object of class DoseRider\n")
   cat(paste("Number of gene sets:", length(x), "\n"))
 }
-
-#' Summary method for DoseRider
-#'
-#' This function provides a summary of a DoseRider object, including the total number
-#' of gene sets, the number of significant gene sets for linear and cubic splines, and other relevant information.
-#'
-#' @param object A DoseRider object.
-#' @param ... Further arguments passed to or from other methods.
-#'
-#' @examples
-#' \dontrun{
-#'   # Assuming `dose_rider_result` is a DoseRider object
-#'   summary(dose_rider_result)
-#' }
-
-#' @export
-summary.DoseRider <- function(object, ...) {
-  num_gene_sets <- length(object)
-  num_significant_linear <- sum(object$P_Value_Linear < 0.05)
-  num_significant_cubic <- sum(object$P_Value_Cubic < 0.05)
-  #num_significant_both <- sum(object$Adjusted_P_Value < 0.05)
-  
-  cat("Summary of DoseRider object:\n")
-  cat("=============================\n")
-  cat("Total number of gene sets:", num_gene_sets, "\n")
-  cat("Number of significant gene sets (Linear):", num_significant_linear, "\n")
-  cat("Number of significant gene sets (Cubic):", num_significant_cubic, "\n")
-  #cat("Number of significant gene sets (Both):", num_significant_both, "\n")
-}
-
