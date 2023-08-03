@@ -21,19 +21,23 @@
 plot_smooth <- function(result, gene_set_name, dose_col="dose", center_values = FALSE) {
   # Get the predictions
   predictions <- as.data.frame(result[[gene_set_name]]$Smooth_Predictions)
-
+  mean_data <- aggregate(fit ~ gene + dose, data = predictions, FUN = mean)
+  
   # If center_values option is enabled, adjust predictions
   if (center_values) {
-    # Calculate mean expression across all genes
-    mean_expression <- colMeans(predictions[["fit"]])
-
-    # Center expression values for each gene around the mean
-    predictions[["fit"]] <- sweep(predictions[["fit"]], 2, mean_expression, "-")
+    # Calculate mean expression and standard deviation across all genes
+    mean_expression <- colMeans(mean_data["fit"])
+    sd_expression <- apply(mean_data["fit"], 2, sd)
+    
+    # Center and scale expression values for each gene around the mean
+    mean_data["fit"] <- sweep(mean_data["fit"], 2, mean_expression, "-")
+    mean_data["fit"] <- sweep(mean_data["fit"], 2, sd_expression, "/")
   }
-
+  
+  
   # Plot the smooth curve with confidence interval region
-  p <- ggplot(predictions, aes_string(x = dose_col, y = "fit", color = "gene")) +
-    geom_line(aes(group = gene), color = "blue") +
+  p <- ggplot(mean_data, aes_string(x = dose_col, y = "fit", color = "gene")) +
+    geom_line(aes_string(group = "gene")) +
     geom_smooth(formula = y ~ poly(x, 3), data = predictions, aes_string(x = dose_col, y = "fit"), se = TRUE, method = "lm", color = "red") +
     labs(x = "Dose",
          y = "Normalized Expression",
