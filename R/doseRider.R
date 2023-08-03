@@ -343,7 +343,7 @@ DoseRiderParallel <- function(se, gmt, dose_col = "dose", sample_col = "sample",
 
   # Save the adjusted p-value inside each gene set
   for (i in seq_along(results)) {
-    results[[i]]$Adjusted_Cubic_P_Value <- adjusted_p_values[i]
+    results[[i]]$Adjusted_Cubic_P_Value <- adjusted_cubic_p_values[i]
     results[[i]]$Adjusted_Linear_P_Value <- adjusted_linear_p_values[i]
 
   }

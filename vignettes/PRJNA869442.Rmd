@@ -81,7 +81,7 @@ bpaf$dose <- log(bpaf$dose + 1)
 ```{r}
 
 gmt <- loadCPDB("Symbol")
-gmt <- filter_gmt_by_size(gmt = gmt, minGenesetSize = 10, maxGenesetSize = 50)  
+gmt <- filter_gmt_by_size(gmt = gmt, minGenesetSize = 10, maxGenesetSize = 20)  
 ```
 
 3. **Setting the dose-response model**
@@ -91,14 +91,14 @@ You can choose among various dose-response models that doseRider supports, like 
 ```{r}
 res <- DoseRiderParallel(bpaf, gmt = gmt, omic = "proteomics", minGSsize = 10, maxGSsize = 200, num_cores = 30)
 resDf <- as.data.frame(res)
-table(resDf$Adjusted_P_Value < 0.05)
-resDf <- resDf[resDf$Adjusted_P_Value < 0.05,]
+table(unlist(resDf["P_Value_Cubic"]) < 0.05)
+resDf <- resDf[unlist(resDf["P_Value_Cubic"]) < 0.05 & unlist(resDf["P_Value_Linear"] < 0.05),]
 ```
 
 5. **Plot significant geneset**
 
 ```{r}
-plot_smooth(res,"Interferon Signaling")
+plot_smooth(res,"Tamoxifen Action Pathway", center_values = T)
 ```
 
 6. **Visualizing results**
