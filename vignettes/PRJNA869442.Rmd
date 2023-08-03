@@ -80,7 +80,7 @@ bpaf$sample <- bpaf$description
 ```{r}
 
 gmt <- loadCPDB("Symbol")
-gmt <- filter_gmt_by_size(gmt = gmt, minGenesetSize = 5, maxGenesetSize = 200)  
+gmt <- filter_gmt_by_size(gmt = gmt, minGenesetSize = 90, maxGenesetSize = 100)  
 ```
 
 3. **Setting the dose-response model**
@@ -88,15 +88,16 @@ gmt <- filter_gmt_by_size(gmt = gmt, minGenesetSize = 5, maxGenesetSize = 200)
 You can choose among various dose-response models that doseRider supports, like Linear, Polynomial, or Hill models.
 
 ```{r}
-res <- DoseRider(bpaf, gmt = gmt, dose_col = "dose", sample_col = "description", omic = "proteomics", minGSsize = 5, maxGSsize = 300)
-View(as.data.frame(res))
+res <- DoseRider(bpaf, gmt = gmt, dose_col = "dose", sample_col = "description", omic = "proteomics", minGSsize = 5, maxGSsize = 100)
+resDf <- as.data.frame(res)
+resDf <- resDf[resDf$Adjusted_P_Value < .05,]
 ```
 
 5. **Plot significant geneset**
 
 ```{r}
-plot_smooth(res,"MAPK signaling pathway - Homo sapiens (human)")
-res$`Pathways of neurodegeneration - multiple diseases - Homo sapiens (human)`$Smooth_Predictions
+plot_smooth(res,"Interferon gamma signaling")
+res$`Interferon gamma signaling`$Smooth_Predictions
 ```
 
 6. **Visualizing results**
