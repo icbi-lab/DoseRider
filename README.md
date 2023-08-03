@@ -21,7 +21,7 @@ Or you can install the development version from GitHub:
 
 ```R
 # install.packages("devtools")
-devtools::install_github("icbi-lab/doseRider")
+devtools::install_github("username/doseRider")
 ```
 
 ## Usage
