@@ -53,6 +53,3 @@ Contributions to `doseRider` are welcome. If you find any bugs, have feature req
 ## License
 
 This package is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
-```
-
-Please note that you need to replace `username` with your GitHub username in the badges section and update the relevant sections with the appropriate information for your package. The README provides an overview of the package, installation instructions, basic usage examples, and information on how to contribute. Make sure to add a `LICENSE` file in the repository root with the text of the MIT License.
