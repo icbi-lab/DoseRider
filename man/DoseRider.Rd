@@ -65,14 +65,3 @@ provided as a SummarizedExperiment object or a matrix/data frame with metadata.
 It uses Generalized Additive Mixed Models (GAMMs) to analyze the relationship
 between dose-response and gene sets.
 }
-\examples{
-# Load example SummarizedExperiment and gene set list
-data(se)
-data(gmt)
-
-# Run DoseRider
-results <- DoseRider(se = se, gmt = gmt, dose_col = "dose", sample_col = "sample")
-
-# Print the results for a specific gene set
-print(results[["gene_set_1"]])
-}
