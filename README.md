@@ -31,16 +31,22 @@ devtools::install_github("username/doseRider")
 library(doseRider)
 
 # Read in your gene expression data as a SummarizedExperiment object
-data <- readRDS("gene_expression_data.rds")
+data <- data("mock_data.rda")
 
-# Perform the dose-response analysis
-result <- doseRider(data)
+# Load the ConsensusPathDB
+gmt <- loadCPDB("Symbol")
+#Filter Genesets
+gmt <- filter_gmt_by_size(gmt = gmt, minGenesetSize = 10, maxGenesetSize = 50)  
+
+# Perform the dose-response analysis in parallel
+result <- DoseRiderParallel(se, gmt = gmt, omic = "rnaseq", minGSsize = 10, 
+        maxGSsize = 200, num_cores = 5)
 
 # Extract breakpoints from the results
 breakpoints <- extract_breakpoints(result)
 
 # Plot the dose-response curves
-plot_dose_response(result)
+plot_smooth(result, names(result)[1])
 
 # Perform downstream analysis and interpretation
 # ...

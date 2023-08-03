@@ -20,7 +20,7 @@
 #' @export
 plot_smooth <- function(result, gene_set_name, dose_col="dose", center_values = FALSE) {
   # Get the predictions
-  predictions <- as.data.frame(result[[gene_set_name]]$Smooth_Predictions)
+  predictions <- as.data.frame(result[[gene_set_name]][["Smooth_Predictions"]][[1]])
   mean_data <- aggregate(fit ~ gene + dose, data = predictions, FUN = mean)
 
   # If center_values option is enabled, adjust predictions
