@@ -2,14 +2,15 @@
 % Please edit documentation in R/gamm.R
 \name{create_gamm_formula}
 \alias{create_gamm_formula}
-\title{Create Generalized Additive Mixed Model (GAMM) Formula}
+\title{Create Generalized Additive Mixed Model (GAMM) Formula with Omics Consideration}
 \usage{
 create_gamm_formula(
   response,
   fixed_effects,
   random_effects,
   covariates = c(),
-  model_type = "base"
+  model_type = "base",
+  omic = "base"
 )
 }
 \arguments{
@@ -19,35 +20,22 @@ create_gamm_formula(
 
 \item{random_effects}{A string or a vector of strings specifying the random effects in the model.}
 
-\item{covariates}{A string or a vector of strings specifying any covariates to be included in the model. Default is an empty vector.}
+\item{covariates}{Optional vector of additional covariates in the model.}
 
-\item{model_type}{A string specifying the type of the model. Can be 'base', 'linear', or 'cubic'. Default is 'base'.}
+\item{model_type}{Type of the model ('base', 'linear', 'cubic').}
+
+\item{omic}{Type of omic data ('base' or 'rnaseq').}
 }
 \value{
-A string representing the formula for the GAMM.
+A string representing the GAMM formula.
 }
 \description{
-This function generates a formula for a GAMM, given response and effect variables, and the model type.
-It allows for the specification of 'base', 'linear', or 'cubic' model types. The main goal is to
-compare the 'cubic' model with the 'base' model to evaluate if the fixed effect (in this case 'dose')
-is significant.
+Generates a formula for fitting a GAMM, given response, fixed effects, random effects, omics type, and model type.
+Supports 'base', 'linear', and 'cubic' models and can handle RNA-seq data.
 }
 \examples{
 \dontrun{
-# Create a base formula
-base_formula <- create_gamm_formula(response = "counts",
-                                    fixed_effects = "dose",
-                                    random_effects = "gene",
-                                    model_type = "base")
-# Create a linear formula
-linear_formula <- create_gamm_formula(response = "counts",
-                                      fixed_effects = "dose",
-                                      random_effects = "gene",
-                                      model_type = "linear")
-# Create a cubic formula
-cubic_formula <- create_gamm_formula(response = "counts",
-                                     fixed_effects = "dose",
-                                     random_effects = "gene",
-                                     model_type = "cubic")
+  base_formula <- create_gamm_formula("mpg", "hp", "cyl", model_type = "base", omic = "base")
+  cubic_formula <- create_gamm_formula("mpg", "hp", "cyl", model_type = "cubic", omic = "rnaseq")
 }
 }
