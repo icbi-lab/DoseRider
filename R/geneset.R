@@ -70,6 +70,48 @@ filter_gmt_by_size <- function(gmt, minGenesetSize, maxGenesetSize) {
   return(filtered_gmt)
 }
 
+#' Filter Gene Sets in a GMT File by Specific IDs
+#'
+#' This function filters gene sets contained within a GMT file based on a given vector of IDs. 
+#' It checks each gene set for a matching `external_id` and retains only those that match any of the provided IDs.
+#'
+#' @param gmt A list representing the GMT file's data.
+#'           Each element of the list is expected to be a gene set, which is itself a list with an `external_id` field.
+#' @param vector_id A vector of IDs (as character strings or numeric values).
+#'                  Gene sets whose `external_id` matches any of these IDs will be retained in the output.
+#'
+#' @return A list of gene sets from the GMT file that match the specified IDs.
+#'         This list will only contain elements where the `external_id` matched at least one of the IDs in `vector_id`.
+#'         If no matches are found, an empty list is returned.
+#'
+#' @examples
+#' # Assuming `gmt_data` is a list representing a GMT file
+#' # and you want to filter for gene sets with external IDs 101 and 102:
+#' filtered_data <- filter_gmt_by_id(gmt_data, c(101, 102))
+#'
+#' @note This function does not handle cases where `external_id` is missing in the gene sets.
+#'       It is assumed that each gene set in the GMT has a valid `external_id` field.
+#'
+filter_gmt_by_id <- function(gmt, vector_id) {
+  # Create an empty list to store filtered gene sets
+  filtered_gmt <- list()
+  
+  # Loop over all gene sets in the GMT file
+  for (i in seq_along(gmt)) {
+    # Retrieve the external_id of the gene set
+    external_id <- gmt[[i]]$external_id
+    
+    # Check if the external_id is in the provided vector_id
+    if (external_id %in% vector_id) {
+      filtered_gmt[[i]] <- gmt[[i]]
+    }
+  }
+  
+  # Remove NULL elements from the list
+  filtered_gmt <- filtered_gmt[!sapply(filtered_gmt, is.null)]
+  
+  return(filtered_gmt)
+}
 
 #' Load CPDB GMT File
 #'

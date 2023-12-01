@@ -1,0 +1,94 @@
+---
+title: "Using doseRider for studying Non-Linear Dose-Response in BPA."
+author: "Pablo Monfort-Lanzas"
+date: "2023-08-01"
+output: html_document
+---
+
+# Using doseRider for studying Non-Linear Dose-Response in BPA
+
+The `doseRider` package is used for analyzing dose-response relationships in gene expression data using Generalized Additive Mixed Models (GAMMs). This report focuses on bisphenol A (BPA) and its alternatives, analyzing their impact on gene expression in MCF-7 cells.
+
+## RMarkdown Workflow for doseRider Analysis
+
+### 1. Loading required packages
+
+```{r, warning=FALSE, echo=FALSE}
+library(doseRider)
+library(DESeq2)
+library(ggplot2)
+library(dplyr)
+```
+
+### 2. Data Import
+
+Data from PRJNA869442 (GSE211183) has been preprocessed for this analysis.
+
+```{r}
+load("../data/PRJNA869442.rda")
+```
+
+#### Dose Selection for Each Compound
+
+Doses were selected based on criteria like precipitation, stress response biomarkers, and cell proliferation.
+
+```{r}
+compound_doses <- list(
+  "BPA" = c(0.0005, 0.1, 0.5, 1, 5, 10)
+)
+  doses <- c(0,compound_doses["BPA"][[1]])
+  
+# Example filtering for BPA
+bpa_data <- PRJNA869442[,(colData(PRJNA869442)$Chemical %in% c("Cells, no treatment","BPA")) &
+                             (colData(PRJNA869442)$Dose %in% doses)]
+bpa_data$sample <- colnames(bpa_data)
+```
+
+### 3. Differential Expression Analysis
+
+```{r}
+colData(bpa_data)$Dose <- unlist(colData(bpa_data)$Dose)
+#colData(bpa_data)$Dose <- log(unlist(colData(bpa_data)$Dose) + 1)
+dds <- DESeqDataSetFromMatrix(countData = assay(bpa_data),
+                              colData   = colData(bpa_data),
+                              design    = ~ Dose*Dose)
+
+dds <- DESeq(dds, parallel = TRUE, quiet = TRUE)
+res <- results(dds)
+
+filter_res <- as.data.frame(res[res$baseMean > 11 &
+                                res$pvalue < 0.1,])
+bpa_data <- estimate_model_parameters(bpa_data)
+
+# Filter low express genes
+filter_bpa_data <- bpa_data[rownames(bpa_data) %in% rownames(filter_res),]
+```
+
+### 4. Load Gene Sets
+
+```{r}
+gmt <- loadCPDB("Symbol")
+top_geneset <- read.csv("../../Projects/TOX/ToxicoDataset/results/TG-GATES/WeightedScoreReactomeTGGATES.tsv", sep = ",")
+gmt_id <- doseRider:::filter_gmt_by_id(gmt, unique(top_geneset[abs(top_geneset$WeightedScore) > 1,]$X))
+```
+
+### 5. Dose-Response Model with doseRider
+
+```{r}
+dose_rider_results <- DoseRiderLMM(filter_bpa_data, gmt = gmt_id[1:100], dose_col = "Dose",omic = "rnaseq", minGSsize = 10, maxGSsize = 1000, method = "fdr", covariates = c())
+res_df <- as.data.frame.DoseRider(dose_rider_results)
+table(res_df$Adjusted_Cubic_P_Value < 0.05)
+table(res_df$Best_Model_AICc)
+#save(res, file = "../../doseRider_save/res_bpa_20_1000.rda")
+```
+
+## Results and Discussion
+
+```{r}
+top <- 10
+
+p1 <- dose_response_heatmap(dose_rider_results, dose_col = "Dose", top = top)
+p2 <- plot_gene_set_random_effects(dose_rider_results, dose_col = "Dose", top = top)
+p3 <- plot_top_pathway_responses(dose_rider_results, top = 4, ncol = 5)
+```
+

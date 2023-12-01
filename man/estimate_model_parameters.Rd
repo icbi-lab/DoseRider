@@ -2,25 +2,17 @@
 % Please edit documentation in R/data_preparation_and_modeling.R
 \name{estimate_model_parameters}
 \alias{estimate_model_parameters}
-\title{Estimate model parameters for DESeq2 or edgeR}
+\title{Update SummarizedExperiment with Estimated Model Parameters}
 \usage{
-estimate_model_parameters(count_data, sample_metadata, model_type)
+estimate_model_parameters(se)
 }
 \arguments{
-\item{count_data}{A matrix or data frame of count data, with rows as genes and columns as samples.}
-
-\item{sample_metadata}{A data frame of sample metadata matching the columns of count_data.}
-
-\item{model_type}{A character string specifying the type of model. Must be either "DESeq2" or "edgeR".}
+\item{se}{SummarizedExperiment object containing count data and sample metadata.}
 }
 \value{
-A list containing the estimated size factors, dispersions, and theta (1/dispersion).
+Updated SummarizedExperiment object with size factors, dispersions, and theta values included.
 }
 \description{
-This function estimates necessary parameters (size factors and dispersions) for either DESeq2 or edgeR
-based on the input count data and sample metadata.
-}
-\examples{
-sample_metadata <- data.frame(condition = rep(c("A", "B"), each = 5))
-parameters <- estimate_model_parameters(assay_df, sample_metadata, model_type = "DESeq2")
+Estimates necessary parameters for DESeq2 or edgeR and updates the SummarizedExperiment object
+with size factors, dispersions, and theta values in its rowData and colData.
 }

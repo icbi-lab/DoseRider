@@ -18,7 +18,7 @@
 #' # Example usage of process_gene_set
 #' gene_set_results <- process_gene_set(long_df, dose_col = "dose", sample_col = "sample", gmt, i = 1, minGSsize = 5, maxGSsize = 300)
 #'
-process_gene_set <- function(se, dose_col, sample_col,omic, gmt, i, minGSsize, maxGSsize) {
+process_gene_set_gam <- function(se, dose_col, sample_col,omic, gmt, i, minGSsize, maxGSsize) {
   geneset <- gmt[[i]]$genes
   # Filter gene set by length
   long_df <- prepare_data(se, geneset, dose_col, sample_col, omic)
@@ -99,6 +99,7 @@ process_gene_set <- function(se, dose_col, sample_col,omic, gmt, i, minGSsize, m
 }
 
 
+
 #' DoseRider Function
 #'
 #' This function performs a series of analysis on gene expression data
@@ -143,7 +144,7 @@ process_gene_set <- function(se, dose_col, sample_col,omic, gmt, i, minGSsize, m
 #' @importFrom utils txtProgressBar
 
 # DoseRider function
-DoseRider <- function(se, gmt, dose_col = "dose", sample_col = "sample",
+DoseRiderGAMM <- function(se, gmt, dose_col = "dose", sample_col = "sample",
                       covariate = "", omic = "rnaseq", minGSsize=5,
                       maxGSsize=300, method = "fdr") {
   ### Step 1: Data Validation and Metadata Check ###
@@ -254,6 +255,7 @@ DoseRider <- function(se, gmt, dose_col = "dose", sample_col = "sample",
 #' @import progress
 #' @importFrom stats p.adjust
 #' @importFrom utils txtProgressBar
+#' @importFrom doSNOW registerDoSNOW
 #'
 #' @export
 #'
@@ -355,60 +357,3 @@ DoseRiderParallel <- function(se, gmt, dose_col = "dose", sample_col = "sample",
 }
 
 
-
-#' Convert a DoseRider object to a data frame
-#'
-#' This function extracts specific attributes from a DoseRider object and
-#' structures them in a data frame for easier manipulation and visualization.
-#' The attributes included are: Geneset, Geneset_Size, GeneRatio, bgRatio,
-#' Genes, Base_AIC, Base_BIC, Base_edf, Linear_AIC, Linear_BIC, Linear_edf,
-#' Cubic_AIC, Cubic_BIC, Cubic_edf, P_Value_Linear, P_Value_Cubic, and Adjusted_P_Value.
-#'
-#' @param object A DoseRider object.
-#'
-#' @return A data frame with specific attributes from the DoseRider object.
-#' Each row of the data frame corresponds to an element of the DoseRider object.
-#'
-#' @examples
-#' \dontrun{
-#'   # Assuming `dose_rider_result` is a DoseRider object
-#'   result_df <- as.data.frame.DoseRider(dose_rider_result)
-#' }
-#'
-#' @export
-as.data.frame.DoseRider <- function(object) {
-  # Define the variables to keep
-  keep <- c("Geneset", "Geneset_Size", "GeneRatio", "bgRatio", "Genes", "Base_AIC",
-            "Base_BIC", "Base_edf", "Linear_AIC", "Linear_BIC", "Linear_edf",
-            "Cubic_AIC", "Cubic_BIC", "Cubic_edf", "P_Value_Linear", "P_Value_Cubic",
-            "Adjusted_P_Value" )
-
-  # Apply a function to each element of the list
-  df_list <- lapply(object, function(x) x[keep])
-
-  # Convert the list of data frames to a single data frame
-  results_df <- as.data.frame(do.call(rbind, df_list))
-
-  return(results_df)
-}
-
-
-#' Print method for DoseRider
-#'
-#' This function prints a summary of a DoseRider object.
-#' It shows the class of the object and the number of gene sets it contains.
-#'
-#' @param x A DoseRider object.
-#' @param ... Further arguments passed to or from other methods.
-#'
-#' @examples
-#' \dontrun{
-#'   # Assuming `dose_rider_result` is a DoseRider object
-#'   print(dose_rider_result)
-#' }
-#'
-#' @export
-print.DoseRider <- function(x, ...) {
-  cat("Object of class DoseRider\n")
-  cat(paste("Number of gene sets:", length(x), "\n"))
-}

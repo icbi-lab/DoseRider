@@ -46,25 +46,20 @@ create_summarized_experiment <- function(assay_df, metadata_df) {
 #' sample_col <- "sample"
 #' long_df <- prepare_data(se, geneset, dose_col, sample_col)
 #' @export
-
 prepare_data <- function(se, geneset, dose_col, sample_col, omic = "rnaseq") {
-
-  # Obtain size_factors
-  size_factors <- colData(se)$size_factors
 
   # Prepare data for glmmTMB, including size factors and dispersions
   common_genes <- intersect(geneset, rownames(se))
   if (length(common_genes) > 0) {
     long_df <- suppressWarnings(as.data.frame(reshape::melt(t(assay(se)[common_genes,]), as.is = TRUE), warning = FALSE))
     colnames(long_df) <- c("sample", "gene", "counts")
-    long_df$size_factor <- size_factors[match(long_df$sample, rownames(colData(se)))]
-    long_df$dispersion <- colData(se)$dispersion
 
-    if (omic != "rnaseq") {
-      long_df$size_factor <- NA
-      long_df$dispersion <- NA
+    if (omic == "rnaseq"){
+      # Match size_factors, theta, and dispersions
+      long_df$size_factor <- colData(se)$size_factors[match(long_df$sample, rownames(colData(se)))]
+      long_df$theta <- rowData(se)$theta[match(long_df$gene, rownames(rowData(se)))]
+      long_df$dispersion <- rowData(se)$dispersions[match(long_df$gene, rownames(rowData(se)))]
     }
-
     long_df <- merge(long_df, colData(se), by = "sample")
     long_df$dose <- unlist(as.numeric(long_df[[dose_col]]))
     long_df <- as.data.frame(long_df, warning = FALSE)
@@ -75,70 +70,35 @@ prepare_data <- function(se, geneset, dose_col, sample_col, omic = "rnaseq") {
   return(long_df)
 }
 
-#' Estimate model parameters for DESeq2 or edgeR
+
+#' Update SummarizedExperiment with Estimated Model Parameters
 #'
-#' This function estimates necessary parameters (size factors and dispersions) for either DESeq2 or edgeR
-#' based on the input count data and sample metadata.
+#' Estimates necessary parameters for DESeq2 or edgeR and updates the SummarizedExperiment object
+#' with size factors, dispersions, and theta values in its rowData and colData.
 #'
-#' @param count_data A matrix or data frame of count data, with rows as genes and columns as samples.
-#' @param sample_metadata A data frame of sample metadata matching the columns of count_data.
-#' @param model_type A character string specifying the type of model. Must be either "DESeq2" or "edgeR".
-#'
-#' @return A list containing the estimated size factors, dispersions, and theta (1/dispersion).
-#' @importFrom DESeq2 DESeqDataSetFromMatrix estimateSizeFactors estimateDispersions
+#' @param se SummarizedExperiment object containing count data and sample metadata.
+#' @return Updated SummarizedExperiment object with size factors, dispersions, and theta values included.
 #' @importFrom edgeR DGEList calcNormFactors estimateDisp
-#'
-#' @examples
-#' sample_metadata <- data.frame(condition = rep(c("A", "B"), each = 5))
-#' parameters <- estimate_model_parameters(assay_df, sample_metadata, model_type = "DESeq2")
-
-estimate_model_parameters <- function(count_data, sample_metadata, model_type) {
-  if (model_type == "DESeq2") {
-    library(DESeq2)
-
-    # Create DESeqDataSet object
-    dds <- DESeqDataSetFromMatrix(countData = count_data,
-                                  colData = sample_metadata,
-                                  design = ~ dose)
-
-    # Estimate size factors
-    dds <- estimateSizeFactors(dds)
-    size_factors <- sizeFactors(dds)
-
-    # Estimate dispersions
-    dds <- estimateDispersions(dds)
-    dispersions <- dispersions(dds)
-
-    # Set theta to 1/dispersions
-    theta <- 1 / dispersions
-
-  } else if (model_type == "edgeR") {
-    library(edgeR)
+#' @export
+estimate_model_parameters <- function(se) {
 
     # Create DGEList object
-    dge <- DGEList(counts = count_data, group = sample_metadata$dose)
+    dge <- DGEList(counts = assay(se), group = se$dose)
 
-    # Estimate normalization factors
+    # Estimate normalization factors and dispersion
     dge <- calcNormFactors(dge)
-    size_factors <- dge$samples$norm.factors
-
-    # Estimate dispersion
     dge <- estimateDisp(dge)
+
+    # Add size factors to colData
+    sizeFactors <- dge$samples$norm.factors
+    se$size_factors <- sizeFactors
+
+    # Add dispersions to rowData
     dispersions <- dge$common.dispersion
-
-    # Set theta to 1/dispersions
     theta <- 1 / dispersions
+    rowData(se)$dispersion <- dispersions
+    rowData(se)$theta <- theta
 
-
-  } else {
-    stop("Invalid model_type specified. Must be either 'DESeq2' or 'edgeR'.")
-  }
-
-  # Return a list containing the estimated parameters
-  parameters <- list(dispersions = dispersions,
-                     size_factors = size_factors,
-                     theta = theta)
-
-  return(parameters)
+  return(se)
 }
 
