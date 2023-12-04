@@ -1,250 +1,204 @@
-#' Process a single gene set for DoseRider analysis
+#' Perform DoseRider Analysis Using Linear Mixed Models (LMMs) or Generalized Additive Mixed Models (GAMMs)
 #'
-#' This function processes a single gene set from the gene set collection for DoseRider analysis.
-#' It fits GAM models to the gene expression data and calculates model metrics and significance.
-#' The results are then stored in a list.
+#' This function performs DoseRider analysis on gene expression data, applying either Linear Mixed Models (LMMs) or
+#' Generalized Additive Mixed Models (GAMMs) to each gene set defined in the gene matrix transposed (GMT) format.
+#' It evaluates dose-response relationships in the context of gene sets and calculates various model metrics,
+#' significance, Benchmark Dose (BMD), and smoothing predictions.
 #'
-#' @param long_df The long-format data frame containing the gene expression data for the current gene set.
-#' @param dose_col The name of the column representing the dose information in the long_df.
-#' @param sample_col The name of the column representing the sample information in the long_df.
-#' @param gmt The gene set collection as a list with gene sets.
-#' @param i The index of the current gene set in the gmt list.
-#' @param minGSsize The minimum gene set size for filtering (default is 5).
-#' @param maxGSsize The maximum gene set size for filtering (default is 300).
+#' @param se SummarizedExperiment object or a matrix/data frame containing gene expression data.
+#' @param gmt List of gene sets, each represented as a list with gene names.
+#' @param dose_col Name of the column representing dose information.
+#' @param sample_col Name of the column representing sample information.
+#' @param covariates Optional, vector specifying the covariate column(s) in `se`.
+#' @param omic Type of omics data, defaults to "rnaseq".
+#' @param minGSsize Minimum gene set size for analysis, defaults to 5.
+#' @param maxGSsize Maximum gene set size for analysis, defaults to 300.
+#' @param method Method for multiple testing adjustment, defaults to "fdr".
+#' @param modelType Type of model to fit for each gene set, options are "LMM" for Linear Mixed Models
+#'                  and "GAMM" for Generalized Additive Mixed Models. Defaults to "LMM".
 #'
-#' @return A list containing the results of the DoseRider analysis for the current gene set, or NULL if the gene set does not meet the size criteria.
+#' @return A list containing results for each gene set including various metrics, p-values,
+#'         and adjusted p-values. The structure of results will depend on the model type used.
 #'
 #' @examples
-#' # Example usage of process_gene_set
-#' gene_set_results <- process_gene_set(long_df, dose_col = "dose", sample_col = "sample", gmt, i = 1, minGSsize = 5, maxGSsize = 300)
+#' \dontrun{
+#' data("SummarizedExperiment")
+#' gmt <- list(geneSet1 = list(genes = c("gene1", "gene2")))
+#' results <- DoseRider(se, gmt, "dose", "sample", "covariate", "rnaseq", modelType = "GAMM")
+#' }
 #'
-process_gene_set_gam <- function(se, dose_col, sample_col,omic, gmt, i, minGSsize, maxGSsize) {
-  geneset <- gmt[[i]]$genes
-  # Filter gene set by length
-  long_df <- prepare_data(se, geneset, dose_col, sample_col, omic)
-  if (!is.null(long_df) && (length(unique(long_df$gene)) >= minGSsize && length(unique(long_df$gene)) <= maxGSsize)) {
-    ## Check the minum overlapping genes
-    # Compute GeneRatio (if needed)
-    # input_vector <- unique(long_df$gene)
-    # ratios <- compute_ratios(geneset, all_genes, input_vector)
-
-    # Step 5: Compute the models and get the significance
-    # Fit GAM models and compute AIC, BIC, and df
-    base_formula <- create_gamm_formula(response = "counts",
-                                        fixed_effects = dose_col,
-                                        random_effects = "gene",
-                                        model_type = "base")
-    linear_formula <- create_gamm_formula(response = "counts",
-                                          fixed_effects = dose_col,
-                                          random_effects = "gene",
-                                          model_type = "linear")
-    cubic_formula <- create_gamm_formula(response = "counts",
-                                         fixed_effects = dose_col,
-                                         random_effects = "gene",
-                                         model_type = "cubic")
-
-    base_results <- fit_gam(base_formula, long_df)
-    linear_results <- fit_gam(linear_formula, long_df)
-    cubic_results <- fit_gam(cubic_formula, long_df)
-
-    # Check if base_results and linear_results are not NaN before computing p-value
-    p_value_linear <- ifelse(is.list(base_results) & is.list(linear_results),
-                             as.numeric(compareGAMM(base_results, linear_results)),
-                             NA)
-
-    # Check if base_results and cubic_results are not NaN before computing p-value
-    p_value_cubic <- ifelse(is.list(linear_results) & is.list(cubic_results),
-                            as.numeric(compareGAMM(base_results, cubic_results)),
-                            NA)
-
-    # Get metrics for linear and cubic models
-    base_metrics <- compute_metrics(base_results)
-    linear_metrics <- compute_metrics(linear_results)
-    cubic_metrics <- compute_metrics(cubic_results)
-
-    # Step 6: Calculate smoothing values for all X
-    smooth_values <- smooth_predictions(model = cubic_results, long_df = long_df,
-                                        dose_col = dose_col, sample_col = sample_col,
-                                        covariate = covariate)
-
-    # Step 7: Save the results
-    # Create a list to store the results for the current gene set
-    geneset_results <- list()
-
-    # Add the results to the gene set list
-    geneset_results$Geneset <- gmt[[i]]$pathway
-    geneset_results$Geneset_Size <- length(geneset)
-    #geneset_results$GeneRatio <- ratios$geneRatio
-    #geneset_results$bgRatio <- ratios$bgRatio
-    geneset_results$Genes <- length(unique(long_df$gene))
-    geneset_results$Base_AIC <- base_metrics$AIC
-    geneset_results$Base_BIC <- base_metrics$BIC
-    geneset_results$Base_edf <- base_metrics$edf
-    geneset_results$Linear_AIC <- linear_metrics$AIC
-    geneset_results$Linear_BIC <- linear_metrics$BIC
-    geneset_results$Linear_edf <- linear_metrics$edf
-    geneset_results$Cubic_AIC <- cubic_metrics$AIC
-    geneset_results$Cubic_BIC <- cubic_metrics$BIC
-    geneset_results$Cubic_edf <- cubic_metrics$edf
-    geneset_results$P_Value_Linear <- p_value_linear
-    geneset_results$P_Value_Cubic <- p_value_cubic
-    geneset_results$Smooth_Predictions <- list(smooth_values)
-
-    # Return the gene set results
-    return(geneset_results)
-  }
-
-  # Return NULL if the gene set does not meet the size criteria
-  return(NULL)
-}
-
-
-
-#' DoseRider Function
-#'
-#' This function performs a series of analysis on gene expression data
-#' provided as a SummarizedExperiment object or a matrix/data frame with metadata.
-#' It uses Generalized Additive Mixed Models (GAMMs) to analyze the relationship
-#' between dose-response and gene sets.
-#'
-#' @param se The gene expression data as either a SummarizedExperiment object or a matrix/data frame.
-#' @param gmt A list of gene sets, each gene set is a list with a 'genes' element containing a character vector of gene symbols.
-#' @param dose_col The name of the dose column in the metadata.
-#' @param sample_col The name of the sample column in the metadata.
-#' @param metadata (Optional) A dataframe that holds metadata information. This is required when 'se' is a matrix or data frame.
-#' @param covariate (Optional) The name of a covariate column in the metadata.
-#' @param omic The omic type, defaults to "rnaseq".
-#' @param minGSsize Minimum gene set size for consideration, defaults to 5.
-#' @param maxGSsize Maximum gene set size for consideration, defaults to 300.
-#' @param method The method for multiple testing adjustment, defaults to "fdr".
-#'
-#' @return A list with results from the dose-response analysis for each gene set.
-#' Each list contains the following items:
-#' - `Geneset`: The name of the gene set.
-#' - `Geneset_Size`: The number of genes in the gene set.
-#' - `GeneRatio`: The proportion of genes from the gene set present in the data.
-#' - `bgRatio`: The proportion of genes in the background set.
-#' - `Genes`: The number of unique genes in the long_df.
-#' - `Base_AIC`: Akaike Information Criterion for the base model.
-#' - `Base_BIC`: Bayesian Information Criterion for the base model.
-#' - `Base_edf`: Effective degrees of freedom for the base model.
-#' - `Linear_AIC`: Akaike Information Criterion for the linear model.
-#' - `Linear_BIC`: Bayesian Information Criterion for the linear model.
-#' - `Linear_edf`: Effective degrees of freedom for the linear model.
-#' - `Cubic_AIC`: Akaike Information Criterion for the cubic model.
-#' - `Cubic_BIC`: Bayesian Information Criterion for the cubic model.
-#' - `Cubic_edf`: Effective degrees of freedom for the cubic model.
-#' - `P_Value_Linear`: P-value for the linear model.
-#' - `P_Value_Cubic`: P-value for the cubic model.
-#' - `Smooth_Predictions`: A list containing smoothed predictions from the cubic model.
-#' - `Adjusted_P_Value`: P-value for the cubic model adjusted for multiple testing.
-#'
-#' @export
 #' @importFrom stats p.adjust
 #' @importFrom utils txtProgressBar
+process_gene_set <- function(se, dose_col, sample_col, omic, gmt, i, minGSsize = 5, maxGSsize = 300, covariates = c(), modelType = "LMM") {
+  geneset <- gmt[[i]]$genes
+  # Prepare data for the gene set
+  long_df <- suppressWarnings(prepare_data(se=se, geneset=geneset, dose_col=dose_col, sample_col=sample_col, omic=omic))
 
-# DoseRider function
-DoseRiderGAMM <- function(se, gmt, dose_col = "dose", sample_col = "sample",
-                      covariate = "", omic = "rnaseq", minGSsize=5,
-                      maxGSsize=300, method = "fdr") {
-  ### Step 1: Data Validation and Metadata Check ###
+  # Check gene set size criteria
+  if (is.null(long_df) || length(unique(long_df$gene)) < minGSsize || length(unique(long_df$gene)) > maxGSsize) {
+    return(NULL)
+  }
 
-  # Check if se is a SummarizedExperiment or a matrix/data frame with metadata
-  if (inherits(se, "SummarizedExperiment")) {
-    num_samples <- ncol(se)
-    num_variables <- nrow(se)
-    metadata <- as.data.frame(colData(se))
-    print(paste("Working with a SummarizedExperiment with", num_samples, "samples and", num_variables, "variables"))
-    ## If not check is a matrix
-  } else if (is.data.frame(se) || is.matrix(se)) {
-    if (is.null(metadata)) {
-      stop("Metadata is required when using a matrix or data frame as input. Please provide the metadata.")
-    }
+  # Fit LMM with null and cubic spline models
+  k <-  length(unique(as.vector(long_df[[dose_col]]))) - 1
+  if (modelType == "LMM"){
+    null_formula <- create_lmm_formula("counts", dose_col, "gene", covariates, "null", omic)
+    linear_formula <- create_lmm_formula("counts", dose_col, "gene", covariates, "linear", omic)
+    cubic_formula <- create_lmm_formula("counts", dose_col, "gene", covariates, "cubic", omic, k = k)
 
-    if (!identical(colnames(se), rownames(metadata))) {
-      stop("The row names in the matrix/data frame and metadata do not match.")
-    }
+    null_results <- suppressWarnings(fit_lmm(null_formula, long_df, omic))
+    linear_results <- suppressWarnings(fit_lmm(linear_formula, long_df, omic))
+    cubic_results <- suppressWarnings(fit_lmm(cubic_formula, long_df, omic))
+  } else if (modelType == "GAMM"){
+    null_formula <- create_gamm_formula("counts", dose_col, "gene", covariates, "null", omic)
+    linear_formula <- create_gamm_formula("counts", dose_col, "gene", covariates, "linear", omic)
+    cubic_formula <- create_gamm_formula("counts", dose_col, "gene", covariates, "cubic", omic, k = k)
+
+    null_results <- suppressWarnings(fit_gam(null_formula, long_df, omic))
+    linear_results <- suppressWarnings(fit_gam(linear_formula, long_df, omic))
+    cubic_results <- suppressWarnings(fit_gam(cubic_formula, long_df, omic))
+  }
+  # Compare models and compute best model
+  if (!is.na(null_results) && !is.na(linear_results) && !is.na(cubic_results)) {
+    p_value_list <- compare_all_models(null_results, linear_results, cubic_results, modelType)
+    best_model_AICc <- select_best_model(list(null = null_results, linear = linear_results, cubic = cubic_results))
+    random_effect <- if (modelType=="LMM") extract_random_effects_lmm(cubic_results, dose_col) else extract_random_effects_gamm(cubic_results, dose_col)
   } else {
-    stop("se should be either a SummarizedExperiment object or a matrix/data frame with metadata.")
+    p_value_list <- NA
+    best_model_AICc <- "null"
+    random_effect <- NA
+  }
+
+  # Compute metrics for null and cubic models
+  null_metrics <- if (modelType=="LMM") compute_metrics_lmm(null_results) else compute_metrics_gamm(null_results)
+  linear_metrics <- if (modelType=="LMM") compute_metrics_lmm(linear_results) else compute_metrics_gamm(linear_results)
+  cubic_metrics <- if (modelType=="LMM") compute_metrics_lmm(cubic_results) else compute_metrics_gamm(cubic_results)
+
+  # Calculate smoothing values and BMD
+  if (!is.na(cubic_results) && best_model_AICc == "cubic") {
+    smooth_values <- smooth_pathway_trend(cubic_results, long_df, dose_col, sample_col, omic, TRUE, covariates)
+    smooth_pathway <- smooth_pathway_trend(cubic_results, long_df, dose_col, sample_col, omic, FALSE, covariates, dose_points = 500)
+    derivate <- compute_derivatives(smooth_pathway,dose_col)
+    bmd <- compute_bmd_from_main_trend(smooth_pathway,dose_col)
+  } else {
+    smooth_values <- NA
+    smooth_pathway <- NA
+    derivate <- NA
+    bmd <- NA
   }
 
 
-  # Check if sample_col, dose_col, and covariate are columns in metadata
-  if (!sample_col %in% colnames(metadata)) {
-    stop(paste("Column", sample_col, "not found in the metadata. Please provide the correct sample_col."))
-  }
+  # Compile results into a list
+  geneset_results <- list(
+    Geneset = gmt[[i]]$pathway,
+    Geneset_Size = length(geneset),
+    Genes = length(unique(long_df$gene)),
+    Null_AIC = null_metrics$AIC,
+    Null_AICc = null_metrics$AICc,
+    Null_BIC = null_metrics$BIC,
+    Null_df = null_metrics$edf,
+    Linear_AIC = linear_metrics$AIC,       # Adding Linear model AIC
+    Linear_AICc = linear_metrics$AICc,     # Adding Linear model AICc
+    Linear_BIC = linear_metrics$BIC,       # Adding Linear model BIC
+    Linear_df = linear_metrics$edf,        # Adding Linear model degrees of freedom
+    Cubic_AIC = cubic_metrics$AIC,         # Adding Cubic model AIC
+    Cubic_AICc = cubic_metrics$AICc,       # Adding Cubic model AICc
+    Cubic_BIC = cubic_metrics$BIC,         # Adding Cubic model BIC
+    Cubic_df = cubic_metrics$edf,          # Adding Cubic model degrees of freedom
+    P_Value_Linear = p_value_list[1],
+    P_Value_Cubic = p_value_list[2],
+    Best_Model_AICc = best_model_AICc,
+    Smooth_Predictions = list(smooth_values),
+    Smooth_Predictions_Pathway = list(smooth_pathway),
+    Raw_Values = list(long_df),
+    BMD = bmd,
+    TCD = derivate,
+    random_effect = random_effect
+  )
 
-  if (!dose_col %in% colnames(metadata)) {
-    stop(paste("Column", dose_col, "not found in the metadata. Please provide the correct dose_col."))
-  }
+  return(geneset_results)
+}
 
-  if (covariate != "" && !covariate %in% colnames(metadata)) {
-    stop(paste("Column", covariate, "not found in the metadata. Please provide the correct covariate."))
-  }
+#' Perform DoseRider Analysis Using Linear Mixed Models (LMMs) or Generalized Additive Mixed Models (GAMMs)
+#'
+#' This function performs DoseRider analysis on gene expression data, applying either Linear Mixed Models (LMMs)
+#' or Generalized Additive Mixed Models (GAMMs) to each gene set defined in the gene matrix transposed (GMT) format.
+#' It evaluates dose-response relationships in the context of gene sets and calculates various model metrics,
+#' significance, and smoothing predictions.
+#'
+#' @param se SummarizedExperiment object or a matrix/data frame containing gene expression data.
+#' @param gmt List of gene sets, each represented as a list with gene names.
+#' @param dose_col Name of the column representing dose information.
+#' @param sample_col Name of the column representing sample information.
+#' @param covariates Optional, vector specifying the covariate column(s) in `se`.
+#' @param omic Type of omics data, defaults to "rnaseq".
+#' @param minGSsize Minimum gene set size for analysis, defaults to 5.
+#' @param maxGSsize Maximum gene set size for analysis, defaults to 300.
+#' @param method Method for multiple testing adjustment, defaults to "fdr".
+#' @param modelType Type of model to be used for analysis, "LMM" for Linear Mixed Models or "GAMM"
+#' for Generalized Additive Mixed Models. Defaults to "LMM".
+#'
+#' @return A list containing results for each gene set including various metrics, p-values,
+#' and adjusted p-values.
+#'
+#' @examples
+#' \dontrun{
+#' data("SummarizedExperiment")
+#' gmt <- list(geneSet1 = list(genes = c("gene1", "gene2")))
+#' results <- DoseRider(se, gmt, "dose", "sample", "covariate", "rnaseq", modelType = "GAMM")
+#' }
+#'
+#' @importFrom stats p.adjust
+#' @importFrom utils txtProgressBar
+#' @export
+DoseRider <- function(se, gmt, dose_col = "dose", sample_col = "sample",
+                         covariates = c(), omic = "rnaseq", minGSsize = 5,
+                         maxGSsize = 300, method = "fdr", modelType = "LMM") {
 
-  ### Step 2: Main Processing ###
-  # Create an empty data frame to store the results
+  # Validate input data
+  validate_input_doserider(se,dose_col,sample_col,covariates)
+
+  # Initialize results list
   results <- list()
-
-  #### Get some values
-  # Get the total number of gene sets
   total_gene_sets <- length(gmt)
-
-  # Vector of uniques genes in the db
-  all_genes <- unique(unlist(lapply(gmt, `[[`, "genes")))
-  input_vector <- unique(rownames(se))
-
-  # Initialize the progress bar
-  #pb <- progress_bar$new(total = total_gene_sets)
   pb <- txtProgressBar(min = 0, max = total_gene_sets, style = 3)
 
-  ##Process genesets
-  # Loop over gene sets
+  # Process each gene set
   for (i in seq_along(gmt)) {
-    geneset_results <- process_gene_set(se, dose_col, sample_col,omic, gmt, i, minGSsize, maxGSsize)
+    setTxtProgressBar(pb, i)
+    geneset_results <- suppressMessages(suppressWarnings(process_gene_set(se, dose_col,
+                                        sample_col, omic, gmt, i, minGSsize, maxGSsize, covariates, modelType)))
     if (!is.null(geneset_results)) {
-      # Add the gene set results to the list of results
       results[[gmt[[i]]$pathway]] <- geneset_results
     }
-    # Update the progress bar
-    setTxtProgressBar(pb, i)
   }
 
-  # Close the progress bar
   close(pb)
 
-  # Add FDR adjustment to the results
-  # Get the adjusted p-values
-  adjusted_cubic_p_values <- p.adjust(unlist(lapply(results, `[[`, "P_Value_Cubic")), method = method)
-  adjusted_linear_p_values <- p.adjust(unlist(lapply(results, `[[`, "P_Value_Linear")), method = method)
+  # Adjust p-values for multiple testing
+  results <- adjust_pvalues_doserider_result(results = results, method = method)
 
-  # Save the adjusted p-value inside each gene set
-  for (i in seq_along(results)) {
-    results[[i]]$Adjusted_Cubic_P_Value <- adjusted_p_values[i]
-    results[[i]]$Adjusted_Linear_P_Value <- adjusted_linear_p_values[i]
-
-    }
-
-  # Add the adjusted p-values to the results object
   class(results) <- "DoseRider"
-
   return(results)
 }
 
-
-#' DoseRiderParallel function
-#'
 #' Perform DoseRider analysis in parallel using multiple cores.
+#'
+#' This function conducts DoseRider analysis in parallel, applying either Linear Mixed Models (LMMs) or Generalized
+#' Additive Mixed Models (GAMMs) to each gene set in the gene matrix transposed (GMT) format. It evaluates dose-response
+#' relationships in gene sets, computing various model metrics and significance.
 #'
 #' @param se The input SummarizedExperiment object or matrix/data frame with metadata.
 #' @param gmt The gene set collection as a list with gene sets.
 #' @param dose_col The name of the column in the metadata representing the dose information.
 #' @param sample_col The name of the column in the metadata representing the sample information.
-#' @param covariate The name of the column in the metadata representing the covariate information (optional).
+#' @param covariates The name of the column in the metadata representing the covariate information (optional).
 #' @param omic The type of omic data used (default is "rnaseq").
 #' @param minGSsize The minimum gene set size for filtering (default is 5).
 #' @param maxGSsize The maximum gene set size for filtering (default is 300).
 #' @param method The p-value adjustment method for FDR correction (default is "fdr").
+#' @param modelType Type of model to be used for analysis, "LMM" for Linear Mixed Models or "GAMM"
+#' for Generalized Additive Mixed Models. Defaults to "LMM".
 #' @param num_cores The number of cores to use for parallel processing (default is 5).
 #'
 #' @return A list containing the results of the DoseRider analysis for each gene set.
@@ -257,103 +211,127 @@ DoseRiderGAMM <- function(se, gmt, dose_col = "dose", sample_col = "sample",
 #' @importFrom utils txtProgressBar
 #' @importFrom doSNOW registerDoSNOW
 #'
-#' @export
-#'
 #' @examples
 #' # Example usage of DoseRiderParallel
-#' results <- DoseRiderParallel(se, gmt, dose_col = "dose", sample_col = "sample", covariate = "age", num_cores = 8)
+#' results <- DoseRiderParallelLMM(se, gmt, dose_col = "dose", sample_col = "sample",
+#'                                 covariate = c(), omic = "rnaseq", minGSsize = 5,
+#'                                 maxGSsize = 300, method = "fdr", modelType = "GAMM", num_cores = 8)
 #'
-# DoseRiderParallel function
+#' @export
 DoseRiderParallel <- function(se, gmt, dose_col = "dose", sample_col = "sample",
-                              covariate = "", omic = "rnaseq", minGSsize = 5,
-                              maxGSsize = 300, method = "fdr", num_cores = 5) {
+                                 covariates = c(), omic = "rnaseq", minGSsize = 5,
+                                 maxGSsize = 300, method = "fdr", num_cores = 5,
+                                 modelType = "LMM") {
   # Register the parallel backend
   cl <- makeCluster(num_cores)
   registerDoSNOW(cl)
 
-  ### Step 1: Data Validation and Metadata Check ###
-  # Check if se is a SummarizedExperiment or a matrix/data frame with metadata
-  if (inherits(se, "SummarizedExperiment")) {
-    num_samples <- ncol(se)
-    num_variables <- nrow(se)
-    metadata <- as.data.frame(colData(se))
-    print(paste("Working with a SummarizedExperiment with", num_samples, "samples and", num_variables, "variables"))
-    ## If not check is a matrix
-  } else if (is.data.frame(se) || is.matrix(se)) {
-    if (is.null(metadata)) {
-      stop("Metadata is required when using a matrix or data frame as input. Please provide the metadata.")
-    }
+  # Validate input data and metadata columns
+  validate_input_doserider(se,dose_col,sample_col,covariates)
 
-    if (!identical(colnames(se), rownames(metadata))) {
-      stop("The row names in the matrix/data frame and metadata do not match.")
-    }
-  } else {
-    stop("se should be either a SummarizedExperiment object or a matrix/data frame with metadata.")
-  }
-
-
-  # Check if sample_col, dose_col, and covariate are columns in metadata
-  if (!sample_col %in% colnames(metadata)) {
-    stop(paste("Column", sample_col, "not found in the metadata. Please provide the correct sample_col."))
-  }
-
-  if (!dose_col %in% colnames(metadata)) {
-    stop(paste("Column", dose_col, "not found in the metadata. Please provide the correct dose_col."))
-  }
-
-  if (covariate != "" && !covariate %in% colnames(metadata)) {
-    stop(paste("Column", covariate, "not found in the metadata. Please provide the correct covariate."))
-  }
-
-  ### Step 2: Main Processing ###
-  # Create an empty data frame to store the results
-  results <- list()
-
-  #### Get some values
-  # Get the total number of gene sets
-  total_gene_sets <- length(gmt) + 1
-
-  # Vector of uniques genes in the db
-  all_genes <- unique(unlist(lapply(gmt, `[[`, "genes")))
-  input_vector <- unique(rownames(se))
-
-  # Initialize the progress bar
-  pb <- txtProgressBar(max=total_gene_sets, style=3)
-  progress <- function(n) setTxtProgressBar(pb, n)
-  opts <- list(progress=progress)
+  # Initialize progress bar and options for parallel processing
+  total_gene_sets <- length(gmt)
+  pb <- txtProgressBar(min = 0, max = total_gene_sets, style = 3)
+  opts <- list(progress = function(n) setTxtProgressBar(pb, n))
 
   # Loop over gene sets in parallel
-  results <- foreach(i = seq_along(gmt), .packages = c("mgcv", "tidyverse", "SummarizedExperiment", "reshape", "doseRider"), .combine = "c", .options.snow = opts) %dopar% {
-    geneset_results <- process_gene_set(se, dose_col, sample_col, omic, gmt, i, minGSsize, maxGSsize)
-    if (!is.null(geneset_results)) {
-      setNames(list(geneset_results), gmt[[i]]$pathway)
-    } else {
-      NULL
-    }
-  }
+  results <- foreach(i = seq_along(gmt), .packages = c("SummarizedExperiment", "lme4", "doseRider"),
+                     .combine = 'c', .options.snow = opts) %dopar% {
+                       geneset_results <- suppressWarnings(process_gene_set(se, dose_col, sample_col,
+                                                            omic, gmt, i, minGSsize, maxGSsize, covariates, modelType))
+                       if (!is.null(geneset_results)) {
+                         setNames(list(geneset_results), gmt[[i]]$pathway)
+                       } else {
+                         NULL
+                       }
+                     }
 
-  # Close the parallel backend
+  # Close parallel backend and progress bar
   stopCluster(cl)
-
-  # Close the progress bar
   close(pb)
 
-  #Add FDR adjustment to the results
-  # Get the adjusted p-values
-  adjusted_cubic_p_values <- p.adjust(unlist(lapply(results, `[[`, "P_Value_Cubic")), method = method)
-  adjusted_linear_p_values <- p.adjust(unlist(lapply(results, `[[`, "P_Value_Linear")), method = method)
+  # Adjust p-values for multiple testing
+  results <- adjust_pvalues_doserider_result(results = results, method = method)
 
-  # Save the adjusted p-value inside each gene set
-  for (i in seq_along(results)) {
-    results[[i]]$Adjusted_Cubic_P_Value <- adjusted_cubic_p_values[i]
-    results[[i]]$Adjusted_Linear_P_Value <- adjusted_linear_p_values[i]
-
-  }
-
-  # Add the adjusted p-values to the results object
   class(results) <- "DoseRider"
-
   return(results)
 }
 
 
+
+#' Convert a DoseRider Object to a Data Frame
+#'
+#' This function converts a DoseRider object into a data frame for easier analysis and visualization.
+#' It extracts various attributes associated with dose-response analysis results, handling nested list structures.
+#'
+#' @param object A DoseRider object containing results from dose-response analysis.
+#'
+#' @return A data frame with attributes from the DoseRider object, where each row corresponds to one gene set.
+#'
+#' @examples
+#' \dontrun{
+#'   # Assuming `dose_rider_result` is a DoseRider object
+#'   result_df <- as.data.frame.DoseRider(dose_rider_result)
+#' }
+#'
+#' @export
+as.data.frame.DoseRider <- function(object) {
+  # Define the attributes to extract
+  attrs_to_extract <- geneset_results_fields <- c("Geneset","Geneset_Size","Genes",
+    "Null_AIC", "Null_AICc","Null_BIC","Null_df", "Linear_AIC","Linear_AICc", "Linear_BIC",
+    "Linear_df","Cubic_AIC","Cubic_AICc","Cubic_BIC","Cubic_df","P_Value_Linear","P_Value_Cubic",
+    "Best_Model_AICc", "Adjusted_Cubic_P_Value","Adjusted_Linear_P_Value" )
+
+
+  # Convert the DoseRider object to a list of data frames, handling nested lists
+  df_list <- lapply(object, function(x) {
+    converted_df <- convert_nested_list_to_df(x[attrs_to_extract])
+    return(converted_df)
+  })
+
+  # Combine individual data frames into one
+  results_df <- do.call(rbind, df_list)
+  results_df <- results_df[!is.na(results_df$Geneset),]
+  return(results_df)
+}
+
+# Utility Function: Convert Nested List to DataFrame
+convert_nested_list_to_df <- function(lst) {
+  # Find the maximum length among the list elements
+  max_len <- max(sapply(lst, length))
+
+  # Ensure each list element has the same length by padding shorter elements with NA
+  lst_padded <- lapply(lst, function(el) {
+    length_diff <- max_len - length(el)
+    if (length_diff > 0) {
+      el <- c(el, rep(NA, length_diff))
+    }
+    return(el)
+  })
+
+  # Convert the padded list to a data frame
+  df <- as.data.frame(lst_padded, stringsAsFactors = FALSE)
+  return(df)
+}
+
+
+
+#' Print method for DoseRider
+#'
+#' This function prints a summary of a DoseRider object.
+#' It shows the class of the object and the number of gene sets it contains.
+#'
+#' @param x A DoseRider object.
+#' @param ... Further arguments passed to or from other methods.
+#'
+#' @examples
+#' \dontrun{
+#'   # Assuming `dose_rider_result` is a DoseRider object
+#'   print(dose_rider_result)
+#' }
+#'
+#' @export
+print.DoseRider <- function(x, ...) {
+  cat("Object of class DoseRider\n")
+  cat(paste("Number of gene sets:", length(x), "\n"))
+}

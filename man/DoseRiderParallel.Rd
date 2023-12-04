@@ -2,19 +2,20 @@
 % Please edit documentation in R/doseRider.R
 \name{DoseRiderParallel}
 \alias{DoseRiderParallel}
-\title{DoseRiderParallel function}
+\title{Perform DoseRider analysis in parallel using multiple cores.}
 \usage{
 DoseRiderParallel(
   se,
   gmt,
   dose_col = "dose",
   sample_col = "sample",
-  covariate = "",
+  covariates = c(),
   omic = "rnaseq",
   minGSsize = 5,
   maxGSsize = 300,
   method = "fdr",
-  num_cores = 5
+  num_cores = 5,
+  modelType = "LMM"
 )
 }
 \arguments{
@@ -26,7 +27,7 @@ DoseRiderParallel(
 
 \item{sample_col}{The name of the column in the metadata representing the sample information.}
 
-\item{covariate}{The name of the column in the metadata representing the covariate information (optional).}
+\item{covariates}{The name of the column in the metadata representing the covariate information (optional).}
 
 \item{omic}{The type of omic data used (default is "rnaseq").}
 
@@ -37,15 +38,22 @@ DoseRiderParallel(
 \item{method}{The p-value adjustment method for FDR correction (default is "fdr").}
 
 \item{num_cores}{The number of cores to use for parallel processing (default is 5).}
+
+\item{modelType}{Type of model to be used for analysis, "LMM" for Linear Mixed Models or "GAMM"
+for Generalized Additive Mixed Models. Defaults to "LMM".}
 }
 \value{
 A list containing the results of the DoseRider analysis for each gene set.
 }
 \description{
-Perform DoseRider analysis in parallel using multiple cores.
+This function conducts DoseRider analysis in parallel, applying either Linear Mixed Models (LMMs) or Generalized
+Additive Mixed Models (GAMMs) to each gene set in the gene matrix transposed (GMT) format. It evaluates dose-response
+relationships in gene sets, computing various model metrics and significance.
 }
 \examples{
 # Example usage of DoseRiderParallel
-results <- DoseRiderParallel(se, gmt, dose_col = "dose", sample_col = "sample", covariate = "age", num_cores = 8)
+results <- DoseRiderParallelLMM(se, gmt, dose_col = "dose", sample_col = "sample",
+                                covariate = c(), omic = "rnaseq", minGSsize = 5,
+                                maxGSsize = 300, method = "fdr", modelType = "GAMM", num_cores = 8)
 
 }

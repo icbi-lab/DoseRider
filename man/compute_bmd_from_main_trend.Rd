@@ -2,42 +2,25 @@
 % Please edit documentation in R/bmd.R
 \name{compute_bmd_from_main_trend}
 \alias{compute_bmd_from_main_trend}
-\title{Compute Benchmark Dose (BMD) from Main Trend}
+\title{Compute Benchmark Dose (BMD) from Smoothed Trend}
 \usage{
-compute_bmd_from_main_trend(
-  model,
-  data,
-  dose_var,
-  omic,
-  z = 1,
-  covariates = c()
-)
+compute_bmd_from_main_trend(smooth_pathway, dose_var, z = 1)
 }
 \arguments{
-\item{model}{A fitted model object, either of class `lmerMod` or `glmerMod`.}
+\item{smooth_pathway}{Data frame containing smoothed trend predictions, typically from a dose-response model.}
 
-\item{data}{A dataframe containing the variables used in the model.}
+\item{dose_var}{The name of the dose variable in `smooth_pathway`.}
 
-\item{dose_var}{The name of the dose variable in `data`.}
-
-\item{omic}{A character string indicating the type of omics data.
-Use "rnaseq" for RNA-Seq data; otherwise, specify another type.}
-
-\item{z}{The number of standard deviations away from the control response
-to define the target response.}
+\item{z}{A numeric value specifying the number of standard deviations above the control response
+to define the target response for BMD. Default is 1.}
 }
 \value{
-A dataframe containing the Benchmark Dose (BMD) for each specified level of `z`.
+A list or a numeric value representing the calculated BMD. If no BMD is found within a
+        reasonable range, NA is returned.
 }
 \description{
-This function calculates the Benchmark Dose (BMD) for a given model and dataset.
-BMD is determined as the dose at which the predicted response is a certain
-number of standard deviations (defined by `z`) away from the control response.
-The function is designed to work with models fitted using `lmer` or `glmer`
-from the `lme4` package and is applicable to linear and generalized linear mixed models.
-}
-\examples{
-# Assuming `model` is a fitted lmerMod or glmerMod object
-# `data` is a dataframe with dose, size_factors, and other covariates
-compute_bmd_from_main_trend(model, data, "dose", "rnaseq", z = 1)
+This function calculates the Benchmark Dose (BMD) based on a smoothed trend from model predictions.
+The BMD is identified as the dose level where the predicted response exceeds a threshold defined
+as a specified number of standard deviations (`z`) above the control response. It's designed to
+work with smoothed trend data, typically derived from `lmer` or `glmer` model predictions.
 }

@@ -75,9 +75,13 @@ gmt_id <- doseRider:::filter_gmt_by_id(gmt, unique(top_geneset[abs(top_geneset$W
 ### 5. Dose-Response Model with doseRider
 
 ```{r}
-dose_rider_results <- DoseRiderLMM(filter_bpa_data, gmt = gmt_id[1:100], dose_col = "Dose",omic = "rnaseq", minGSsize = 10, maxGSsize = 1000, method = "fdr", covariates = c())
+dose_rider_results <- DoseRiderParallel(filter_bpa_data, gmt = gmt_id, 
+                                           dose_col = "Dose", omic = "rnaseq", 
+                                           minGSsize = 10, maxGSsize = 400, 
+                                           method = "fdr", covariates = c(),
+                                           modelType = "LMM", num_cores = 10)
 res_df <- as.data.frame.DoseRider(dose_rider_results)
-table(res_df$Adjusted_Cubic_P_Value < 0.05)
+table(res_df$Adjusted_Cubic_P_Value < 0.01)
 table(res_df$Best_Model_AICc)
 #save(res, file = "../../doseRider_save/res_bpa_20_1000.rda")
 ```
@@ -86,9 +90,20 @@ table(res_df$Best_Model_AICc)
 
 ```{r}
 top <- 10
+save_path <- "/home/monfortl/doseRider/plots/"
 
 p1 <- dose_response_heatmap(dose_rider_results, dose_col = "Dose", top = top)
+plotFile1 <- paste0(save_path,"/plot1.jpeg")
 p2 <- plot_gene_set_random_effects(dose_rider_results, dose_col = "Dose", top = top)
-p3 <- plot_top_pathway_responses(dose_rider_results, top = 4, ncol = 5)
+plotFile2 <- paste0(save_path,"/plot2.jpeg")
+p3 <- plot_top_pathway_responses(dose_rider_results, top = top-1, ncol = 3)
+plotFile3 <- paste0(save_path,"/plot3.jpeg")
+
+jpeg(file=plotFile1,width = 600, height = 500, units = "px")
+ plot(p1)
+dev.off()
+ggsave(plotFile2, plot = p2, width = 250, height = 150, units = "mm", dpi = 600)
+ggsave(plotFile3, plot = p3, width = 400, height = 200, units = "mm", dpi = 600)
+
 ```
 

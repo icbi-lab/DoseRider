@@ -10,7 +10,8 @@ create_gamm_formula(
   random_effects,
   covariates = c(),
   model_type = "base",
-  omic = "base"
+  omic = NULL,
+  k = NULL
 )
 }
 \arguments{
