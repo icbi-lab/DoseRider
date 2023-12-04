@@ -4,20 +4,12 @@
 \alias{compute_derivatives}
 \title{Compute Derivatives and Identify Zero Points}
 \usage{
-compute_derivatives(model, data, dose_var, omic, covariates = c())
+compute_derivatives(smooth_pathway, dose_var)
 }
 \arguments{
-\item{model}{A fitted model object, either of class `lmerMod` or `glmerMod`.}
+\item{smooth_pathway}{Data frame containing smoothed trend predictions, typically from a dose-response model.}
 
-\item{data}{A dataframe containing the variables used in the model.}
-
-\item{dose_var}{The name of the dose variable in `data`.}
-
-\item{omic}{A character string indicating the type of omics data.
-Use "rnaseq" for RNA-Seq data; otherwise, specify another type.}
-
-\item{covariates}{An optional vector of names of covariates in `data` to be
-included in the prediction. Default is NULL.}
+\item{dose_var}{The name of the dose variable in `smooth_pathway`.}
 }
 \value{
 A list containing the first derivative, second derivative, and
@@ -26,11 +18,5 @@ A list containing the first derivative, second derivative, and
 \description{
 This function calculates the first and second derivatives of the predicted
 values from a mixed model and identifies points where these derivatives
-are approximately zero. It is designed to work with models fitted using
-`lmer` or `glmer` from the `lme4` package.
-}
-\examples{
-# Assuming `model` is a fitted lmerMod or glmerMod object
-# `data` is a dataframe with dose, size_factors, and other covariates
-compute_derivatives(model, data, "dose", "rnaseq", c("cov1", "cov2"))
+are approximately zero.
 }

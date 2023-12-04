@@ -4,7 +4,7 @@
 \alias{fit_gam}
 \title{Fit Generalized Additive Model (GAM)}
 \usage{
-fit_gam(formula, data)
+fit_gam(formula, data, omic)
 }
 \arguments{
 \item{formula}{A formula for the GAM.}

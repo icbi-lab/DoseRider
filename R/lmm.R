@@ -1,87 +1,3 @@
-#' Generate Smooth Predictions for Pathway Trends
-#'
-#' This function creates a data frame of smooth predictions based on a provided model. It is useful for
-#' visualizing trends in pathway data, especially in the context of dose-response studies. It handles
-#' different types of omics data and can incorporate covariates.
-#'
-#' @param model A model object, typically of class 'lmerMod' or 'glmerMod'.
-#' @param long_df A data frame containing the input data with columns corresponding to dose, sample, and other variables.
-#' @param dose_col The name of the dose variable in `long_df`.
-#' @param sample_col The name of the sample variable in `long_df`.
-#' @param omic A character string indicating the type of omics data (e.g., "rnaseq").
-#' @param random_effects Logical, indicating if random effects (like gene) should be included.
-#' @param covariates_cols Optional; a vector of names of additional covariates in `long_df`.
-#'
-#' @return A data frame containing the original data along with the predictions from the model.
-#'
-#' @examples
-#' \dontrun{
-#' data("mtcars")
-#' model <- lmer(mpg ~ wt + (1|cyl), data = mtcars)
-#' predictions <- smooth_pathway_trend(model = model,
-#'                                    long_df = mtcars,
-#'                                    dose_col = "wt",
-#'                                    sample_col = "cyl",
-#'                                    omic = "rnaseq",
-#'                                    random_effects = TRUE,
-#'                                    covariates_cols = NULL)
-#' }
-#'
-#' @export
-#' @importFrom lme4 lmer
-#' @importFrom stats predict
-smooth_pathway_trend <- function(model, long_df, dose_col = "dose", sample_col = "sample", omic = "rnaseq",
-                                 random_effects = TRUE, covariates_cols = NULL, gene_subset = NULL,
-                                 dose_points = 25, sample_subset_size = 10) {
-  # Ensure necessary columns are present
-  required_cols <- c(dose_col, sample_col)
-  if (omic == "rnaseq") required_cols <- c(required_cols, "size_factor")
-  if (!all(required_cols %in% names(long_df))) stop("Some required columns not found in data")
-
-  # Prepare parameters for expand.grid
-  expand_params <- list(dose = seq(min(long_df[[dose_col]]), max(long_df[[dose_col]]), length.out = dose_points))
-
-  # Add size factor or sample subset
-  if (omic == "rnaseq") {
-    size_factors <- unique(long_df[["size_factor"]])
-    if (length(size_factors) > sample_subset_size) {
-      size_factors <- sample(size_factors, sample_subset_size)
-    }
-    expand_params$size_factor <- size_factors
-  } else {
-    samples <- unique(long_df[[sample_col]])
-    if (length(samples) > sample_subset_size) {
-      samples <- sample(samples, sample_subset_size)
-    }
-    expand_params$sample <- samples
-  }
-
-  # Add gene if random effects are considered
-  if (random_effects) expand_params$gene <- unique(long_df$gene)
-
-  # Add additional covariates if provided
-  if (!is.null(covariates_cols) && all(covariates_cols %in% names(long_df))) {
-    for (col in covariates_cols) expand_params[[col]] <- unique(long_df[[col]])
-  } else if (!is.null(covariates_cols)) stop("Some covariates not found in data")
-
-  # Create new data for prediction
-  new_data <- expand.grid(expand_params)
-  colnames(new_data) <- c(dose_col, if (omic == "rnaseq") "size_factor" else sample_col, if (random_effects) "gene", covariates_cols)
-
-  # Generate predictions
-  if (random_effects){
-    predictions <- predict(model, newdata = new_data, se.fit = TRUE)
-  } else {
-    predictions <- predict(model, newdata = new_data, se.fit = TRUE, re.form = NA)
-  }
-  predictions <- cbind(new_data, predictions)
-
-  # Return the data with predictions
-  return(predictions)
-}
-
-
-
 #' Fit Linear Mixed Model (LMM) or Generalized Linear Mixed Model (GLMM)
 #'
 #' This function fits an LMM or a GLMM to the provided data using the specified formula.
@@ -110,7 +26,6 @@ smooth_pathway_trend <- function(model, long_df, dose_col = "dose", sample_col =
 #' model <- fit_lmm(formula = formula, data = mtcars, omic = "rnaseq", theta = 1.5)
 #' }
 #'
-#' @export
 fit_lmm <- function(formula, data, omic = "base") {
   # Adjust control parameters
   control_params <- glmerControl(optimizer = "bobyqa", optCtrl = list(maxfun = 1e8))
@@ -127,7 +42,7 @@ fit_lmm <- function(formula, data, omic = "base") {
   tryCatch(
     {
       if (family_choice == "gaussian") {
-        lmm_model <- lmer(as.formula(formula), data = data,REML = F)
+        lmm_model <- lmer(as.formula(formula), data = data, REML = F)
       } else {
         lmm_model <- glmer(as.formula(formula), data = data, family = family, control = control_params)
       }
@@ -171,7 +86,6 @@ fit_lmm <- function(formula, data, omic = "base") {
 #'                                      model_type = "cubic",
 #'                                      omic = "rnaseq")
 #' }
-#' @export
 create_lmm_formula <- function(response, fixed_effects, random_effects, covariates = c(), model_type = "base", omic = NULL, k = NULL) {
 
   base_formula <- paste(response, "~")
@@ -209,6 +123,29 @@ create_lmm_formula <- function(response, fixed_effects, random_effects, covariat
   return(base_formula)
 }
 
+#' Extract Random Effects from LMM
+#'
+#' This function extracts the random effect estimates for each gene from an LMM model object.
+#' The result is a dataframe with genes as rows and their corresponding random effect values.
+#'
+#' @param model An LMM model object, typically of class 'lmerMod'.
+#' @return A dataframe with genes as rows and their random effect estimates.
+#' @importFrom lme4 ranef
+extract_random_effects_lmm <- function(model, dose_col) {
+  # Ensure the input is an LMM model
+  if (!inherits(model, "merMod")) {
+    stop("The provided model is not an LMM model.")
+  }
+
+  # Extract the random effects using ranef
+  random_effects <- ranef(model)$gene
+
+  # If there are multiple random effects (e.g., intercept and slope), you may need to adjust this part
+  # Here, we assume a single random effect for simplicity
+  random_effects_df <- data.frame(row.names = rownames(random_effects), RandomEffect = random_effects[,dose_col])
+
+  return(random_effects_df)
+}
 
 
 #' Compute metrics for a given lmer or glmer model
@@ -226,7 +163,6 @@ create_lmm_formula <- function(response, fixed_effects, random_effects, covariat
 #' # Compute metrics
 #' compute_metrics(model)
 #' @importFrom AICcmodavg AICc
-#' @export
 compute_metrics_lmm <- function(model) {
   if (inherits(model, "merMod")) { # Checking if the model is either a lmer or glmer
     df_model <- df.residual(model) # degrees of freedom for the model
@@ -245,3 +181,5 @@ compute_metrics_lmm <- function(model) {
     ))
   }
 }
+
+

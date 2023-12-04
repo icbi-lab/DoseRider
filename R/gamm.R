@@ -10,7 +10,7 @@
 #'
 #' @return A GAM model if fitting is successful; NA otherwise.
 #'
-#' @importFrom mgcv gam
+#' @importFrom mgcv bam
 #' @importFrom stats formula
 #' @importFrom MASS negative.binomial
 #' @importFrom utils globalVariables
@@ -22,11 +22,10 @@
 #'   model <- fit_gam(formula, data = mtcars, omic = "base")
 #' }
 #'
-#' @export
-fit_gam <- function(formula, data) {
+fit_gam <- function(formula, data, omic) {
   # Adjust control parameters
-  control_params <- glmerControl(optimizer = "bobyqa", optCtrl = list(maxfun = 1e7))
-  
+  #control_params <- glmerControl(optimizer = "bobyqa", optCtrl = list(maxfun = 1e7))
+
   # Determine the family based on 'omic' parameter
   if (omic == "rnaseq") {
     #if (!"theta" %in% colnames(data)) stop("theta must be specified for omic = 'rnaseq'")
@@ -35,15 +34,15 @@ fit_gam <- function(formula, data) {
   } else {
     family_choice <- "gaussian"
   }
-  
+
   tryCatch(
     {
       if (family_choice == "gaussian") {
         gam_model <- bam(as.formula(formula), data = data, method = "ML")
       } else {
-        gam_model <- bam(as.formula(formula), data = data, family = family, control = control_params,  method = "ML")
+        gam_model <- bam(as.formula(formula), data = data, family = family,  method = "ML")
       }
-      return(lmm_model)
+      return(gam_model)
     },
     error = function(e) {
       cat(paste0("[!] Error: ",e))
@@ -72,38 +71,94 @@ fit_gam <- function(formula, data) {
 #'   base_formula <- create_gamm_formula("mpg", "hp", "cyl", model_type = "base", omic = "base")
 #'   cubic_formula <- create_gamm_formula("mpg", "hp", "cyl", model_type = "cubic", omic = "rnaseq")
 #' }
-#' @export
-create_gamm_formula <- function(response, fixed_effects, random_effects, covariates = c(), model_type = "base", omic = "base") {
-  # Basic structure for random effects
-  random_effect_structure <- paste0("s(", random_effects, ", bs = 're')")
-  
-  # Start assembling the base formula
-  base_formula <- paste0(response, " ~ ", random_effect_structure)
-  
-  # Handling covariates
-  if (length(covariates) > 0) {
-    covariate_terms <- paste(covariates, collapse = " + ")
-    base_formula <- paste(base_formula, "+", covariate_terms)
+create_gamm_formula <- function(response, fixed_effects, random_effects, covariates = c(), model_type = "base", omic = NULL, k = NULL) {
+  base_formula <- paste(response, "~")
+
+  if (model_type == "null") {
+    # Null model with random intercept
+    base_formula <- paste(base_formula, "s(", random_effects, ", bs='re')")
+  } else if (model_type == "linear") {
+    # Linear model with random slope
+    base_formula <- paste(base_formula, "+ s(", fixed_effects,",",random_effects, ", bs='re')")
+  } else if (model_type == "cubic") {
+    # Cubic spline model with random intercept and slope
+    cubic_terms <- paste("s(", fixed_effects, ", bs='cr', k=", k, ")")
+    base_formula <- paste(base_formula, cubic_terms, "+ s(", random_effects, ", bs='re') + s(", fixed_effects, ",", random_effects, ", bs='re')")
   }
-  
-  # Add omic-specific considerations
-  if (omic == "rnaseq") {
+
+  if (length(covariates) > 0) {
+    base_formula <- paste(base_formula, "+", paste(covariates, collapse = " + "))
+  }
+
+  if (!is.null(omic) && omic == "rnaseq") {
     base_formula <- paste(base_formula, "+ offset(log(size_factor))")
   }
-  
-  # Extend formula based on model type
-  if (model_type == "linear") {
-    linear_terms <- paste(fixed_effects, collapse = " + ")
-    return(paste(base_formula, "+", linear_terms))
-  } else if (model_type == "cubic") {
-    cubic_terms <- paste0("s(", fixed_effects, ", bs = 'cr', k = 4)") # Adjust 'k' as needed
-    return(paste(base_formula, "+", cubic_terms))
-  } else if (model_type != "base") {
-    stop("Invalid model type. Available options: 'base', 'linear', 'cubic'")
-  }
-  
+
   return(base_formula)
 }
 
 
+#' Extract Random Effects from GAMM
+#'
+#' This function extracts the random effect estimates for each gene from a GAMM object.
+#' The result is a dataframe with genes as rows and their corresponding random effect values.
+#'
+#' @param model A GAMM model object.
+#' @return A dataframe with genes as rows and their random effect estimates.
+#' @importFrom gammit extract_ranef
+extract_random_effects_gamm <- function(model, dose_col) {
+  # Ensure the input is a GAMM model
+  if (!inherits(model, c("gam", "bam"))) {
+    stop("The provided model is not a GAMM model.")
+  }
 
+  # Extract the coefficients from the model
+  random_effects <- extract_ranef(model)
+  random_effects <- as.data.frame(random_effects[random_effects$effect == dose_col,])
+  rownames(random_effects) <- random_effects$group
+  # Convert the random effects into a dataframe
+  random_effects_df <- data.frame(row.names = rownames(random_effects), RandomEffect = unlist(random_effects$value, use.names = FALSE))
+
+  return(random_effects_df)
+}
+
+
+#' Compute metrics for a given gam or bam model
+#'
+#' This function computes the AIC, BIC, and effective degrees of freedom (edf) for a given `gam` or `bam` model.
+#'
+#' The approach to calculate the effective degrees of freedom (edf)
+#' is adapted from the itsadug package: Interpreting Time Series and Autocorrelated Data Using GAMMs
+#' Reference: itsadug package (https://CRAN.R-project.org/package=itsadug)
+#'
+#' @param model A `gam` or `bam` model object from the mgcv package.
+#'
+#' @return A list containing the AIC, BIC, and edf of the model.
+#'         If the model parameter isn't a `gam` or `bam` object, the function will return NA for all metrics.
+#' @examples
+#' library(mgcv)
+#' data(sleepstudy)
+#' gam_model <- gam(Reaction ~ s(Days), data = sleepstudy)
+#'
+#' # Compute metrics
+#' compute_metrics_gamm(gam_model)
+#' @importFrom AICcmodavg AICc
+compute_metrics_gamm <- function(model) {
+  if (inherits(model, c("gam", "bam"))) {
+    return(list(
+      AIC = AIC(model),
+      AICc = AICc(model),
+      BIC = BIC(model),
+      edf = length(model$sp) + model$nsdf + ifelse(length(model$smooth) > 0,
+            sum(sapply(model$smooth, FUN = function(x) {x$null.space.dim},
+                                                        USE.NAMES = FALSE)), 0)
+    ))
+  } else {
+    return(list(
+      AIC = NA,
+      AICc = NA,
+      BIC = NA,
+      edf = NA
+    ))
+  }
+}

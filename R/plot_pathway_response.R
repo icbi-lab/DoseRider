@@ -1,3 +1,90 @@
+#' Generate Smooth Predictions for Pathway Trends
+#'
+#' This function creates a data frame of smooth predictions based on a provided model. It is useful for
+#' visualizing trends in pathway data, especially in the context of dose-response studies. It handles
+#' different types of omics data and can incorporate covariates.
+#'
+#' @param model A model object, typically of class 'lmerMod' or 'glmerMod'.
+#' @param long_df A data frame containing the input data with columns corresponding to dose, sample, and other variables.
+#' @param dose_col The name of the dose variable in `long_df`.
+#' @param sample_col The name of the sample variable in `long_df`.
+#' @param omic A character string indicating the type of omics data (e.g., "rnaseq").
+#' @param random_effects Logical, indicating if random effects (like gene) should be included.
+#' @param covariates_cols Optional; a vector of names of additional covariates in `long_df`.
+#'
+#' @return A data frame containing the original data along with the predictions from the model.
+#'
+#' @examples
+#' \dontrun{
+#' data("mtcars")
+#' model <- lmer(mpg ~ wt + (1|cyl), data = mtcars)
+#' predictions <- smooth_pathway_trend(model = model,
+#'                                    long_df = mtcars,
+#'                                    dose_col = "wt",
+#'                                    sample_col = "cyl",
+#'                                    omic = "rnaseq",
+#'                                    random_effects = TRUE,
+#'                                    covariates_cols = NULL)
+#' }
+#'
+#' @importFrom lme4 lmer
+#' @importFrom stats predict
+smooth_pathway_trend <- function(model, long_df, dose_col = "dose", sample_col = "sample", omic = "rnaseq",
+                                 random_effects = TRUE, covariates_cols = NULL, gene_subset = NULL,
+                                 dose_points = 25, sample_subset_size = 10) {
+  # Ensure necessary columns are present
+  required_cols <- c(dose_col, sample_col)
+  if (omic == "rnaseq") required_cols <- c(required_cols, "size_factor")
+  if (!all(required_cols %in% names(long_df))) stop("Some required columns not found in data")
+
+  # Prepare parameters for expand.grid
+  expand_params <- list(dose = seq(min(long_df[[dose_col]]), max(long_df[[dose_col]]), length.out = dose_points))
+
+  # Add size factor or sample subset
+  if (omic == "rnaseq") {
+    size_factors <- unique(long_df[["size_factor"]])
+    if (length(size_factors) > sample_subset_size) {
+      size_factors <- sample(size_factors, sample_subset_size)
+    }
+    expand_params$size_factor <- size_factors
+  } else {
+    samples <- unique(long_df[[sample_col]])
+    if (length(samples) > sample_subset_size) {
+      samples <- sample(samples, sample_subset_size)
+    }
+    expand_params$sample <- samples
+  }
+
+  # Add gene if random effects are considered
+  if (random_effects) {
+    expand_params$gene <- unique(long_df$gene)
+  } else {
+    expand_params$gene <- unique(long_df$gene)[1]
+
+  }
+  # Add additional covariates if provided
+  if (!is.null(covariates_cols) && all(covariates_cols %in% names(long_df))) {
+    for (col in covariates_cols) expand_params[[col]] <- unique(long_df[[col]])
+  } else if (!is.null(covariates_cols)) stop("Some covariates not found in data")
+
+  # Create new data for prediction
+  new_data <- expand.grid(expand_params)
+  colnames(new_data) <- c(dose_col, if (omic == "rnaseq") "size_factor" else sample_col, "gene", covariates_cols)
+
+  # Generate predictions
+  if (random_effects){
+    predictions <- predict(model, newdata = new_data)
+  } else {
+    predictions <- predict(model, newdata = new_data, re.form = NA)
+  }
+  predictions <- cbind(new_data, predictions)
+
+  # Return the data with predictions
+  return(predictions)
+}
+
+
+
 #' Plot Pathway Response with Enhanced Visualization at Specific Points
 #'
 #' This function creates a plot showing the pathway response with enhanced line thickness
@@ -8,6 +95,10 @@
 #' @param dose_col The name of the column representing dose information.
 #'
 #' @return A ggplot object representing the pathway response plot.
+#'
+#' @import ggplot2
+#' @importFrom stringr str_wrap
+#'
 #' @export
 plot_pathway_response <- function(dose_rider_results, gene_set_name, dose_col = "Dose", center_values = FALSE) {
   smooth_pathway <- dose_rider_results[[gene_set_name]]$Smooth_Predictions[[1]]
@@ -66,7 +157,7 @@ plot_pathway_response <- function(dose_rider_results, gene_set_name, dose_col = 
       geom_line(data = mean_trend, aes(x = Dose, y = predictions,linewidth = line_thickness), color = "red")
 
     # Finalize the plot settings
-    p <- p + labs(x = "Dose", y = "Expression", title = gene_set_name) +
+    p <- p + labs(x = "Dose", y = "Expression", title = str_wrap(gene_set_name, width = 35)) +
       theme_minimal() +
       theme(legend.position = "none", axis.text = element_text(size = 12), axis.title = element_text(size = 14), plot.title = element_text(size = 16))
 
@@ -146,7 +237,7 @@ plot_top_pathway_responses <- function(dose_rider_results, top=15, ncol = 3) {
 plot_gene_set_random_effects <- function(dose_rider_results, dose_col = "Dose", top = 10) {
   all_random_effects <- data.frame(gene = character(),
                                    gene_set = character(),
-                                   random_effect = numeric(),
+                                   RandomEffect = numeric(),
                                    stringsAsFactors = FALSE)
   #Top pathways in function of P-Value
   dose_rider_df <- as.data.frame(dose_rider_results)
@@ -158,19 +249,17 @@ plot_gene_set_random_effects <- function(dose_rider_results, dose_col = "Dose", 
   for (gene_set_name in gene_set_names) {
     random_effects <- dose_rider_results[[gene_set_name]]$random_effect
 
-    if (length(random_effects) > 1){
+    if (length(random_effects$RandomEffect) > 1){
     # Replace with actual way to access the model
     random_effects$gene_set <- gene_set_name
     random_effects$gene <- rownames(random_effects)
-    random_effects$`(Intercept)` <- NULL
-    colnames(random_effects) <- c("random_effect","gene_set","gene" )
     all_random_effects <- rbind(all_random_effects, random_effects)
     }
   }
 
   # Ridge plot
   all_random_effects$gene_set <- unlist(lapply(all_random_effects$gene_set,function(x){str_wrap(x,width = 35)}))
-  p <- ggplot(all_random_effects, aes(x = random_effect, y = gene_set, fill = gene_set)) +
+  p <- ggplot(all_random_effects, aes(x = RandomEffect, y = gene_set, fill = gene_set)) +
     geom_vline(xintercept = 0, color = "red", linetype = "dashed") +
     geom_density_ridges() +
     scale_fill_manual(values = custom_palette) +
