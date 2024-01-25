@@ -28,8 +28,19 @@
 #' }
 #'
 #' @importFrom stats p.adjust
-#' @importFrom utils txtProgressBar
+#' @import utils
+
 process_gene_set <- function(se, dose_col, sample_col, omic, gmt, i, minGSsize = 5, maxGSsize = 300, covariates = c(), modelType = "LMM") {
+  # Helper function to summarize a model
+  is_fitted_model <- function(model) {
+    if(inherits(model, c("lmerMod", "glmerMod"))) {
+      return(TRUE)
+    } else if(inherits(model, c("gam", "bam"))) {
+      return(TRUE)
+    } else {
+      return(FALSE)
+    }
+  }
   geneset <- gmt[[i]]$genes
   # Prepare data for the gene set
   long_df <- suppressWarnings(prepare_data(se=se, geneset=geneset, dose_col=dose_col, sample_col=sample_col, omic=omic))
@@ -40,51 +51,79 @@ process_gene_set <- function(se, dose_col, sample_col, omic, gmt, i, minGSsize =
   }
 
   # Fit LMM with null and cubic spline models
-  k <-  length(unique(as.vector(long_df[[dose_col]]))) - 1
+  #k <-  length(unique(as.vector(long_df[[dose_col]]))) - 1
   if (modelType == "LMM"){
     null_formula <- create_lmm_formula("counts", dose_col, "gene", covariates, "null", omic)
     linear_formula <- create_lmm_formula("counts", dose_col, "gene", covariates, "linear", omic)
-    cubic_formula <- create_lmm_formula("counts", dose_col, "gene", covariates, "cubic", omic, k = k)
+    non_linear_formula <- create_lmm_formula("counts", dose_col, "gene", covariates, "non_linear", omic)
 
     null_results <- suppressWarnings(fit_lmm(null_formula, long_df, omic))
     linear_results <- suppressWarnings(fit_lmm(linear_formula, long_df, omic))
-    cubic_results <- suppressWarnings(fit_lmm(cubic_formula, long_df, omic))
+    non_linear_results <- suppressWarnings(fit_lmm(non_linear_formula, long_df, omic))
   } else if (modelType == "GAMM"){
     null_formula <- create_gamm_formula("counts", dose_col, "gene", covariates, "null", omic)
     linear_formula <- create_gamm_formula("counts", dose_col, "gene", covariates, "linear", omic)
-    cubic_formula <- create_gamm_formula("counts", dose_col, "gene", covariates, "cubic", omic, k = k)
+    non_linear_formula <- create_gamm_formula("counts", dose_col, "gene", covariates, "non_linear", omic)
 
     null_results <- suppressWarnings(fit_gam(null_formula, long_df, omic))
     linear_results <- suppressWarnings(fit_gam(linear_formula, long_df, omic))
-    cubic_results <- suppressWarnings(fit_gam(cubic_formula, long_df, omic))
+    non_linear_results <- suppressWarnings(fit_gam(non_linear_formula, long_df, omic))
   }
+
   # Compare models and compute best model
-  if (!is.na(null_results) && !is.na(linear_results) && !is.na(cubic_results)) {
-    p_value_list <- compare_all_models(null_results, linear_results, cubic_results, modelType)
-    best_model_AICc <- select_best_model(list(null = null_results, linear = linear_results, cubic = cubic_results))
-    random_effect <- if (modelType=="LMM") extract_random_effects_lmm(cubic_results, dose_col) else extract_random_effects_gamm(cubic_results, dose_col)
+  fitted_models <- list(null = null_results, linear = linear_results, non_linear = non_linear_results)
+  is_fitted <- sapply(fitted_models, is_fitted_model)
+  fitted_models <- fitted_models[is_fitted]
+
+  if (length(fitted_models) > 1) {
+    p_value_list <- compare_all_models(null_results, linear_results, non_linear_results, modelType)
+    best_model_AICc <- select_best_model(fitted_models)
+    best_model <- fitted_models[[best_model_AICc]]
   } else {
-    p_value_list <- NA
-    best_model_AICc <- "null"
-    random_effect <- NA
+    p_value_list <- list("p_value_linear"= NA, "p_value_non_linear"= NA)
+    best_model_AICc <- names(fitted_models)
+    best_model <- fitted_models[[1]]
   }
 
   # Compute metrics for null and cubic models
   null_metrics <- if (modelType=="LMM") compute_metrics_lmm(null_results) else compute_metrics_gamm(null_results)
   linear_metrics <- if (modelType=="LMM") compute_metrics_lmm(linear_results) else compute_metrics_gamm(linear_results)
-  cubic_metrics <- if (modelType=="LMM") compute_metrics_lmm(cubic_results) else compute_metrics_gamm(cubic_results)
+  non_linear_metrics <- if (modelType=="LMM") compute_metrics_lmm(non_linear_results) else compute_metrics_gamm(non_linear_results)
 
-  # Calculate smoothing values and BMD
-  if (!is.na(cubic_results) && best_model_AICc == "cubic") {
-    smooth_values <- smooth_pathway_trend(cubic_results, long_df, dose_col, sample_col, omic, TRUE, covariates)
-    smooth_pathway <- smooth_pathway_trend(cubic_results, long_df, dose_col, sample_col, omic, FALSE, covariates, dose_points = 500)
-    derivate <- compute_derivatives(smooth_pathway,dose_col)
-    bmd <- compute_bmd_from_main_trend(smooth_pathway,dose_col)
+  # Calculate smoothing values and BMD for the best model
+  if (best_model_AICc != "null") {
+    smooth_values <- smooth_pathway_trend(best_model, long_df, dose_col, sample_col, omic, TRUE, covariates, dose_points = 50)
+    random_effect <- if (modelType == "LMM") extract_random_effects_lmm(best_model, dose_col) else extract_random_effects_gamm(best_model, dose_col)
+    long_df$predictions <- predict(best_model, newdata = long_df)
+    optimal_clusters_silhouette <- optimal_clusters_silhouette(smooth_values, dose_col, max_clusters = 10)
+    cluster <- optimal_clusters_silhouette$Cluster
+    n_cluster <- optimal_clusters_silhouette$OptimalClusters
+    cluster_specific_results <- list()
+
+    #Compute mean trend, bmd and derivates for each cluster
+    for (j in c(1:n_cluster)) {
+      cluster_genes <- names(cluster[cluster == j])
+      smooth_cluster <- smooth_values[smooth_values$gene %in% cluster_genes,]
+      derivative_cluster <- compute_derivatives(smooth_cluster, dose_col)
+      bmd_cluster <- compute_bmd_from_main_trend(smooth_cluster, dose_col, z = 1)
+      # Store the cluster-specific results
+      # Store the cluster-specific results
+      cluster_specific_results[[paste("Cluster", j)]] <- list(
+        Derivative = derivative_cluster,
+        #SmoothPathway = smooth_pathway_cluster,
+        BMD = bmd_cluster
+      )
+    }
+
   } else {
     smooth_values <- NA
     smooth_pathway <- NA
-    derivate <- NA
-    bmd <- NA
+    derivative <- NA
+    #bmd <- NA
+    random_effect <- NA
+    cluster <- NA
+    n_cluster <- NA
+    cluster_specific_results <- NA
   }
 
 
@@ -101,19 +140,22 @@ process_gene_set <- function(se, dose_col, sample_col, omic, gmt, i, minGSsize =
     Linear_AICc = linear_metrics$AICc,     # Adding Linear model AICc
     Linear_BIC = linear_metrics$BIC,       # Adding Linear model BIC
     Linear_df = linear_metrics$edf,        # Adding Linear model degrees of freedom
-    Cubic_AIC = cubic_metrics$AIC,         # Adding Cubic model AIC
-    Cubic_AICc = cubic_metrics$AICc,       # Adding Cubic model AICc
-    Cubic_BIC = cubic_metrics$BIC,         # Adding Cubic model BIC
-    Cubic_df = cubic_metrics$edf,          # Adding Cubic model degrees of freedom
-    P_Value_Linear = p_value_list[1],
-    P_Value_Cubic = p_value_list[2],
+    non_linear_AIC = non_linear_metrics$AIC,         # Adding non_linear model AIC
+    non_linear_AICc = non_linear_metrics$AICc,       # Adding non_linear model AICc
+    non_linear_BIC = non_linear_metrics$BIC,         # Adding non_linear model BIC
+    non_linear_df = non_linear_metrics$edf,          # Adding non_linear model degrees of freedom
+    P_Value_Linear = p_value_list$p_value_linear,
+    P_Value_non_linear = p_value_list$p_value_non_linear,
     Best_Model_AICc = best_model_AICc,
     Smooth_Predictions = list(smooth_values),
-    Smooth_Predictions_Pathway = list(smooth_pathway),
+    #Smooth_Predictions_Pathway = list(smooth_pathway),
     Raw_Values = list(long_df),
-    BMD = bmd,
-    TCD = derivate,
-    random_effect = random_effect
+    #BMD = bmd,
+    #TCD = derivative,
+    random_effect = random_effect,
+    ClusterAssignments = cluster,
+    OptimalClusters = n_cluster,
+    ClusterSpecificResults = cluster_specific_results
   )
 
   return(geneset_results)
@@ -150,6 +192,8 @@ process_gene_set <- function(se, dose_col, sample_col, omic, gmt, i, minGSsize =
 #'
 #' @importFrom stats p.adjust
 #' @importFrom utils txtProgressBar
+#' @import utils
+#' @import progress
 #' @export
 DoseRider <- function(se, gmt, dose_col = "dose", sample_col = "sample",
                          covariates = c(), omic = "rnaseq", minGSsize = 5,
@@ -235,7 +279,7 @@ DoseRiderParallel <- function(se, gmt, dose_col = "dose", sample_col = "sample",
   opts <- list(progress = function(n) setTxtProgressBar(pb, n))
 
   # Loop over gene sets in parallel
-  results <- foreach(i = seq_along(gmt), .packages = c("SummarizedExperiment", "lme4", "doseRider"),
+  results <- foreach(i = seq_along(gmt), .packages = c("SummarizedExperiment", "lme4", "doseRider","dplyr"),
                      .combine = 'c', .options.snow = opts) %dopar% {
                        geneset_results <- suppressWarnings(process_gene_set(se, dose_col, sample_col,
                                                             omic, gmt, i, minGSsize, maxGSsize, covariates, modelType))
@@ -279,8 +323,8 @@ as.data.frame.DoseRider <- function(object) {
   # Define the attributes to extract
   attrs_to_extract <- geneset_results_fields <- c("Geneset","Geneset_Size","Genes",
     "Null_AIC", "Null_AICc","Null_BIC","Null_df", "Linear_AIC","Linear_AICc", "Linear_BIC",
-    "Linear_df","Cubic_AIC","Cubic_AICc","Cubic_BIC","Cubic_df","P_Value_Linear","P_Value_Cubic",
-    "Best_Model_AICc", "Adjusted_Cubic_P_Value","Adjusted_Linear_P_Value" )
+    "Linear_df","non_linear_AIC","non_linear_AICc","non_linear_BIC","non_linear_df","P_Value_Linear","P_Value_non_linear",
+    "Best_Model_AICc", "Adjusted_non_linear_P_Value","Adjusted_Linear_P_Value","OptimalClusters" )
 
 
   # Convert the DoseRider object to a list of data frames, handling nested lists

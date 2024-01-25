@@ -8,7 +8,7 @@ plot_pathway_response(
   dose_rider_results,
   gene_set_name,
   dose_col = "Dose",
-  center_values = FALSE
+  center_values = T
 )
 }
 \arguments{

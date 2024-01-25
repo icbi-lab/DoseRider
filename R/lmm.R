@@ -28,7 +28,7 @@
 #'
 fit_lmm <- function(formula, data, omic = "base") {
   # Adjust control parameters
-  control_params <- glmerControl(optimizer = "bobyqa", optCtrl = list(maxfun = 1e8))
+  control_params <- glmerControl(optimizer = "bobyqa", optCtrl = list(maxfun = 1e10))
 
   # Determine the family based on 'omic' parameter
   if (omic == "rnaseq") {
@@ -86,42 +86,37 @@ fit_lmm <- function(formula, data, omic = "base") {
 #'                                      model_type = "cubic",
 #'                                      omic = "rnaseq")
 #' }
-create_lmm_formula <- function(response, fixed_effects, random_effects, covariates = c(), model_type = "base", omic = NULL, k = NULL) {
+create_lmm_formula <- function(response, fixed_effects, random_effects, covariates = c(), model_type = "base", omic = NULL) {
 
-  base_formula <- paste(response, "~")
+  # Start with the response variable
+  formula <- paste(response, "~")
 
-  if (model_type == "null") {
-    base_formula <- paste(base_formula, "(1|", random_effects, ")")
-    if (length(covariates) > 0) {
-      base_formula <- paste(base_formula, "+", paste(covariates, collapse = " + "))
-    }
-    if (!is.null(omic) && omic == "rnaseq") {
-      base_formula <- paste(base_formula, "+ offset(log(size_factor))")
-    }
+  # Include random effects with appropriate spline
+  if (model_type == "non_linear") {
+    random_effect_term <- paste0("(bs(", fixed_effects,  ") | ", random_effects, ")")
+  } else if (model_type == "linear") {
+    random_effect_term <- paste0("(",fixed_effects, " | ", random_effects, ")")
   } else {
-    base_formula <- paste(base_formula, "(", fixed_effects, "|", random_effects, ")")
+    random_effect_term <- paste0("( 1 | ", random_effects, ")")
 
-    if (!is.null(omic) && omic == "rnaseq") {
-      base_formula <- paste(base_formula, "+ offset(log(size_factor))")
-    }
+  }
+  formula <- paste(formula, random_effect_term)
 
-    if (length(covariates) > 0) {
-      base_formula <- paste(base_formula, "+", paste(covariates, collapse = " + "))
-    }
-
-    if (model_type == "cubic") {
-      cubic_terms <- paste("bs(", fixed_effects, ",k=", k -1, ")", collapse = " + ")
-      base_formula <- paste(base_formula, "+", cubic_terms)
-    } else if (model_type == "linear") {
-      linear_terms <- fixed_effects
-      base_formula <- paste(base_formula, "+", linear_terms)
-    } else if (model_type != "base") {
-      stop("Invalid model type. Available options: 'base', 'linear', 'cubic', 'null'")
-    }
+  # Add covariates if any
+  if (length(covariates) > 0) {
+    covariate_terms <- paste(covariates, collapse = " + ")
+    formula <- paste(formula, "+", covariate_terms)
   }
 
-  return(base_formula)
+  # Add offset for RNA-Seq data
+  if (!is.null(omic) && omic == "rnaseq") {
+    formula <- paste(formula, "+ offset(log(size_factor))")
+  }
+
+  return(formula)
 }
+
+
 
 #' Extract Random Effects from LMM
 #'
@@ -142,10 +137,11 @@ extract_random_effects_lmm <- function(model, dose_col) {
 
   # If there are multiple random effects (e.g., intercept and slope), you may need to adjust this part
   # Here, we assume a single random effect for simplicity
-  random_effects_df <- data.frame(row.names = rownames(random_effects), RandomEffect = random_effects[,dose_col])
+  random_effects_df <- data.frame(row.names = rownames(random_effects), RandomIntercept = random_effects[,"(Intercept)"] , RandomEffect = random_effects[,2])
 
   return(random_effects_df)
 }
+
 
 
 #' Compute metrics for a given lmer or glmer model

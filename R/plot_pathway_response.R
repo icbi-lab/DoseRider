@@ -84,6 +84,35 @@ smooth_pathway_trend <- function(model, long_df, dose_col = "dose", sample_col =
 }
 
 
+#Function to clos the TCD trend
+adjust_trend_visuals <- function(cluster_trend, dose_col, zero_points, t = 0.0001, line_thickness = 0.3, new_line_thickness = 0.4) {
+  # Initialize columns if they don't exist
+  if (!"line_thickness" %in% names(cluster_trend)) {
+    cluster_trend$line_thickness <- line_thickness # Default line thickness
+  }
+  if (!"color" %in% names(cluster_trend)) {
+    cluster_trend$color <- "#D32F2F" # Default color
+  }
+
+  # Define the delta for zero point range calculation
+  delta <- max(cluster_trend[[dose_col]]) * t
+
+  for (z in unique(zero_points)) {
+    range_around_zero <- c(z - delta, z + delta)
+
+    # Find the closest values within the range
+    closest_lower <- cluster_trend[[dose_col]][which.min(abs(cluster_trend[[dose_col]] - range_around_zero[1]))]
+    closest_upper <- cluster_trend[[dose_col]][which.min(abs(cluster_trend[[dose_col]] - range_around_zero[2]))]
+
+    # Adjust line thickness and color for doses within the zero point range
+    within_range <- cluster_trend[[dose_col]] >= closest_lower & cluster_trend[[dose_col]] <= closest_upper
+    cluster_trend$line_thickness[within_range] <- new_line_thickness
+    cluster_trend$color[within_range] <- "#7B1FA2"
+  }
+
+  return(cluster_trend)
+}
+
 
 #' Plot Pathway Response with Enhanced Visualization at Specific Points
 #'
@@ -100,66 +129,82 @@ smooth_pathway_trend <- function(model, long_df, dose_col = "dose", sample_col =
 #' @importFrom stringr str_wrap
 #'
 #' @export
-plot_pathway_response <- function(dose_rider_results, gene_set_name, dose_col = "Dose", center_values = FALSE) {
-  smooth_pathway <- dose_rider_results[[gene_set_name]]$Smooth_Predictions[[1]]
-  smooth_trend <- dose_rider_results[[gene_set_name]]$Smooth_Predictions_Pathway[[1]]
-  zero_points <- dose_rider_results[[gene_set_name]]$TCD$zero_points_first_deriv
+plot_pathway_response <- function(dose_rider_results, gene_set_name, dose_col = "Dose", center_values = T) {
 
+  # Extract the specific gene set results from dose_rider_results
+  gene_set_results <- dose_rider_results[[gene_set_name]]
+
+  # Smooth Predictions for the gene set
+  smooth_pathway <- gene_set_results$Smooth_Predictions[[1]]
+
+  # Cluster Assignments for the gene set, converted to a data frame and adding gene names as a column
+  ClusterAssignments <- data.frame(Cluster = gene_set_results$ClusterAssignments)
+  ClusterAssignments$gene <- rownames(ClusterAssignments)
+
+  # Cluster-specific results and the number of optimal clusters for the gene set
+  ClusterSpecificResults <- gene_set_results$ClusterSpecificResults
+  n_cluster <- gene_set_results$OptimalClusters
+
+  # If there are smoothed data
   if (!is.null(smooth_pathway) && length(smooth_pathway) > 0) {
-    mean_data <- aggregate(predictions ~ Dose + gene, data = as.data.frame(smooth_pathway), FUN = mean)
-    mean_trend <- aggregate(predictions ~ Dose, data = as.data.frame(smooth_trend), FUN = mean)
-
-    # Assuming 'mean_trend' and 'mean_data' contain your data
+    mean_data <- aggregate(as.formula(paste0("predictions ~ ",dose_col," + gene")), data = as.data.frame(smooth_pathway), FUN = mean)
+    mean_data <- merge(mean_data, ClusterAssignments, by = "gene")
 
     # If center_values option is enabled, adjust predictions
     if (center_values) {
-      # Calculate mean and standard deviation for centering and scaling
-      mean_expression <- mean(mean_data$predictions)
-      sd_expression <- sd(mean_data$predictions)
-
-      # Center and scale expression values for each gene
-      mean_data$predictions <- (mean_data$predictions - mean_expression) / sd_expression
-
-      # Apply the same process to the mean trend data
-      #mean_expression_trend <- mean(mean_trend$predictions)
-      #sd_expression_trend <- sd(mean_trend$predictions)
-
-      mean_trend$predictions <- (mean_trend$predictions - mean_expression) / sd_expression
+      mean_data <- mean_data %>%
+        group_by(gene) %>%
+        mutate(predictions = predictions - mean(predictions, na.rm = TRUE)) %>%
+        ungroup()
+      predictions_col <- "predictions_centered"
+    } else {
+      predictions_col <- "predictions"
     }
 
+    # Now proceed with plotting,
 
-    #Ajust thicknes
-    mean_trend$line_thickness <- 1
-
-    # Define the range around zero points
-    delta <- max(mean_data$Dose)*0.011
-    for (z in unique(zero_points)) {
-      range_around_zero <- c(z - delta, z + delta)
-
-      # Find the closest values to the range boundaries in mean_trend$Dose
-      closest_lower <- mean_trend$Dose[which.min(abs(mean_trend$Dose - range_around_zero[1]))]
-      closest_upper <- mean_trend$Dose[which.min(abs(mean_trend$Dose - range_around_zero[2]))]
-
-      # Check if closest values are within the original range to avoid out-of-range issues
-      if (closest_lower >= min(mean_trend$Dose) && closest_upper <= max(mean_trend$Dose)) {
-        mean_trend$line_thickness <- ifelse(mean_trend$Dose >= closest_lower & mean_trend$Dose <= closest_upper, 1.5, 1)
-      }
-    }
-
-    # Now proceed with plotting, using the line_thickness column for adjusting line thickness
-
+    # Create custom legend labels
+    legend_labels <- create_legend_labels(dose_rider_results, gene_set_name)
 
     # Add gene-specific trends
-    p <- ggplot() + geom_line(data = mean_data, aes(x = Dose, y = predictions, group = gene), color = "blue", linewidth = 0.5)
+    p <- ggplot() + geom_line(data = mean_data, aes(x = Dose, y = predictions, group = gene,color = as.factor(Cluster)), linewidth = 0.5)
+    #PLot specific data for the clusters
+    for (j in c(1:n_cluster)) {
+      cluster_data <- ClusterSpecificResults[paste0("Cluster ",j)][[1]]
+      cluster_derivate <- c(cluster_data$Derivative$zero_points_first_deriv,cluster_data$Derivative$zero_points_second_deriv)
+      cluster_bmd <- cluster_data$BMD
+      cluster_trend <- aggregate(as.formula(paste0("predictions ~ ",dose_col)), data = as.data.frame(mean_data[mean_data$Cluster == j,]), FUN = mean)
 
+      #Plot Cluster trend
+      #Plot TCD
+      cluster_trend <- adjust_trend_visuals(cluster_trend, dose_col, cluster_derivate)
+      p <- p + geom_line(data = cluster_trend, aes(x = Dose, y = predictions, linewidth = line_thickness))
+      #Plot BMD
+      if (sum(!is.na(cluster_bmd))>0){
+        for (bmd_dose in cluster_bmd) {
+
+          p <- p + geom_vline(xintercept = bmd_dose,color="#F57C00",linetype="dashed",linewidth=1.5)
+
+        }
+      }
+
+
+    }
+    p <- p + scale_linewidth(range = c(0.7, 1.6))
     # Create the base plot with mean trend
-    p <- p +
-      geom_line(data = mean_trend, aes(x = Dose, y = predictions,linewidth = line_thickness), color = "red")
+    #p <- p +
+    #  geom_line(data = mean_trend, aes(x = Dose, y = predictions,linewidth = line_thickness))
 
     # Finalize the plot settings
-    p <- p + labs(x = "Dose", y = "Expression", title = str_wrap(gene_set_name, width = 35)) +
+    # Finalize the plot settings and add custom legend labels
+    p <- p + labs(x = "Dose", y = "Expression", title = str_wrap(gene_set_name, width = 35), caption = paste(legend_labels)) +
       theme_minimal() +
-      theme(legend.position = "none", axis.text = element_text(size = 12), axis.title = element_text(size = 14), plot.title = element_text(size = 16))
+      theme(
+        legend.position = "none", # Place the legend at the bottom
+        axis.text = element_text(size = 12),
+        axis.title = element_text(size = 14),
+        plot.title = element_text(size = 16)
+      )
 
     return(p)
   } else {
@@ -173,15 +218,17 @@ plot_pathway_response <- function(dose_rider_results, gene_set_name, dose_col = 
 #' Creates a combined plot of top significant pathway responses from dose_rider_results.
 #'
 #' @param dose_rider_results A list containing the results from doseRider analysis.
-#' @param top The number of top pathways to plot based on significance.
+#' @param top An integer specifying the number of top gene sets to include in the plot. Default is 15.
+#' @param order_column A character string specifying the column to use for ordering gene sets in the plot.
+#'
 #'
 #' @return A combined ggplot object with top significant pathway response plots.
 #' @importFrom cowplot plot_grid
 #' @export
-plot_top_pathway_responses <- function(dose_rider_results, top=15, ncol = 3) {
+plot_top_pathway_responses <- function(dose_rider_results, top=15, ncol = 3, order_column = "Adjusted_non_linear_P_Value", decreasing = F) {
   # Extract and order gene sets by adjusted cubic p-value
   dose_rider_df <- as.data.frame(dose_rider_results)
-  dose_rider_df <- dose_rider_df[order(dose_rider_df$Adjusted_Cubic_P_Value),]
+  dose_rider_df <- dose_rider_df[order(dose_rider_df[[order_column]], decreasing = decreasing), ]
 
   # Select top gene sets
   top_gene_sets <- head(dose_rider_df$Geneset, top)
@@ -193,9 +240,9 @@ plot_top_pathway_responses <- function(dose_rider_results, top=15, ncol = 3) {
     res_path <- dose_rider_results[[gene_set_name]]
 
     best_model <- res_path$Best_Model_AICc
-    adj_p_val <- res_path$Adjusted_Cubic_P_Value
+    adj_p_val <- res_path$Adjusted_non_linear_P_Value
 
-    if (!is.na(best_model) && !is.na(adj_p_val) && best_model == "cubic" && adj_p_val < 0.01) {
+    if (!is.na(best_model) && best_model != "null") {
       plot_list[[gene_set_name]] <- plot_pathway_response(dose_rider_results, gene_set_name)
     }
   }
@@ -216,8 +263,9 @@ plot_top_pathway_responses <- function(dose_rider_results, top=15, ncol = 3) {
 #' within each gene set. It is particularly useful for analyzing the variability of gene
 #' expressions within gene sets modeled using Linear Mixed Models (LMMs).
 #'
-#' @param dose_rider_results A list containing the results from the DoseRider analysis.
-#' Each element of the list should be a sublist representing a gene set, including a fitted LMM object.
+#' @param dose_col A character string specifying the name of the dose column in the raw expression data.
+#' @param top An integer specifying the number of top gene sets to include in the plot. Default is 15.
+#' @param order_column A character string specifying the column to use for ordering gene sets in the plot
 #'
 #' @return A ggplot object representing the ridge plots of random effects for each gene set.
 #' The plot displays the distribution of random effects for each gene set along the y-axis.
@@ -234,16 +282,17 @@ plot_top_pathway_responses <- function(dose_rider_results, top=15, ncol = 3) {
 #' }
 #'
 #' @export
-plot_gene_set_random_effects <- function(dose_rider_results, dose_col = "Dose", top = 10) {
+plot_gene_set_random_effects <- function(dose_rider_results, dose_col = "Dose", top = 10, order_column = "Adjusted_non_linear_P_Value", decreasing = F) {
   all_random_effects <- data.frame(gene = character(),
                                    gene_set = character(),
+                                   RandomIntercept = numeric(),
                                    RandomEffect = numeric(),
                                    stringsAsFactors = FALSE)
   #Top pathways in function of P-Value
   dose_rider_df <- as.data.frame(dose_rider_results)
-  dose_rider_df <- dose_rider_df[order(dose_rider_df$Adjusted_Cubic_P_Value),]
+  dose_rider_df <- dose_rider_df[order(dose_rider_df[[order_column]], decreasing = decreasing), ]
 
-  # Gene set names
+  # Extract the top gene set names
   gene_set_names <- dose_rider_df$Geneset[1:top]
 
   for (gene_set_name in gene_set_names) {
@@ -271,5 +320,96 @@ plot_gene_set_random_effects <- function(dose_rider_results, dose_col = "Dose", 
 }
 
 
+#' Plot Scatter Plot for Relationship Between Random Intercepts and Effects in a Gene Set
+#'
+#' This function generates a scatter plot to visualize the relationship between
+#' random intercepts and random slopes for genes within a specified gene set.
+#' It is particularly useful for analyzing the variability and relationship
+#' of gene expressions within a gene set modeled.
+#'
+#' @param dose_rider_results A list containing the results from the DoseRider analysis.
+#' @param gene_set_name The name of the gene set for which the plot will be generated.
+#'
+#' @return A ggplot object representing the scatter plot of random intercepts vs random slopes for the specified gene set.
+#' The plot displays the relationship between random intercepts and random slopes for each gene in the gene set.
+#'
+#' @import ggplot2
+#' @import ggrepel
+#' @importFrom stringr str_wrap
+#'
+#' @examples
+#' \dontrun{
+#'   # Assuming 'dose_rider_results' contains LMM results for gene sets
+#'   scatter_plot <- plot_gene_random_effect_relationship(dose_rider_results, "Gene Set Name")
+#'   print(scatter_plot)
+#' }
+#'
+#' @export
+plot_gene_random_effect_relationship <- function(dose_rider_results, gene_set_name) {
+  if (!gene_set_name %in% names(dose_rider_results)) {
+    stop("The specified gene set name is not found in the results.")
+  }
 
+  random_effects <- dose_rider_results[[gene_set_name]]$random_effect
+
+  if (length(random_effects$RandomEffect) > 1) {
+    random_effects$gene_set <- gene_set_name
+    random_effects$gene <- rownames(random_effects)
+
+    p <- ggplot(random_effects, aes(x = RandomEffect, y = RandomIntercept, label = gene)) +
+      geom_point(color = "black", fill = "white", shape = 21, size = 3, stroke = 2) +
+      geom_label_repel(aes(label = gene), box.padding = 0.35, point.padding = 0.3,
+                       size = 3, force = 1) +
+      labs(x = "Random Slope", y = "Random Intercept", title = str_wrap(gene_set_name, 35)) +
+      theme_bw()
+
+    return(p)
+  } else {
+    stop("Insufficient data for random effects in the specified gene set.")
+  }
+}
+
+#' Plot Dot Plot of Top Pathways from DoseRider Results
+#'
+#' This function creates a dot plot visualizing the top pathways from DoseRider analysis results based on their adjusted cubic p-value.
+#' The size of the dots represents the number of genes in each pathway, while the color indicates the best model selected for each pathway.
+#'
+#' @param dose_rider_results A list containing the results from the DoseRider analysis.
+#' @param top The number of top pathways to display in the plot. Default is 10.
+#' @param order_column A character string specifying the column to use for ordering gene sets in the plot.
+#' @return A ggplot object representing the dot plot of top pathways.
+#' @import ggplot2
+#' @importFrom stringr str_wrap
+#' @examples
+#' \dontrun{
+#'   # Assuming dose_rider_results is available
+#'   dot_plot <- plot_dotplot_top_pathways(dose_rider_results, top = 10)
+#'   print(dot_plot)
+#' }
+#'
+#' @export
+plot_dotplot_top_pathways <- function(dose_rider_results, top = 10, order_column = "Adjusted_non_linear_P_Value", decreasing = F) {
+  # Convert dose_rider_results to dataframe
+  dose_rider_df <- as.data.frame(dose_rider_results)
+
+  # Add -log10(p-value) and sort by it
+  dose_rider_df$NegLogPValue <- -log10(dose_rider_df$Adjusted_non_linear_P_Value)
+  dose_rider_df <- dose_rider_df[order(dose_rider_df[[order_column]], decreasing = decreasing), ]
+  dose_rider_df <- dose_rider_df[!is.na(dose_rider_df$NegLogPValue),]
+  top_pathways_df <- head(dose_rider_df, top)
+  top_pathways_df$Geneset <- unlist(lapply(top_pathways_df$Geneset, function(x){str_wrap(x,35)}))
+  # Create Dot Plot
+  dot_plot <- ggplot(top_pathways_df, aes(x = NegLogPValue, y = reorder(Geneset, NegLogPValue), size = Genes, fill = Best_Model_AICc)) +
+    geom_point(shape = 21) +
+    scale_size_continuous(name = "Gene Set Size") +
+    labs(x = "-log10(Adjusted non-linear P-Value)", y = "") +
+    scale_fill_manual(values = c("non_linear" = "blue", "linear" = "green", "null" = "red"), name = "Best Model") +
+    theme_bw() +
+    theme(axis.text.x = element_text(angle = 45, hjust = 1))
+
+  return(dot_plot)
+}
+
+# Example usage:
+# plot_top_pathways_by_model(dose_rider_results, top = 10)
 

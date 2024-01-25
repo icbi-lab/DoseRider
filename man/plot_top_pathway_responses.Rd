@@ -4,12 +4,20 @@
 \alias{plot_top_pathway_responses}
 \title{Plot Top Significant Pathway Responses}
 \usage{
-plot_top_pathway_responses(dose_rider_results, top = 15, ncol = 3)
+plot_top_pathway_responses(
+  dose_rider_results,
+  top = 15,
+  ncol = 3,
+  order_column = "Adjusted_non_linear_P_Value",
+  decreasing = F
+)
 }
 \arguments{
 \item{dose_rider_results}{A list containing the results from doseRider analysis.}
 
-\item{top}{The number of top pathways to plot based on significance.}
+\item{top}{An integer specifying the number of top gene sets to include in the plot. Default is 15.}
+
+\item{order_column}{A character string specifying the column to use for ordering gene sets in the plot.}
 }
 \value{
 A combined ggplot object with top significant pathway response plots.

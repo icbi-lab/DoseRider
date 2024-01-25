@@ -10,8 +10,7 @@ create_lmm_formula(
   random_effects,
   covariates = c(),
   model_type = "base",
-  omic = NULL,
-  k = NULL
+  omic = NULL
 )
 }
 \arguments{

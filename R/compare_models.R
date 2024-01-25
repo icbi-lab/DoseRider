@@ -13,20 +13,21 @@
 #' # Assuming lm_base, lm_linear, and lm_cubic are fitted linear models:
 #' # compare_models_pvalues <- compare_three_models(lm_base, lm_linear, lm_cubic)
 #' @importFrom mgcv anova.gam
-compare_all_models <- function(null_results, linear_results, cubic_results, modelType) {
+compare_all_models <- function(null_results, linear_results, non_linear_results, modelType) {
 
   if (modelType == "LMM"){
     # Perform an ANOVA comparison between the three models
-    anova_results <- anova(null_results, linear_results, cubic_results)
+    anova_results <- anova(null_results, linear_results, non_linear_results)
   } else if (modelType == "GAMM"){
-    anova_results <- anova.gam(null_results, linear_results,cubic_results, test = "F")
+    anova_results <- anova.gam(null_results, linear_results,non_linear_results, test = "F")
+    rownames(anova_results) <- c("null_results","linear_results","non_linear_results")
   }
   # Extract p-values for the comparisons
-  p_linear_vs_null <- anova_results$Pr[2]
-  p_cubic_vs_linear <- anova_results$Pr[3]
+  p_value_linear <- anova_results["linear_results",]$`Pr(>Chisq)`
+  p_value_non_linear <- anova_results["non_linear_results",]$`Pr(>Chisq)`
 
   # Return the p-values
-  return(c(p_linear_vs_null, p_cubic_vs_linear))
+  return(list("p_value_linear"=p_value_linear, "p_value_non_linear"=p_value_non_linear))
 }
 
 #' Select the Best Pathway Model Based on AICc
@@ -58,9 +59,6 @@ compare_all_models <- function(null_results, linear_results, cubic_results, mode
 #' print(best)
 #' }
 select_best_model <- function(models) {
-  if (!all(c("null","linear","cubic") %in% names(models))) {
-    stop("The models list should contain 'null', 'linear', and 'cubic' models.")
-  }
 
   # Compute AICc values
   aicc_values <- sapply(models, AICc)
@@ -74,4 +72,32 @@ select_best_model <- function(models) {
   }
 
   return(best_model)
+}
+
+# The `create_legend_labels` function compiles key model statistics into a concise summary for plot legends from dose-response analysis results.
+create_legend_labels <- function(dose_rider_results, gene_set_name) {
+  # Extract the best model information
+  best_model <- dose_rider_results[[gene_set_name]]$Best_Model_AICc
+  p_value <- 0
+  p_value_label <- ""
+  aicc <- 0
+
+  # Determine the model specifics and format the output accordingly
+  if (best_model == "non_linear") {
+    p_value <- round(dose_rider_results[[gene_set_name]]$P_Value_non_linear, 3)
+    aicc <- round(dose_rider_results[[gene_set_name]]$non_linear_AICc, 2)
+  } else {
+    p_value <- round(dose_rider_results[[gene_set_name]]$P_Value_Linear, 3)
+    aicc <- round(dose_rider_results[[gene_set_name]]$Linear_AICc, 2)
+  }
+
+  # Format the p-value for display
+  p_value_label <- ifelse(p_value < 0.001, "<0.001", as.character(p_value))
+
+  # Construct the legend label text
+  legend_labels <- paste("Best model:", best_model,
+                         ", Best model p-value:", p_value_label,
+                         ", Best model AICc:", aicc)
+
+  return(legend_labels)
 }
