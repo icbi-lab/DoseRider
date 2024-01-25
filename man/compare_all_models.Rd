@@ -4,14 +4,14 @@
 \alias{compare_all_models}
 \title{Compare Models with ANOVA}
 \usage{
-compare_all_models(null_results, linear_results, cubic_results, modelType)
+compare_all_models(null_results, linear_results, non_linear_results, modelType)
 }
 \arguments{
 \item{linear_results}{A fitted model representing the linear model.}
 
-\item{cubic_results}{A fitted model representing the cubic model.}
-
 \item{base_results}{A fitted model representing the base model.}
+
+\item{cubic_results}{A fitted model representing the cubic model.}
 }
 \value{
 A named vector of p-values for the comparisons: base vs. linear and linear vs. cubic.

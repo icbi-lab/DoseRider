@@ -4,13 +4,23 @@
 \alias{dose_response_heatmap}
 \title{Create Complex Heatmap for Gene Sets}
 \usage{
-dose_response_heatmap(dose_rider_results, dose_col, top = 15)
+dose_response_heatmap(
+  dose_rider_results,
+  dose_col,
+  top = 15,
+  order_column = "Adjusted_non_linear_P_Value",
+  decreasing = F
+)
 }
 \arguments{
 \item{dose_rider_results}{A list containing the results of the DoseRider analysis for each gene set.
 Each element of the list is a sublist with various metrics and the raw values (expression data) for a gene set.}
 
 \item{dose_col}{A character string specifying the name of the dose column in the raw expression data.}
+
+\item{top}{An integer specifying the number of top gene sets to include in the heatmap. Default is 15.}
+
+\item{order_column}{A character string specifying the column to use for ordering gene sets in the heatmap.}
 }
 \value{
 An object of class `Heatmap` representing the constructed heatmap.

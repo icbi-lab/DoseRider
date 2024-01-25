@@ -4,11 +4,20 @@
 \alias{plot_gene_set_random_effects}
 \title{Plot Ridge Plots for Random Effects in Gene Sets}
 \usage{
-plot_gene_set_random_effects(dose_rider_results, dose_col = "Dose", top = 10)
+plot_gene_set_random_effects(
+  dose_rider_results,
+  dose_col = "Dose",
+  top = 10,
+  order_column = "Adjusted_non_linear_P_Value",
+  decreasing = F
+)
 }
 \arguments{
-\item{dose_rider_results}{A list containing the results from the DoseRider analysis.
-Each element of the list should be a sublist representing a gene set, including a fitted LMM object.}
+\item{dose_col}{A character string specifying the name of the dose column in the raw expression data.}
+
+\item{top}{An integer specifying the number of top gene sets to include in the plot. Default is 15.}
+
+\item{order_column}{A character string specifying the column to use for ordering gene sets in the plot}
 }
 \value{
 A ggplot object representing the ridge plots of random effects for each gene set.

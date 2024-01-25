@@ -71,31 +71,37 @@ fit_gam <- function(formula, data, omic) {
 #'   base_formula <- create_gamm_formula("mpg", "hp", "cyl", model_type = "base", omic = "base")
 #'   cubic_formula <- create_gamm_formula("mpg", "hp", "cyl", model_type = "cubic", omic = "rnaseq")
 #' }
-create_gamm_formula <- function(response, fixed_effects, random_effects, covariates = c(), model_type = "base", omic = NULL, k = NULL) {
+create_gamm_formula <- function(response, fixed_effects, random_effects, covariates = c(), model_type = "non_linear", omic = NULL, k = NULL) {
   base_formula <- paste(response, "~")
 
   if (model_type == "null") {
-    # Null model with random intercept
+    # Null model with only random intercept
     base_formula <- paste(base_formula, "s(", random_effects, ", bs='re')")
   } else if (model_type == "linear") {
-    # Linear model with random slope
-    base_formula <- paste(base_formula, "+ s(", fixed_effects,",",random_effects, ", bs='re')")
-  } else if (model_type == "cubic") {
-    # Cubic spline model with random intercept and slope
-    cubic_terms <- paste("s(", fixed_effects, ", bs='cr', k=", k, ")")
-    base_formula <- paste(base_formula, cubic_terms, "+ s(", random_effects, ", bs='re') + s(", fixed_effects, ",", random_effects, ", bs='re')")
+    # Linear model with random slope and intercept
+    base_formula <- paste(base_formula, fixed_effects, "+ s(", random_effects, ", bs='re')", "+ s(",fixed_effects, ",",random_effects,",bs='re')")
+  } else if (model_type == "non_linear") {
+    # Non-linear model with random intercept and smooth terms
+    if (is.null(k)) k <- 3 # Default knots if not specified
+    #base_formula <- paste(base_formula, " s(", fixed_effects, ", bs='cr', k=", k, ")", "+ s(", fixed_effects, ",", random_effects, ", bs='fs', k =",k,")")
+    base_formula <- paste(base_formula, " s(", fixed_effects, ", bs='cr', k=", k, ")", "+ s(", random_effects, ", bs='re')", "+ s(",fixed_effects, ",",random_effects,",bs='re')")
+
   }
 
+  # Add covariates if any
   if (length(covariates) > 0) {
-    base_formula <- paste(base_formula, "+", paste(covariates, collapse = " + "))
+    covariate_terms <- paste(covariates, collapse = " + ")
+    base_formula <- paste(base_formula, "+", covariate_terms)
   }
 
+  # Add offset for RNA-Seq data
   if (!is.null(omic) && omic == "rnaseq") {
     base_formula <- paste(base_formula, "+ offset(log(size_factor))")
   }
 
   return(base_formula)
 }
+
 
 
 #' Extract Random Effects from GAMM
@@ -114,13 +120,17 @@ extract_random_effects_gamm <- function(model, dose_col) {
 
   # Extract the coefficients from the model
   random_effects <- extract_ranef(model)
-  random_effects <- as.data.frame(random_effects[random_effects$effect == dose_col,])
-  rownames(random_effects) <- random_effects$group
+  random_slope <- as.data.frame(random_effects[random_effects$effect == dose_col,])
+  random_intercept <- as.data.frame(random_effects[random_effects$effect == "Intercept",])
+  rownames(random_slope) <- random_slope$group
+  rownames(random_intercept) <- random_intercept$group
+
   # Convert the random effects into a dataframe
-  random_effects_df <- data.frame(row.names = rownames(random_effects), RandomEffect = unlist(random_effects$value, use.names = FALSE))
+  random_effects_df <- data.frame(row.names = rownames(random_slope), RandomIntercept = unlist(random_intercept$value, use.names = FALSE), RandomEffect = unlist(random_slope$value, use.names = FALSE))
 
   return(random_effects_df)
 }
+
 
 
 #' Compute metrics for a given gam or bam model

@@ -13,7 +13,7 @@ The `doseRider` package is used for analyzing dose-response relationships in gen
 
 ### 1. Loading required packages
 
-```{r, warning=FALSE, echo=FALSE}
+```{r, warning=FALSE, echo=FALSE, include=FALSE}
 library(doseRider)
 library(DESeq2)
 library(ggplot2)
@@ -56,8 +56,7 @@ dds <- DESeqDataSetFromMatrix(countData = assay(bpa_data),
 dds <- DESeq(dds, parallel = TRUE, quiet = TRUE)
 res <- results(dds)
 
-filter_res <- as.data.frame(res[res$baseMean > 11 &
-                                res$pvalue < 0.1,])
+filter_res <- as.data.frame(res[(res$baseMean > 11) & (res$pvalue < 0.5),])
 bpa_data <- estimate_model_parameters(bpa_data)
 
 # Filter low express genes
@@ -68,20 +67,22 @@ filter_bpa_data <- bpa_data[rownames(bpa_data) %in% rownames(filter_res),]
 
 ```{r}
 gmt <- loadCPDB("Symbol")
-top_geneset <- read.csv("../../Projects/TOX/ToxicoDataset/results/TG-GATES/WeightedScoreReactomeTGGATES.tsv", sep = ",")
-gmt_id <- doseRider:::filter_gmt_by_id(gmt, unique(top_geneset[abs(top_geneset$WeightedScore) > 1,]$X))
+top_geneset <- read.csv("../../Projects/TOX/ToxicoDataset/results/TG-GATES/WeightedScoreCPDBTGGATES.tsv", sep = ",")
+gmt_id <- doseRider:::filter_gmt_by_id(gmt, unique(top_geneset[abs(top_geneset$WeightedScore) > 2,]$X))
 ```
 
 ### 5. Dose-Response Model with doseRider
 
 ```{r}
-dose_rider_results <- DoseRiderParallel(filter_bpa_data, gmt = gmt_id, 
+dose_rider_results <- DoseRider(se = filter_bpa_data, gmt = gmt_id, 
                                            dose_col = "Dose", omic = "rnaseq", 
-                                           minGSsize = 10, maxGSsize = 400, 
+                                           minGSsize = 50, maxGSsize = 1000, 
                                            method = "fdr", covariates = c(),
-                                           modelType = "LMM", num_cores = 10)
+                                          modelType = "LMM")
+
 res_df <- as.data.frame.DoseRider(dose_rider_results)
-table(res_df$Adjusted_Cubic_P_Value < 0.01)
+lKeep <- (res_df$Adjusted_non_linear_P_Value < 0.01) & (res_df$Adjusted_Linear_P_Value < 0.01)
+table((res_df$Adjusted_non_linear_P_Value < 0.01) & (res_df$Adjusted_Linear_P_Value < 0.01))
 table(res_df$Best_Model_AICc)
 #save(res, file = "../../doseRider_save/res_bpa_20_1000.rda")
 ```
@@ -89,21 +90,42 @@ table(res_df$Best_Model_AICc)
 ## Results and Discussion
 
 ```{r}
-top <- 10
+top <- 15
 save_path <- "/home/monfortl/doseRider/plots/"
 
-p1 <- dose_response_heatmap(dose_rider_results, dose_col = "Dose", top = top)
+p1 <- dose_response_heatmap(dose_rider_results, dose_col = "Dose", top = top, order_column = "Adjusted_non_linear_P_Value", decreasing = F )
 plotFile1 <- paste0(save_path,"/plot1.jpeg")
 p2 <- plot_gene_set_random_effects(dose_rider_results, dose_col = "Dose", top = top)
 plotFile2 <- paste0(save_path,"/plot2.jpeg")
-p3 <- plot_top_pathway_responses(dose_rider_results, top = top-1, ncol = 3)
+p3 <- plot_top_pathway_responses(dose_rider_results, top = 9, ncol = 3)
 plotFile3 <- paste0(save_path,"/plot3.jpeg")
+p4 <- plot_gene_random_effect_relationship(dose_rider_results, "Androgen receptor signaling pathway")
+plotFile4 <- paste0(save_path,"/plot4.jpeg")
+p5 <- plot_dotplot_top_pathways(dose_rider_results, top = top, order_column = "Genes", decreasing = T)
+plotFile5 <- paste0(save_path,"/plot5.jpeg")
+p6 <- create_gene_heatmap(dose_rider_results,dose_col = "Dose", gene_set_name = "Androgen receptor signaling pathway")
+plotFile6 <- paste0(save_path,"/plot6.jpeg")
 
 jpeg(file=plotFile1,width = 600, height = 500, units = "px")
  plot(p1)
 dev.off()
 ggsave(plotFile2, plot = p2, width = 250, height = 150, units = "mm", dpi = 600)
 ggsave(plotFile3, plot = p3, width = 400, height = 200, units = "mm", dpi = 600)
-
+ggsave(plotFile4, plot = p4, width = 400, height = 200, units = "mm", dpi = 600)
+ggsave(plotFile5, plot = p5, width = 400, height = 200, units = "mm", dpi = 600)
+jpeg(file=plotFile6,width = 700, height = 700, units = "px")
+ plot(p6)
+dev.off()
 ```
+
+# Microarray example:
+
+dataset1: Human Transcriptomic Integrated Approach for Testing and Assessment Oral Reference Dose for Steatosis: 0.00, 0.3125, 0.625, 1.25, 2.50, 5.00 (24 samples) GSE135117
+
+dataset2: Primary hepatocyte cultures from 3 human donors were treated with TCDD and PCB 126 compounds, with 14 samples per compound (6 doses) (6.5 to 14 log10 M doses for TCDD and 5 to 12 log10 M doses for PCB 126). GSE14553
+
+dataset3: The cell used in this study is THP-1 macrophages from Homo sapiens. They were exposed to rigid multi-walled carbon nanotubes (rCNT) at three concentrations (5, 10, or 20 µg/mL) and untreated controls at 24, 48, and 72 hours, with each group performed as triplicates. GSE146708
+
+
+The cell used is BEAS-2B bronchial epithelial cells (Homo sapiens), exposed to N-hydroxylated PhIP at nine different doses ranging from 1 x 10-6 to 5 x 10-10 M, with triplicate cell cultures for each dose. There is no mention of donors in this dataset. PRJNA151269; GEO: GSE34635
 

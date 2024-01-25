@@ -4,7 +4,7 @@
 \alias{compute_bmd_from_main_trend}
 \title{Compute Benchmark Dose (BMD) from Smoothed Trend}
 \usage{
-compute_bmd_from_main_trend(smooth_pathway, dose_var, z = 1)
+compute_bmd_from_main_trend(smooth_pathway, dose_var, z = 1, center_values = T)
 }
 \arguments{
 \item{smooth_pathway}{Data frame containing smoothed trend predictions, typically from a dose-response model.}

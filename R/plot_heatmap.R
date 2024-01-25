@@ -6,6 +6,8 @@
 #' @param dose_rider_results A list containing the results of the DoseRider analysis for each gene set.
 #' Each element of the list is a sublist with various metrics and the raw values (expression data) for a gene set.
 #' @param dose_col A character string specifying the name of the dose column in the raw expression data.
+#' @param top An integer specifying the number of top gene sets to include in the heatmap. Default is 15.
+#' @param order_column A character string specifying the column to use for ordering gene sets in the heatmap.
 #'
 #' @return An object of class `Heatmap` representing the constructed heatmap.
 #'
@@ -22,17 +24,17 @@
 #' }
 #'
 #' @export
-dose_response_heatmap <- function(dose_rider_results, dose_col, top = 15) {
+dose_response_heatmap <- function(dose_rider_results, dose_col, top = 15, order_column = "Adjusted_non_linear_P_Value", decreasing = F) {
   # Initialize an empty matrix to store the average expressions
   heatmap_data <- list()
 
   #Top pathways in function of P-Value
   dose_rider_df <- as.data.frame(dose_rider_results)
-  dose_rider_df <- dose_rider_df[order(dose_rider_df$Adjusted_Cubic_P_Value),]
+  dose_rider_df <- dose_rider_df[with(dose_rider_df, order(order_column, decreasing=decreasing))]
 
   # Gene set names
   gene_set_names <- dose_rider_df$Geneset[1:top]
-
+  gene_set_names <- gene_set_names[!is.na(gene_set_names)]
   for (gene_set_name in gene_set_names) {
     res_geneset <- dose_rider_results[[gene_set_name]]
     gene_set_name <- str_replace(gene_set_name, " - Homo sapiens \\(human\\)", "")
@@ -40,10 +42,12 @@ dose_response_heatmap <- function(dose_rider_results, dose_col, top = 15) {
     raw_values <- res_geneset$Raw_Values[[1]]
 
     # Calculate the average expression for each dose
-    avg_expression <- aggregate(counts ~ get(dose_col, raw_values), data = raw_values, FUN = mean)
-    rownames(avg_expression) <- avg_expression$`get(dose_col, raw_values)`
-    # Store the average expressions with gene set name as column name
-    heatmap_data[[gene_set_name]] <- setNames(avg_expression[["counts"]], avg_expression[[dose_col]])
+    if ("predictions" %in% colnames(raw_values)){
+      avg_expression <- aggregate(predictions ~ get(dose_col, raw_values), data = raw_values, FUN = mean)
+      rownames(avg_expression) <- avg_expression$`get(dose_col, raw_values)`
+      # Store the average expressions with gene set name as column name
+      heatmap_data[[gene_set_name]] <- setNames(avg_expression[["predictions"]], avg_expression[[dose_col]])
+    }
   }
 
   # Combine the list into a matrix
@@ -76,3 +80,77 @@ dose_response_heatmap <- function(dose_rider_results, dose_col, top = 15) {
   return(ha)
   }
 
+#' Create Heatmap for Individual Genes within a Gene Set
+#'
+#' This function creates a heatmap for a specified gene set from DoseRider results. Each row in the heatmap
+#' represents an individual gene, and each column represents different doses, showing gene expression values.
+#'
+#' @param dose_rider_results A list containing the results of the DoseRider analysis for each gene set.
+#' @param gene_set_name A character string specifying the name of the gene set to be visualized.
+#' @param dose_col A character string specifying the name of the dose column in the raw expression data.
+#'
+#' @return An object of class `Heatmap` representing the constructed heatmap for the specified gene set.
+#'
+#' @importFrom ComplexHeatmap Heatmap
+#' @importFrom grid gpar
+#' @importFrom circlize colorRamp2
+#' @importFrom reshape2 dcast
+#'
+#' @examples
+#' \dontrun{
+#'   # Assuming `dose_rider_results` is your DoseRider analysis result
+#'   heatmap_plot <- create_gene_heatmap(dose_rider_results, "Gene Set Name", "dose")
+#'   draw(heatmap_plot) # To display the heatmap
+#' }
+#'
+#' @export
+create_gene_heatmap <- function(dose_rider_results, gene_set_name, dose_col) {
+  if (!gene_set_name %in% names(dose_rider_results)) {
+    stop("Specified gene set name not found in the results.")
+  }
+
+  # Extract the raw values for the specified gene set
+  res_geneset <- dose_rider_results[[gene_set_name]]
+  raw_values <- res_geneset$Raw_Values[[1]]
+
+  # Calculate the average expression for each dose
+  if ("predictions" %in% colnames(raw_values)){
+    # Calculate the average expression for each gene at each dose
+    avg_expression <- aggregate(predictions ~ get(dose_col, raw_values) + gene,
+                                data = raw_values,
+                                FUN = mean)
+    colnames(avg_expression) <- c(dose_col, "gene", "predictions")
+
+    # Pivot the data to have genes as rows and doses as columns
+    heatmap_data <- dcast(avg_expression, gene ~ get(dose_col, avg_expression),
+                          value.var = "predictions")
+    rownames(heatmap_data) <- heatmap_data$gene
+    heatmap_data$gene <- NULL
+  }
+
+
+
+  # Calculate Z-scores for standardization
+  z_score_matrix <- t(apply(heatmap_data[-1], 1, scale))
+
+  # Define color function for the heatmap
+  col_fun <- colorRamp2(c(-2, 0, 2), c("blue", "white", "red"))
+
+  # Create the heatmap
+  ha <- Heatmap(z_score_matrix,
+                name = "Z-Score",
+                column_title = "Dose",
+                column_title_side = "bottom",
+                row_title = "Gene",
+                column_gap = unit(2, "mm"),
+                border_gp = grid::gpar(col = "black", lty = 1),
+                rect_gp = grid::gpar(col = "black", lwd = 1),
+                row_names_gp = gpar(fontsize = 10, fontface = "bold"),
+                column_names_gp = gpar(fontsize = 10, fontface = "bold", just = "center"),
+                column_names_rot = 0,
+                cluster_columns = FALSE,
+                show_row_dend = FALSE,
+                col = col_fun)
+
+  return(ha)
+}
