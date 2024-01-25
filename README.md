@@ -125,7 +125,7 @@ The **Toxicogenomics Gene Set** within DoseRider focuses on genes identified fro
 Scores were calculated by multiplying NES by the negative logarithm of the p-value for each compound and dose level, emphasizing gene sets with significant and robust expression changes. These scores were then averaged across dose levels per compound, and a final normalization step across all compounds produced Z-score normalized weights. This process prioritizes gene sets by their responsiveness to toxicological exposure across the dataset.
 
 
-![Gene Heatmap for Specific Pathway](./plots/plots/HeatmapHighResponsive.jpeg)
+![Gene Heatmap for Specific Pathway](./plots/HeatmapHighResponsive.jpeg)
 
 
 ## Upcoming Features
