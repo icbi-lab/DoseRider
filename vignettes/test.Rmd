@@ -34,56 +34,81 @@ Doses were selected based on criteria like precipitation, stress response biomar
 
 ```{r}
 compound_doses <- list(
-  "BPA" = c(0.0005, 0.1, 0.5, 1, 5, 10)
+  "BPAF" = c(0.0005, 0.001, 0.01, 0.1, 0.5, 1, 5)
 )
-  doses <- c(0,compound_doses["BPA"][[1]])
+  doses <- c(0,compound_doses["BPAF"][[1]])
   
 # Example filtering for BPA
-bpa_data <- PRJNA869442[,(colData(PRJNA869442)$Chemical %in% c("Cells, no treatment","BPA")) &
+bpaf_data <- PRJNA869442[,(colData(PRJNA869442)$Chemical %in% c("Cells, no treatment","BPAF")) &
                              (colData(PRJNA869442)$Dose %in% doses)]
-bpa_data$sample <- colnames(bpa_data)
+bpaf_data$sample <- colnames(bpaf_data)
 ```
 
 ### 3. Differential Expression Analysis
 
 ```{r}
-colData(bpa_data)$Dose <- unlist(colData(bpa_data)$Dose)
+colData(bpaf_data)$Dose <- unlist(colData(bpaf_data)$Dose)
 #colData(bpa_data)$Dose <- log(unlist(colData(bpa_data)$Dose) + 1)
-dds <- DESeqDataSetFromMatrix(countData = assay(bpa_data),
-                              colData   = colData(bpa_data),
+dds <- DESeqDataSetFromMatrix(countData = assay(bpaf_data),
+                              colData   = colData(bpaf_data),
                               design    = ~ Dose*Dose)
 
 dds <- DESeq(dds, parallel = TRUE, quiet = TRUE)
 res <- results(dds)
 
-filter_res <- as.data.frame(res[(res$baseMean > 11) & (res$pvalue < 0.5),])
-bpa_data <- estimate_model_parameters(bpa_data)
+filter_res <- as.data.frame(res[(res$baseMean > 11) & (res$pvalue < 0.1),])
+bpaf_data <- estimate_model_parameters(bpaf_data)
 
 # Filter low express genes
-filter_bpa_data <- bpa_data[rownames(bpa_data) %in% rownames(filter_res),]
+filter_bpaf_data <- bpaf_data[rownames(bpaf_data) %in% rownames(filter_res),]
+
+# Extract metadata from the filtered data
+metadata <- colData(filter_bpaf_data)
+
+# Extract expression data from the filtered data
+expression_data <- assay(filter_bpaf_data)
+
+# Save metadata to a TSV file
+write.table(metadata, "metadata.tsv", sep="\t", quote=FALSE)
+
+# Save expression data to a TSV file
+write.table(expression_data, "expression_data.tsv", sep="\t", quote=FALSE)
+
 ```
 
 ### 4. Load Gene Sets
 
 ```{r}
-gmt <- loadCPDB("Symbol")
-top_geneset <- read.csv("../../Projects/TOX/ToxicoDataset/results/TG-GATES/WeightedScoreCPDBTGGATES.tsv", sep = ",")
-gmt_id <- doseRider:::filter_gmt_by_id(gmt, unique(top_geneset[abs(top_geneset$WeightedScore) > 2,]$X))
+# gmt <- loadCPDB("Symbol")
+# top_geneset <- read.csv("../../Projects/TOX/ToxicoDataset/results/TG-GATES/WeightedScoreCPDBTGGATES.tsv", sep = ",")
+# gmt_id <- doseRider:::filter_gmt_by_id(gmt, unique(top_geneset[abs(top_geneset$WeightedScore) > 1,]$X))
+
+# Specify the path to your GMT file
+gmt_h_path <- "../external/h.all.v2023.2.Hs.symbols.gmt" 
+gmt_perturbation_path <- "../external/c2.cgp.v2023.2.Hs.symbols.gmt"
+
+# Use the function to read the GMT file
+gmt_p_data <- filter_gmt_by_size(read_gmt(gmt_perturbation_path),20,100)
+#gmt_h_data <- filter_gmt_by_size(read_gmt(gmt_h_path),20,100)
+#gmt_data <- c(gmt_h_data, gmt_p_data)
 ```
 
 ### 5. Dose-Response Model with doseRider
 
 ```{r}
-dose_rider_results <- DoseRider(se = filter_bpa_data, gmt = gmt_id, 
+dose_rider_results <- DoseRiderParallel(se = filter_bpaf_data, gmt = gmt_p_data, 
                                            dose_col = "Dose", omic = "rnaseq", 
-                                           minGSsize = 50, maxGSsize = 1000, 
-                                           method = "fdr", covariates = c(),
-                                          modelType = "LMM")
+                                           minGSsize = 20, maxGSsize = 100, 
+                                           method = "bonferroni", covariates = c(),
+                                          modelType = "LMM", num_cores = 10)
 
 res_df <- as.data.frame.DoseRider(dose_rider_results)
-lKeep <- (res_df$Adjusted_non_linear_P_Value < 0.01) & (res_df$Adjusted_Linear_P_Value < 0.01)
-table((res_df$Adjusted_non_linear_P_Value < 0.01) & (res_df$Adjusted_Linear_P_Value < 0.01))
-table(res_df$Best_Model_AICc)
+table(res_df$best_model)
+
+lSign <-  (res_df$best_model == "non_linear_mixed" & res_df$adjusted_non_linear_mixed_p_value < 0.001) |
+          (res_df$best_model == "non_linear_fixed" & res_df$adjusted_non_linear_fixed_p_value < 0.001) |
+          (res_df$best_model == "linear" & res_df$adjusted_linear_p_value < 0.001) 
+
 #save(res, file = "../../doseRider_save/res_bpa_20_1000.rda")
 ```
 
@@ -91,20 +116,36 @@ table(res_df$Best_Model_AICc)
 
 ```{r}
 top <- 15
-save_path <- "/home/monfortl/doseRider/plots/"
+save_path <- "/home/monfortl/plots/Example_results/MSIGDB/"
+#dir.create(save_path)
 
-p1 <- dose_response_heatmap(dose_rider_results, dose_col = "Dose", top = top, order_column = "Adjusted_non_linear_P_Value", decreasing = F )
+p1 <- dose_response_heatmap(dose_rider_results, dose_col = "Dose", top = top, order_column = "best_model_pvalue", decreasing = F )
 plotFile1 <- paste0(save_path,"/plot1.jpeg")
-p2 <- plot_gene_set_random_effects(dose_rider_results, dose_col = "Dose", top = top)
+p2 <- plot_gene_set_random_effects(dose_rider_results, dose_col = "Dose",order_column = "best_model_pvalue", top = top)
 plotFile2 <- paste0(save_path,"/plot2.jpeg")
-p3 <- plot_top_pathway_responses(dose_rider_results, top = 9, ncol = 3)
+p3 <- plot_top_pathway_responses(dose_rider_results, top = 6, ncol = 3, order_column = "best_model_pvalue")
 plotFile3 <- paste0(save_path,"/plot3.jpeg")
-p4 <- plot_gene_random_effect_relationship(dose_rider_results, "Androgen receptor signaling pathway")
+
+for (geneset in res_df$Geneset[lSign]) {
+  center_values = ifelse(dose_rider_results[[geneset]]$best_model == "linear", F , ifelse(
+    dose_rider_results[[geneset]]$best_model == "non_linear_fixed",F,T
+  ))
+  p9 <- plot_pathway_response(dose_rider_results, gene_set_name = geneset, center_values = center_values) + theme(plot.margin = margin(1,1,1.5,1.2, "cm")) + ggtitle(stringr::str_wrap(geneset,10))
+
+  plotFile9 <- paste0(save_path,"/",stringr::str_replace_all(geneset,"/","_"),".jpeg")
+  ggsave(plotFile9, plot = p9, width = 150, height = 150, units = "mm", dpi = 600)
+}
+
+p4 <- plot_gene_random_effect_relationship(dose_rider_results, "DUTERTRE_ESTRADIOL_RESPONSE_6HR_DN")
 plotFile4 <- paste0(save_path,"/plot4.jpeg")
 p5 <- plot_dotplot_top_pathways(dose_rider_results, top = top, order_column = "Genes", decreasing = T)
 plotFile5 <- paste0(save_path,"/plot5.jpeg")
-p6 <- create_gene_heatmap(dose_rider_results,dose_col = "Dose", gene_set_name = "Androgen receptor signaling pathway")
+p6 <- create_gene_heatmap(dose_rider_results,dose_col = "Dose", gene_set_name = "DUTERTRE_ESTRADIOL_RESPONSE_6HR_DN")
 plotFile6 <- paste0(save_path,"/plot6.jpeg")
+data_bmd <- get_bmd_range(dose_rider_results = dose_rider_results)
+p7 <- plot_bmd_density_and_peaks(data_bmd)
+plotFile7 <- paste0(save_path,"/plot7.jpeg")
+
 
 jpeg(file=plotFile1,width = 600, height = 500, units = "px")
  plot(p1)
@@ -116,6 +157,8 @@ ggsave(plotFile5, plot = p5, width = 400, height = 200, units = "mm", dpi = 600)
 jpeg(file=plotFile6,width = 700, height = 700, units = "px")
  plot(p6)
 dev.off()
+ggsave(plotFile7, plot = p7, width = 400, height = 200, units = "mm", dpi = 600)
+
 ```
 
 # Microarray example:
@@ -129,3 +172,57 @@ dataset3: The cell used in this study is THP-1 macrophages from Homo sapiens. Th
 
 The cell used is BEAS-2B bronchial epithelial cells (Homo sapiens), exposed to N-hydroxylated PhIP at nine different doses ranging from 1 x 10-6 to 5 x 10-10 M, with triplicate cell cultures for each dose. There is no mention of donors in this dataset. PRJNA151269; GEO: GSE34635
 
+```{r}
+lColor <- c(
+  "#37475b", "#90a9c6", "#f0f8f9", "#a2a9bb", "#a6bbd0", "#686872", "#c98768", "#c98768",
+  "#D32F2F", "#388E3C", "#1976D2", "#FFC107", "#7C4DFF", "#E64A19", "#009688", "#FBC02D"
+)
+write_gmt <- function(data_list, file_name) {
+  gmt_lines <- sapply(data_list, function(entry) {
+    pathway <- entry$pathway
+    genes <- entry$genes
+    if (is.null(genes)) {
+      genes <- c("")
+    } else {
+      genes <- genes[!is.na(genes)]  # Remove any NA values
+    }
+    c(pathway, "", genes)
+  }, simplify = FALSE)
+  
+  gmt_content <- sapply(gmt_lines, function(line) {
+    paste(line, collapse = "\t")
+  })
+  
+  file_path <- file.path("external_data", file_name)
+  
+  writeLines(gmt_content, con = file_path)
+}
+
+convert_and_write_gmt <- function(data_list, file_name) {
+  if (!dir.exists("external_data")) {
+    dir.create("external_data")
+
+  
+  write_gmt(data_list, file_name)
+}
+
+  
+  # Load the datasets
+  data("CPDB_pathways_genes_ensembl", package = "doseRider")
+  data("CPDB_pathways_genes_entrez", package = "doseRider")
+  data("CPDB_pathways_genes_refseq", package = "doseRider")
+  data("CPDB_pathways_genes_symbol", package = "doseRider")
+  data("CPDB_pathways_metabolites", package = "doseRider")
+  
+  # Write each dataset to GMT format
+  write_gmt(CPDB_pathways_genes_ensembl, "CPDB_pathways_genes_ensembl.gmt")
+  write_gmt(CPDB_pathways_genes_entrez, "CPDB_pathways_genes_entrez.gmt")
+  write_gmt(CPDB_pathways_genes_refseq, "CPDB_pathways_genes_refseq.gmt")
+  write_gmt(CPDB_pathways_genes_symbol, "CPDB_pathways_genes_symbol.gmt")
+  write_gmt(CPDB_pathways_metabolites, "CPDB_pathways_metabolites.gmt")
+}
+
+convert_and_write_gmt()
+
+
+```

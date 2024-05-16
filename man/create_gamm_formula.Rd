@@ -9,7 +9,7 @@ create_gamm_formula(
   fixed_effects,
   random_effects,
   covariates = c(),
-  model_type = "base",
+  model_type = "non_linear",
   omic = NULL,
   k = NULL
 )

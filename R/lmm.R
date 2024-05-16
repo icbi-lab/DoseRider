@@ -92,8 +92,12 @@ create_lmm_formula <- function(response, fixed_effects, random_effects, covariat
   formula <- paste(response, "~")
 
   # Include random effects with appropriate spline
-  if (model_type == "non_linear") {
+  if (model_type == "non_linear_mixed") {
+    #"Random Spline Non-linear Model"
     random_effect_term <- paste0("(bs(", fixed_effects,  ") | ", random_effects, ")")
+  } else if (model_type == "non_linear_fixed") {
+    #"Random Intercept and Slope Non-linear Model"
+    random_effect_term <- paste0("bs(", fixed_effects,  ")"," + (",fixed_effects,"|",random_effects,")")
   } else if (model_type == "linear") {
     random_effect_term <- paste0("(",fixed_effects, " | ", random_effects, ")")
   } else {
@@ -132,16 +136,26 @@ extract_random_effects_lmm <- function(model, dose_col) {
     stop("The provided model is not an LMM model.")
   }
 
-  # Extract the random effects using ranef
+  # Extract the random effects for the gene component
   random_effects <- ranef(model)$gene
+  if (is.null(random_effects)) {
+    stop("No random effects found for 'gene'. Ensure your model includes random effects for 'gene'.")
+  }
 
-  # If there are multiple random effects (e.g., intercept and slope), you may need to adjust this part
-  # Here, we assume a single random effect for simplicity
-  random_effects_df <- data.frame(row.names = rownames(random_effects), RandomIntercept = random_effects[,"(Intercept)"] , RandomEffect = random_effects[,2])
+  # Initialize a data frame to store the random effects
+  random_effects_df <- data.frame(row.names = rownames(random_effects))
 
+  # Extract the intercept and any other random effects, naming them accordingly
+  col_names <- colnames(random_effects)
+  lCol <- c()
+  for (i in seq_along(col_names)) {
+    effect_name <- ifelse(col_names[i] == "(Intercept)", "RandomIntercept", paste("RandomEffect", i-1, sep = ""))
+    random_effects_df[[effect_name]] <- unlist(random_effects[, col_names[i], drop = FALSE])
+    lCol <- c(lCol, effect_name)
+  }
+  #colnames(random_effects_df) <- lCol
   return(random_effects_df)
 }
-
 
 
 #' Compute metrics for a given lmer or glmer model
@@ -159,6 +173,7 @@ extract_random_effects_lmm <- function(model, dose_col) {
 #' # Compute metrics
 #' compute_metrics(model)
 #' @importFrom AICcmodavg AICc
+#' @importFrom performance icc
 compute_metrics_lmm <- function(model) {
   if (inherits(model, "merMod")) { # Checking if the model is either a lmer or glmer
     df_model <- df.residual(model) # degrees of freedom for the model
@@ -166,16 +181,19 @@ compute_metrics_lmm <- function(model) {
       AIC = AIC(model),
       AICc = AICc(model),
       BIC = BIC(model),
-      edf = df_model
+      edf = df_model,
+      ICC = as.data.frame(icc(model, robust = T))[1,"ICC_unadjusted"]
     ))
   } else {
     return(list(
       AIC = NA,
       AICc = NA,
       BIC = NA,
-      edf = NA
+      edf = NA,
+      ICC = NA
     ))
   }
 }
+
 
 

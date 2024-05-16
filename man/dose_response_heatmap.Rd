@@ -8,7 +8,7 @@ dose_response_heatmap(
   dose_rider_results,
   dose_col,
   top = 15,
-  order_column = "Adjusted_non_linear_P_Value",
+  order_column = "best_model_pvalue",
   decreasing = F
 )
 }

@@ -50,10 +50,3 @@ This function conducts DoseRider analysis in parallel, applying either Linear Mi
 Additive Mixed Models (GAMMs) to each gene set in the gene matrix transposed (GMT) format. It evaluates dose-response
 relationships in gene sets, computing various model metrics and significance.
 }
-\examples{
-# Example usage of DoseRiderParallel
-results <- DoseRiderParallelLMM(se, gmt, dose_col = "dose", sample_col = "sample",
-                                covariate = c(), omic = "rnaseq", minGSsize = 5,
-                                maxGSsize = 300, method = "fdr", modelType = "GAMM", num_cores = 8)
-
-}

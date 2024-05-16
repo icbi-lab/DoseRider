@@ -134,3 +134,75 @@ compute_bmd_for_gene_in_geneset <- function(dose_rider_results, gene_set_name, g
   return(bmd_result)
 }
 
+extract_bmd_for_pathway <- function(dose_rider_results, gene_set_name){
+  # Initialize an empty list to store BMD values
+  all_bmd_values <- c()
+
+  # Extract the specific gene set results from dose_rider_results
+  gene_set_results <- dose_rider_results[[gene_set_name]]
+
+  # Check if cluster-specific results exist
+  if (!is.null(gene_set_results$ClusterSpecificResults)) {
+    # Iterate through each cluster to extract BMD values
+    for (cluster_name in names(gene_set_results$ClusterSpecificResults)) {
+      cluster_data <- gene_set_results$ClusterSpecificResults[[cluster_name]]
+      all_bmd_values <- c(all_bmd_values,cluster_data$BMD)
+    }
+  } else {
+    # Handle case where no cluster-specific results are available
+    all_bmd_values <- NA
+  }
+
+  return(all_bmd_values)
+}
+
+#' Plot Benchmark Dose (BMD) Density and Peaks
+#'
+#' This function creates a plot visualizing the density of BMD values and highlights
+#' the peaks where the highest density of BMD values are found.
+#'
+#' @param bmd_range_output A list containing the output from `get_bmd_range` function,
+#' which includes x (BMD values), y (density), and bmd (peaks).
+#'
+#' @return A ggplot object visualizing the density of BMD values with peaks marked.
+#'
+#' @examples
+#' bmd_range_output <- get_bmd_range(dose_rider_results)
+#' plot_bmd_density_and_peaks(bmd_range_output)
+#'
+#' @export
+get_bmd_range <- function(dose_rider_results){
+  # Load necessary library
+
+  # Find local maxima (peaks) in the density estimate
+  find_peaks <- function(density_obj) {
+    # The peaks are where the slope changes from positive to negative
+    slope <- diff(density_obj$y)
+    q55 <- quantile(density_obj$y, 0.55)
+    peaks <- which(diff(sign(slope)) == -2) + 1
+    peaks <- peaks[density_obj$y[peaks] > q55]
+    return( density_obj$x[peaks])
+  }
+
+
+  # Hypothetical list of BMD values for different pathways
+  bmd_values <- c()
+
+  for (gene_set_name in names(dose_rider_results)) {
+    bmd_values <- c(bmd_values, extract_bmd_for_pathway(dose_rider_results, gene_set_name))
+
+  }
+
+
+  # Combine all BMD values into a single vector for density estimation
+  all_bmds <- unique(bmd_values)
+  all_bmds <- all_bmds[!is.na(all_bmds)]
+
+  # Perform kernel density estimation
+  bmd_density <- density(all_bmds)
+  peaks <- find_peaks(bmd_density)
+  res <- list(x = bmd_density$x, y = bmd_density$y, bmd=peaks)
+  # Printing the high density range
+  return(res)
+
+}

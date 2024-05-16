@@ -19,7 +19,7 @@ A list of gene sets from the GMT file that match the specified IDs.
         If no matches are found, an empty list is returned.
 }
 \description{
-This function filters gene sets contained within a GMT file based on a given vector of IDs. 
+This function filters gene sets contained within a GMT file based on a given vector of IDs.
 It checks each gene set for a matching `external_id` and retains only those that match any of the provided IDs.
 }
 \note{

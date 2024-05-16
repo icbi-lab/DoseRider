@@ -55,29 +55,39 @@ process_gene_set <- function(se, dose_col, sample_col, omic, gmt, i, minGSsize =
   if (modelType == "LMM"){
     null_formula <- create_lmm_formula("counts", dose_col, "gene", covariates, "null", omic)
     linear_formula <- create_lmm_formula("counts", dose_col, "gene", covariates, "linear", omic)
-    non_linear_formula <- create_lmm_formula("counts", dose_col, "gene", covariates, "non_linear", omic)
+    non_linear_fixed_formula <- create_lmm_formula("counts", dose_col, "gene", covariates, "non_linear_fixed", omic)
+    non_linear_mixed_formula <- create_lmm_formula("counts", dose_col, "gene", covariates, "non_linear_mixed", omic)
 
     null_results <- suppressWarnings(fit_lmm(null_formula, long_df, omic))
     linear_results <- suppressWarnings(fit_lmm(linear_formula, long_df, omic))
-    non_linear_results <- suppressWarnings(fit_lmm(non_linear_formula, long_df, omic))
+    non_linear_fixed_results <- suppressWarnings(fit_lmm(non_linear_fixed_formula, long_df, omic))
+    non_linear_mixed_results <- suppressWarnings(fit_lmm(non_linear_mixed_formula, long_df, omic))
+
   } else if (modelType == "GAMM"){
     null_formula <- create_gamm_formula("counts", dose_col, "gene", covariates, "null", omic)
     linear_formula <- create_gamm_formula("counts", dose_col, "gene", covariates, "linear", omic)
     non_linear_formula <- create_gamm_formula("counts", dose_col, "gene", covariates, "non_linear", omic)
+    non_linear_fixed_formula <- create_gamm_formula("counts", dose_col, "gene", covariates, "non_linear_fixed", omic)
+    non_linear_mixed_formula <- create_gamm_formula("counts", dose_col, "gene", covariates, "non_linear_mixed", omic)
 
     null_results <- suppressWarnings(fit_gam(null_formula, long_df, omic))
     linear_results <- suppressWarnings(fit_gam(linear_formula, long_df, omic))
-    non_linear_results <- suppressWarnings(fit_gam(non_linear_formula, long_df, omic))
+    non_linear_fixed_results <- suppressWarnings(fit_gam(non_linear_fixed_formula, long_df, omic))
+    non_linear_mixed_results <- suppressWarnings(fit_gam(non_linear_mixed_formula, long_df, omic))
   }
 
   # Compare models and compute best model
-  fitted_models <- list(null = null_results, linear = linear_results, non_linear = non_linear_results)
+  fitted_models <- list(null = null_results, linear = linear_results,
+                        non_linear_fixed = non_linear_fixed_results,
+                        non_linear_mixed = non_linear_mixed_results)
   is_fitted <- sapply(fitted_models, is_fitted_model)
   fitted_models <- fitted_models[is_fitted]
 
   if (length(fitted_models) > 1) {
-    p_value_list <- compare_all_models(null_results, linear_results, non_linear_results, modelType)
-    best_model_AICc <- select_best_model(fitted_models)
+    p_value_list <- compare_all_models(null_results, linear_results,
+                                       non_linear_fixed_results,
+                                       non_linear_mixed_results, modelType)
+    best_model_AICc <- select_best_model(fitted_models, p_value_list)
     best_model <- fitted_models[[best_model_AICc]]
   } else {
     p_value_list <- list("p_value_linear"= NA, "p_value_non_linear"= NA)
@@ -88,7 +98,8 @@ process_gene_set <- function(se, dose_col, sample_col, omic, gmt, i, minGSsize =
   # Compute metrics for null and cubic models
   null_metrics <- if (modelType=="LMM") compute_metrics_lmm(null_results) else compute_metrics_gamm(null_results)
   linear_metrics <- if (modelType=="LMM") compute_metrics_lmm(linear_results) else compute_metrics_gamm(linear_results)
-  non_linear_metrics <- if (modelType=="LMM") compute_metrics_lmm(non_linear_results) else compute_metrics_gamm(non_linear_results)
+  non_linear_fixed_metrics <- if (modelType=="LMM") compute_metrics_lmm(non_linear_fixed_results) else compute_metrics_gamm(non_linear_fixed_results)
+  non_linear_mixed_metrics <- if (modelType=="LMM") compute_metrics_lmm(non_linear_mixed_results) else compute_metrics_gamm(non_linear_mixed_results)
 
   # Calculate smoothing values and BMD for the best model
   if (best_model_AICc != "null") {
@@ -132,21 +143,46 @@ process_gene_set <- function(se, dose_col, sample_col, omic, gmt, i, minGSsize =
     Geneset = gmt[[i]]$pathway,
     Geneset_Size = length(geneset),
     Genes = length(unique(long_df$gene)),
-    Null_AIC = null_metrics$AIC,
-    Null_AICc = null_metrics$AICc,
-    Null_BIC = null_metrics$BIC,
-    Null_df = null_metrics$edf,
-    Linear_AIC = linear_metrics$AIC,       # Adding Linear model AIC
-    Linear_AICc = linear_metrics$AICc,     # Adding Linear model AICc
-    Linear_BIC = linear_metrics$BIC,       # Adding Linear model BIC
-    Linear_df = linear_metrics$edf,        # Adding Linear model degrees of freedom
-    non_linear_AIC = non_linear_metrics$AIC,         # Adding non_linear model AIC
-    non_linear_AICc = non_linear_metrics$AICc,       # Adding non_linear model AICc
-    non_linear_BIC = non_linear_metrics$BIC,         # Adding non_linear model BIC
-    non_linear_df = non_linear_metrics$edf,          # Adding non_linear model degrees of freedom
-    P_Value_Linear = p_value_list$p_value_linear,
-    P_Value_non_linear = p_value_list$p_value_non_linear,
-    Best_Model_AICc = best_model_AICc,
+    null_AIC = null_metrics$AIC,
+    null_AICc = null_metrics$AICc,
+    null_BIC = null_metrics$BIC,
+    null_df = null_metrics$edf,
+    null_df = null_metrics$ICC,
+    linear_AIC = linear_metrics$AIC,
+    linear_AICc = linear_metrics$AICc,
+    linear_BIC = linear_metrics$BIC,
+    linear_df = linear_metrics$edf,
+    linear_ICC = linear_metrics$ICC,
+    non_linear_fixed_AIC = non_linear_fixed_metrics$AIC,
+    non_linear_fixed_AICc = non_linear_fixed_metrics$AICc,
+    non_linear_fixed_BIC = non_linear_fixed_metrics$BIC,
+    non_linear_fixed_df = non_linear_fixed_metrics$edf,
+    non_linear_fixed_ICC = non_linear_fixed_metrics$ICC,
+    non_linear_mixed_AIC = non_linear_mixed_metrics$AIC,
+    non_linear_mixed_AICc = non_linear_mixed_metrics$AICc,
+    non_linear_mixed_BIC = non_linear_mixed_metrics$BIC,
+    non_linear_mixed_df = non_linear_mixed_metrics$edf,
+    non_linear_mixed_ICC = non_linear_mixed_metrics$ICC,
+    p_value_linear = p_value_list$p_value_linear,
+    p_value_non_linear_fixed = p_value_list$p_value_non_linear_fixed,
+    p_value_non_linear_mixed = p_value_list$p_value_non_linear_mixed,
+
+    best_model = best_model_AICc,
+    best_model_pvalue = ifelse(best_model_AICc == "null", NA,
+                               ifelse(best_model_AICc == "linear", p_value_list$p_value_linear,
+                                      ifelse(best_model_AICc == "non_linear_fixed", p_value_list$p_value_non_linear_fixed,
+                                             ifelse(best_model_AICc == "non_linear_mixed", p_value_list$p_value_non_linear_mixed, NA)))),
+
+
+    best_model_aicc = ifelse(best_model_AICc == "null", null_metrics$AICc,
+                             ifelse(best_model_AICc == "linear", linear_metrics$AICc,
+                                    ifelse(best_model_AICc == "non_linear_fixed", non_linear_fixed_metrics$AICc,
+                                           ifelse(best_model_AICc == "non_linear_mixed", non_linear_mixed_metrics$AICc, NA)))),
+
+    best_model_bic = ifelse(best_model_AICc == "null", null_metrics$BIC,
+                            ifelse(best_model_AICc == "linear", linear_metrics$BIC,
+                                   ifelse(best_model_AICc == "non_linear_fixed", non_linear_fixed_metrics$BIC,
+                                          ifelse(best_model_AICc == "non_linear_mixed", non_linear_mixed_metrics$BIC, NA)))),
     Smooth_Predictions = list(smooth_values),
     #Smooth_Predictions_Pathway = list(smooth_pathway),
     Raw_Values = list(long_df),
@@ -255,11 +291,6 @@ DoseRider <- function(se, gmt, dose_col = "dose", sample_col = "sample",
 #' @importFrom utils txtProgressBar
 #' @importFrom doSNOW registerDoSNOW
 #'
-#' @examples
-#' # Example usage of DoseRiderParallel
-#' results <- DoseRiderParallelLMM(se, gmt, dose_col = "dose", sample_col = "sample",
-#'                                 covariate = c(), omic = "rnaseq", minGSsize = 5,
-#'                                 maxGSsize = 300, method = "fdr", modelType = "GAMM", num_cores = 8)
 #'
 #' @export
 DoseRiderParallel <- function(se, gmt, dose_col = "dose", sample_col = "sample",
@@ -322,9 +353,14 @@ DoseRiderParallel <- function(se, gmt, dose_col = "dose", sample_col = "sample",
 as.data.frame.DoseRider <- function(object) {
   # Define the attributes to extract
   attrs_to_extract <- geneset_results_fields <- c("Geneset","Geneset_Size","Genes",
-    "Null_AIC", "Null_AICc","Null_BIC","Null_df", "Linear_AIC","Linear_AICc", "Linear_BIC",
-    "Linear_df","non_linear_AIC","non_linear_AICc","non_linear_BIC","non_linear_df","P_Value_Linear","P_Value_non_linear",
-    "Best_Model_AICc", "Adjusted_non_linear_P_Value","Adjusted_Linear_P_Value","OptimalClusters" )
+    "null_AIC", "null_AICc","null_BIC","null_df",
+    "linear_AIC","linear_AICc", "inear_BIC", "linear_df","linear_ICC",
+    "non_linear_fixed_AIC","non_linear_fixed_AICc","non_linear_fixed_BIC","non_linear_fixed_df", "non_linear_fixed_ICC",
+    "non_linear_mixed_AIC", "non_linear_mixed_AICc","non_linear_mixed_BIC","non_linear_mixed_df","non_linear_mixed_ICC",
+    "p_value_inear","p_value_non_linear_fixed","p_value_non_linear_mixed",
+    "adjusted_linear_p_value","adjusted_non_linear_fixed_p_value","adjusted_non_linear_mixed_p_value",
+    "best_model", "best_model_pvalue", "best_model_aicc", "best_model_bic",
+    "OptimalClusters" )
 
 
   # Convert the DoseRider object to a list of data frames, handling nested lists

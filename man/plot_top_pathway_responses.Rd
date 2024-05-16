@@ -8,7 +8,7 @@ plot_top_pathway_responses(
   dose_rider_results,
   top = 15,
   ncol = 3,
-  order_column = "Adjusted_non_linear_P_Value",
+  order_column = "best_model_pvalue",
   decreasing = F
 )
 }
