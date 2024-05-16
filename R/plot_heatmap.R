@@ -24,7 +24,7 @@
 #' }
 #'
 #' @export
-dose_response_heatmap <- function(dose_rider_results, dose_col, top = 15, order_column = "Adjusted_non_linear_P_Value", decreasing = F) {
+dose_response_heatmap <- function(dose_rider_results, dose_col, top = 15, order_column = "best_model_pvalue", decreasing = F) {
   # Initialize an empty matrix to store the average expressions
   heatmap_data <- list()
 

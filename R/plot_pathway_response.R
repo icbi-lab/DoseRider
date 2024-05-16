@@ -225,9 +225,9 @@ plot_pathway_response <- function(dose_rider_results, gene_set_name, dose_col = 
 #' @return A combined ggplot object with top significant pathway response plots.
 #' @importFrom cowplot plot_grid
 #' @export
-plot_top_pathway_responses <- function(dose_rider_results, top=15, ncol = 3, order_column = "Adjusted_non_linear_P_Value", decreasing = F) {
+plot_top_pathway_responses <- function(dose_rider_results, top=15, ncol = 3, order_column = "best_model_pvalue", decreasing = F) {
   # Extract and order gene sets by adjusted cubic p-value
-  dose_rider_df <- as.data.frame(dose_rider_results)
+  dose_rider_df <- as.data.frame.DoseRider(dose_rider_results)
   dose_rider_df <- dose_rider_df[order(dose_rider_df[[order_column]], decreasing = decreasing), ]
 
   # Select top gene sets
@@ -239,8 +239,7 @@ plot_top_pathway_responses <- function(dose_rider_results, top=15, ncol = 3, ord
   for (gene_set_name in top_gene_sets) {
     res_path <- dose_rider_results[[gene_set_name]]
 
-    best_model <- res_path$Best_Model_AICc
-    adj_p_val <- res_path$Adjusted_non_linear_P_Value
+    best_model <- res_path$best_model
 
     if (!is.na(best_model) && best_model != "null") {
       plot_list[[gene_set_name]] <- plot_pathway_response(dose_rider_results, gene_set_name)
@@ -282,7 +281,7 @@ plot_top_pathway_responses <- function(dose_rider_results, top=15, ncol = 3, ord
 #' }
 #'
 #' @export
-plot_gene_set_random_effects <- function(dose_rider_results, dose_col = "Dose", top = 10, order_column = "Adjusted_non_linear_P_Value", decreasing = F) {
+plot_gene_set_random_effects <- function(dose_rider_results, dose_col = "Dose", top = 10, order_column = "best_model_pvalue", decreasing = F) {
   all_random_effects <- data.frame(gene = character(),
                                    gene_set = character(),
                                    RandomIntercept = numeric(),
@@ -308,7 +307,7 @@ plot_gene_set_random_effects <- function(dose_rider_results, dose_col = "Dose", 
 
   # Ridge plot
   all_random_effects$gene_set <- unlist(lapply(all_random_effects$gene_set,function(x){str_wrap(x,width = 35)}))
-  p <- ggplot(all_random_effects, aes(x = RandomEffect, y = gene_set, fill = gene_set)) +
+  p <- ggplot(all_random_effects, aes(x = RandomEffect1, y = gene_set, fill = gene_set)) +
     geom_vline(xintercept = 0, color = "red", linetype = "dashed") +
     geom_density_ridges() +
     scale_fill_manual(values = custom_palette) +
@@ -356,7 +355,7 @@ plot_gene_random_effect_relationship <- function(dose_rider_results, gene_set_na
     random_effects$gene_set <- gene_set_name
     random_effects$gene <- rownames(random_effects)
 
-    p <- ggplot(random_effects, aes(x = RandomEffect, y = RandomIntercept, label = gene)) +
+    p <- ggplot(random_effects, aes(x = RandomEffect1, y = RandomIntercept, label = gene)) +
       geom_point(color = "black", fill = "white", shape = 21, size = 3, stroke = 2) +
       geom_label_repel(aes(label = gene), box.padding = 0.35, point.padding = 0.3,
                        size = 3, force = 1) +
@@ -388,28 +387,57 @@ plot_gene_random_effect_relationship <- function(dose_rider_results, gene_set_na
 #' }
 #'
 #' @export
-plot_dotplot_top_pathways <- function(dose_rider_results, top = 10, order_column = "Adjusted_non_linear_P_Value", decreasing = F) {
+plot_dotplot_top_pathways <- function(dose_rider_results, top = 10, order_column = "best_model_pvalue", pvalue_column = "best_model_pvalue", decreasing = F) {
   # Convert dose_rider_results to dataframe
-  dose_rider_df <- as.data.frame(dose_rider_results)
+  dose_rider_df <- as.data.frame.DoseRider(dose_rider_results)
 
   # Add -log10(p-value) and sort by it
-  dose_rider_df$NegLogPValue <- -log10(dose_rider_df$Adjusted_non_linear_P_Value)
+  dose_rider_df$NegLogPValue <- -log10(dose_rider_df[[pvalue_column]])
   dose_rider_df <- dose_rider_df[order(dose_rider_df[[order_column]], decreasing = decreasing), ]
   dose_rider_df <- dose_rider_df[!is.na(dose_rider_df$NegLogPValue),]
   top_pathways_df <- head(dose_rider_df, top)
   top_pathways_df$Geneset <- unlist(lapply(top_pathways_df$Geneset, function(x){str_wrap(x,35)}))
   # Create Dot Plot
-  dot_plot <- ggplot(top_pathways_df, aes(x = NegLogPValue, y = reorder(Geneset, NegLogPValue), size = Genes, fill = Best_Model_AICc)) +
+  dot_plot <- ggplot(top_pathways_df, aes(x = NegLogPValue, y = reorder(Geneset, NegLogPValue), size = Genes, fill = best_model)) +
     geom_point(shape = 21) +
     scale_size_continuous(name = "Gene Set Size") +
     labs(x = "-log10(Adjusted non-linear P-Value)", y = "") +
-    scale_fill_manual(values = c("non_linear" = "blue", "linear" = "green", "null" = "red"), name = "Best Model") +
+    scale_fill_manual(values = c("non_linear_mixed" = "orange","non_linear_fixed" = "blue", "linear" = "green", "null" = "red"), name = "Best Model") +
     theme_bw() +
     theme(axis.text.x = element_text(angle = 45, hjust = 1))
 
   return(dot_plot)
 }
 
-# Example usage:
-# plot_top_pathways_by_model(dose_rider_results, top = 10)
+#' Plot Benchmark Dose (BMD) Density and Peaks
+#'
+#' This function creates a plot visualizing the density of BMD values and highlights
+#' the peaks where the highest density of BMD values are found.
+#'
+#' @param bmd_range_output A list containing the output from `get_bmd_range` function,
+#' which includes x (BMD values), y (density), and bmd (peaks).
+#'
+#' @return A ggplot object visualizing the density of BMD values with peaks marked.
+#' @import ggplot2
+#' @examples
+#' bmd_range_output <- get_bmd_range(dose_rider_results)
+#' plot_bmd_density_and_peaks(bmd_range_output)
+#'
+#' @export
+
+plot_bmd_density_and_peaks <- function(bmd_range_output) {
+  # Convert the list to a dataframe for plotting
+  data_to_plot <- data.frame(x = bmd_range_output$x, y = bmd_range_output$y)
+
+  # Create the plot
+  p <- ggplot(data_to_plot, aes(x = x, y = y)) +
+    geom_line() +
+    geom_vline(xintercept = bmd_range_output$bmd, color = "red", linetype = "dashed") +
+    labs(x = "BMD", y = "Density", title = "BMD Density and Peaks") +
+    theme_bw() +
+    theme(axis.text.x = element_text(angle = 45, hjust = 1))
+
+  return(p)
+}
+
 

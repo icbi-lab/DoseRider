@@ -14,16 +14,19 @@ validate_input_doserider <- function(se,dose_col,sample_col,covariates){
 
 # Adjust p-values for multiple testing
 adjust_pvalues_doserider_result <- function(results, method){
-  non_linear_p_values <- sapply(results, function(x) x$P_Value_non_linear)
-  linear_p_values <- sapply(results, function(x) x$P_Value_Linear)
+  non_linear_fixed_p_values <- sapply(results, function(x) x$p_value_non_linear_fixed)
+  non_linear_mixed_p_values <- sapply(results, function(x) x$p_value_non_linear_mixed)
+  linear_p_values <- sapply(results, function(x) x$p_value_linear)
 
-  adjusted_non_linear_p_values <- p.adjust(non_linear_p_values, method)
+  adjusted_non_linear_fixed_p_values <- p.adjust(non_linear_fixed_p_values, method)
+  adjusted_non_linear_mixed_p_values <- p.adjust(non_linear_mixed_p_values, method)
   adjusted_linear_p_values <- p.adjust(linear_p_values, method)
 
   # Add adjusted p-values to results
   for (i in seq_along(results)) {
-    results[[i]]$Adjusted_non_linear_P_Value <- adjusted_non_linear_p_values[i]
-    results[[i]]$Adjusted_Linear_P_Value <- adjusted_linear_p_values[i]
+    results[[i]]$adjusted_non_linear_fixed_p_value <- adjusted_non_linear_fixed_p_values[i]
+    results[[i]]$adjusted_non_linear_mixed_p_value <- adjusted_non_linear_mixed_p_values[i]
+    results[[i]]$adjusted_linear_p_value <- adjusted_linear_p_values[i]
   }
   return(results)
 }

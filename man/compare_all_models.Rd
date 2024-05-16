@@ -4,7 +4,13 @@
 \alias{compare_all_models}
 \title{Compare Models with ANOVA}
 \usage{
-compare_all_models(null_results, linear_results, non_linear_results, modelType)
+compare_all_models(
+  null_results,
+  linear_results,
+  non_linear_fixed_results,
+  non_linear_mixed_results,
+  modelType
+)
 }
 \arguments{
 \item{linear_results}{A fitted model representing the linear model.}

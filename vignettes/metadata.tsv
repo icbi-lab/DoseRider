@@ -1,0 +1,47 @@
+title	dose.ch1	iupac.name.ch1	description	cell.line.ch1	treatment.ch1	cas.rn.ch1	Chemical	Dose	sample	size_factors
+S87_pool1	Cells, no treatment_0_87	0	N/A	S87_pool1	MCF-7	Cells, no treatment_0	N/A	Cells, no treatment	0	S87_pool1	1.01126006783596
+S88_pool1	Cells, no treatment_0_88	0	N/A	S88_pool1	MCF-7	Cells, no treatment_0	N/A	Cells, no treatment	0	S88_pool1	1.01732686333237
+S100_pool1	BPAF_0.0005_100	0.0005	4-[1,1,1,3,3,3-hexafluoro-2-(4-hydroxyphenyl)propan-2-yl]phenol	S100_pool1	MCF-7	BPAF_0.0005	1478-61-1	BPAF	5e-04	S100_pool1	0.994525377565336
+S108_pool1	BPAF_0.001_108	0.001	4-[1,1,1,3,3,3-hexafluoro-2-(4-hydroxyphenyl)propan-2-yl]phenol	S108_pool1	MCF-7	BPAF_0.001	1478-61-1	BPAF	0.001	S108_pool1	1.01419327204264
+S116_pool1	BPAF_0.01_116	0.01	4-[1,1,1,3,3,3-hexafluoro-2-(4-hydroxyphenyl)propan-2-yl]phenol	S116_pool1	MCF-7	BPAF_0.01	1478-61-1	BPAF	0.01	S116_pool1	1.00819142013732
+S124_pool1	BPAF_0.1_124	0.1	4-[1,1,1,3,3,3-hexafluoro-2-(4-hydroxyphenyl)propan-2-yl]phenol	S124_pool1	MCF-7	BPAF_0.1	1478-61-1	BPAF	0.1	S124_pool1	1.00057581235942
+S132_pool1	BPAF_0.5_132	0.5	4-[1,1,1,3,3,3-hexafluoro-2-(4-hydroxyphenyl)propan-2-yl]phenol	S132_pool1	MCF-7	BPAF_0.5	1478-61-1	BPAF	0.5	S132_pool1	1.02481277485624
+S140_pool1	BPAF_1_140	1	4-[1,1,1,3,3,3-hexafluoro-2-(4-hydroxyphenyl)propan-2-yl]phenol	S140_pool1	MCF-7	BPAF_1	1478-61-1	BPAF	1	S140_pool1	1.00339406914835
+S148_pool1	BPAF_5_148	5	4-[1,1,1,3,3,3-hexafluoro-2-(4-hydroxyphenyl)propan-2-yl]phenol	S148_pool1	MCF-7	BPAF_5	1478-61-1	BPAF	5	S148_pool1	1.00292425747148
+S182_pool1	Cells, no treatment_0_182	0	N/A	S182_pool1	MCF-7	Cells, no treatment_0	N/A	Cells, no treatment	0	S182_pool1	1.00195701763496
+S183_pool1	Cells, no treatment_0_183	0	N/A	S183_pool1	MCF-7	Cells, no treatment_0	N/A	Cells, no treatment	0	S183_pool1	0.994280519361603
+S184_pool1	Cells, no treatment_0_184	0	N/A	S184_pool1	MCF-7	Cells, no treatment_0	N/A	Cells, no treatment	0	S184_pool1	1.01108087514085
+S279_pool1	Cells, no treatment_0_279	0	N/A	S279_pool1	MCF-7	Cells, no treatment_0	N/A	Cells, no treatment	0	S279_pool1	0.895291573442745
+S280_pool1	Cells, no treatment_0_280	0	N/A	S280_pool1	MCF-7	Cells, no treatment_0	N/A	Cells, no treatment	0	S280_pool1	0.866983251877671
+S292_pool1	BPAF_0.0005_292	0.0005	4-[1,1,1,3,3,3-hexafluoro-2-(4-hydroxyphenyl)propan-2-yl]phenol	S292_pool1	MCF-7	BPAF_0.0005	1478-61-1	BPAF	5e-04	S292_pool1	1.0234692957795
+S300_pool1	BPAF_0.001_300	0.001	4-[1,1,1,3,3,3-hexafluoro-2-(4-hydroxyphenyl)propan-2-yl]phenol	S300_pool1	MCF-7	BPAF_0.001	1478-61-1	BPAF	0.001	S300_pool1	1.11310636677172
+S308_pool1	BPAF_0.01_308	0.01	4-[1,1,1,3,3,3-hexafluoro-2-(4-hydroxyphenyl)propan-2-yl]phenol	S308_pool1	MCF-7	BPAF_0.01	1478-61-1	BPAF	0.01	S308_pool1	0.99978517342618
+S316_pool1	BPAF_0.1_316	0.1	4-[1,1,1,3,3,3-hexafluoro-2-(4-hydroxyphenyl)propan-2-yl]phenol	S316_pool1	MCF-7	BPAF_0.1	1478-61-1	BPAF	0.1	S316_pool1	1.00536068407141
+S324_pool1	BPAF_0.5_324	0.5	4-[1,1,1,3,3,3-hexafluoro-2-(4-hydroxyphenyl)propan-2-yl]phenol	S324_pool1	MCF-7	BPAF_0.5	1478-61-1	BPAF	0.5	S324_pool1	1.01669763402844
+S332_pool1	BPAF_1_332	1	4-[1,1,1,3,3,3-hexafluoro-2-(4-hydroxyphenyl)propan-2-yl]phenol	S332_pool1	MCF-7	BPAF_1	1478-61-1	BPAF	1	S332_pool1	1.04073538562178
+S340_pool1	BPAF_5_340	5	4-[1,1,1,3,3,3-hexafluoro-2-(4-hydroxyphenyl)propan-2-yl]phenol	S340_pool1	MCF-7	BPAF_5	1478-61-1	BPAF	5	S340_pool1	1.02916038523574
+S374_pool1	Cells, no treatment_0_374	0	N/A	S374_pool1	MCF-7	Cells, no treatment_0	N/A	Cells, no treatment	0	S374_pool1	1.01779996854881
+S375_pool1	Cells, no treatment_0_375	0	N/A	S375_pool1	MCF-7	Cells, no treatment_0	N/A	Cells, no treatment	0	S375_pool1	1.04373367607928
+S376_pool1	Cells, no treatment_0_376	0	N/A	S376_pool1	MCF-7	Cells, no treatment_0	N/A	Cells, no treatment	0	S376_pool1	1.03137947914419
+S87_pool2	Cells, no treatment_0_471	0	N/A	S87_pool2	MCF-7	Cells, no treatment_0	N/A	Cells, no treatment	0	S87_pool2	1.0158537268279
+S88_pool2	Cells, no treatment_0_472	0	N/A	S88_pool2	MCF-7	Cells, no treatment_0	N/A	Cells, no treatment	0	S88_pool2	1.04244340598717
+S100_pool2	BPAF_0.0005_484	0.0005	4-[1,1,1,3,3,3-hexafluoro-2-(4-hydroxyphenyl)propan-2-yl]phenol	S100_pool2	MCF-7	BPAF_0.0005	1478-61-1	BPAF	5e-04	S100_pool2	1.0063225479968
+S108_pool2	BPAF_0.001_492	0.001	4-[1,1,1,3,3,3-hexafluoro-2-(4-hydroxyphenyl)propan-2-yl]phenol	S108_pool2	MCF-7	BPAF_0.001	1478-61-1	BPAF	0.001	S108_pool2	1.0063855758847
+S116_pool2	BPAF_0.01_500	0.01	4-[1,1,1,3,3,3-hexafluoro-2-(4-hydroxyphenyl)propan-2-yl]phenol	S116_pool2	MCF-7	BPAF_0.01	1478-61-1	BPAF	0.01	S116_pool2	1.0213191987372
+S124_pool2	BPAF_0.1_508	0.1	4-[1,1,1,3,3,3-hexafluoro-2-(4-hydroxyphenyl)propan-2-yl]phenol	S124_pool2	MCF-7	BPAF_0.1	1478-61-1	BPAF	0.1	S124_pool2	1.02470703322405
+S148_pool2	BPAF_5_532	5	4-[1,1,1,3,3,3-hexafluoro-2-(4-hydroxyphenyl)propan-2-yl]phenol	S148_pool2	MCF-7	BPAF_5	1478-61-1	BPAF	5	S148_pool2	1.00396741353641
+S182_pool2	Cells, no treatment_0_566	0	N/A	S182_pool2	MCF-7	Cells, no treatment_0	N/A	Cells, no treatment	0	S182_pool2	0.971878859868896
+S183_pool2	Cells, no treatment_0_567	0	N/A	S183_pool2	MCF-7	Cells, no treatment_0	N/A	Cells, no treatment	0	S183_pool2	0.981676156680136
+S184_pool2	Cells, no treatment_0_568	0	N/A	S184_pool2	MCF-7	Cells, no treatment_0	N/A	Cells, no treatment	0	S184_pool2	0.997188220713651
+S279_pool2	Cells, no treatment_0_663	0	N/A	S279_pool2	MCF-7	Cells, no treatment_0	N/A	Cells, no treatment	0	S279_pool2	0.974602065603082
+S280_pool2	Cells, no treatment_0_664	0	N/A	S280_pool2	MCF-7	Cells, no treatment_0	N/A	Cells, no treatment	0	S280_pool2	0.994122257910267
+S292_pool2	BPAF_0.0005_676	0.0005	4-[1,1,1,3,3,3-hexafluoro-2-(4-hydroxyphenyl)propan-2-yl]phenol	S292_pool2	MCF-7	BPAF_0.0005	1478-61-1	BPAF	5e-04	S292_pool2	0.996988730723419
+S300_pool2	BPAF_0.001_684	0.001	4-[1,1,1,3,3,3-hexafluoro-2-(4-hydroxyphenyl)propan-2-yl]phenol	S300_pool2	MCF-7	BPAF_0.001	1478-61-1	BPAF	0.001	S300_pool2	0.991268334116092
+S308_pool2	BPAF_0.01_692	0.01	4-[1,1,1,3,3,3-hexafluoro-2-(4-hydroxyphenyl)propan-2-yl]phenol	S308_pool2	MCF-7	BPAF_0.01	1478-61-1	BPAF	0.01	S308_pool2	0.986740085987218
+S316_pool2	BPAF_0.1_700	0.1	4-[1,1,1,3,3,3-hexafluoro-2-(4-hydroxyphenyl)propan-2-yl]phenol	S316_pool2	MCF-7	BPAF_0.1	1478-61-1	BPAF	0.1	S316_pool2	0.964981720985853
+S324_pool2	BPAF_0.5_708	0.5	4-[1,1,1,3,3,3-hexafluoro-2-(4-hydroxyphenyl)propan-2-yl]phenol	S324_pool2	MCF-7	BPAF_0.5	1478-61-1	BPAF	0.5	S324_pool2	1.01905190297446
+S332_pool2	BPAF_1_716	1	4-[1,1,1,3,3,3-hexafluoro-2-(4-hydroxyphenyl)propan-2-yl]phenol	S332_pool2	MCF-7	BPAF_1	1478-61-1	BPAF	1	S332_pool2	0.97186081337958
+S340_pool2	BPAF_5_724	5	4-[1,1,1,3,3,3-hexafluoro-2-(4-hydroxyphenyl)propan-2-yl]phenol	S340_pool2	MCF-7	BPAF_5	1478-61-1	BPAF	5	S340_pool2	0.975844672057909
+S374_pool2	Cells, no treatment_0_758	0	N/A	S374_pool2	MCF-7	Cells, no treatment_0	N/A	Cells, no treatment	0	S374_pool2	0.968097049265282
+S375_pool2	Cells, no treatment_0_759	0	N/A	S375_pool2	MCF-7	Cells, no treatment_0	N/A	Cells, no treatment	0	S375_pool2	0.957656733438949
+S376_pool2	Cells, no treatment_0_760	0	N/A	S376_pool2	MCF-7	Cells, no treatment_0	N/A	Cells, no treatment	0	S376_pool2	0.990179461802918

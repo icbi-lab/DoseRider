@@ -27,6 +27,40 @@ find_geneset_index <- function(gmt, geneset_name, pathway_col) {
   return(NULL)
 }
 
+#' Read GMT File from MSigDB
+#'
+#' Parses a GMT (Gene Matrix Transposed) file from the Molecular Signatures Database (MSigDB),
+#' structuring it into a list of pathways and their associated genes. Each element of the list
+#' is a list itself, containing the pathway name and a vector of gene symbols.
+#'
+#' @param file_path The path to the GMT file to be read.
+#' @return A list where each element is a list with two elements: `$pathway`, the name of the pathway,
+#' and `$genes`, a vector of gene symbols associated with that pathway.
+#' @examples
+#' file_path <- "path/to/your/c2.cgp.v2023.2.Hs.symbols.gmt"
+#' gmt_data <- read_gmt(file_path)
+#' if (length(gmt_data) > 0) {
+#'   print(gmt_data[[1]])
+#'   print(gmt_data[[2]])
+#' }
+#' @export
+read_gmt <- function(file_path) {
+  con <- file(file_path, "r")
+  gmt <- list()
+  while(TRUE) {
+    line <- readLines(con, n = 1, warn = FALSE)
+    if(length(line) == 0) {
+      break
+    }
+    elements <- strsplit(line, "\t")[[1]]
+    pathway_name <- elements[1]
+    genes <- elements[-c(1, 2)] # Exclude pathway name and URL
+    gmt[[length(gmt) + 1]] <- list(pathway = pathway_name, genes = genes)
+  }
+  close(con)
+  return(gmt)
+}
+
 
 #' Filter GMT by Geneset Size
 #'
@@ -72,7 +106,7 @@ filter_gmt_by_size <- function(gmt, minGenesetSize, maxGenesetSize) {
 
 #' Filter Gene Sets in a GMT File by Specific IDs
 #'
-#' This function filters gene sets contained within a GMT file based on a given vector of IDs. 
+#' This function filters gene sets contained within a GMT file based on a given vector of IDs.
 #' It checks each gene set for a matching `external_id` and retains only those that match any of the provided IDs.
 #'
 #' @param gmt A list representing the GMT file's data.
@@ -95,21 +129,21 @@ filter_gmt_by_size <- function(gmt, minGenesetSize, maxGenesetSize) {
 filter_gmt_by_id <- function(gmt, vector_id) {
   # Create an empty list to store filtered gene sets
   filtered_gmt <- list()
-  
+
   # Loop over all gene sets in the GMT file
   for (i in seq_along(gmt)) {
     # Retrieve the external_id of the gene set
     external_id <- gmt[[i]]$external_id
-    
+
     # Check if the external_id is in the provided vector_id
     if (external_id %in% vector_id) {
       filtered_gmt[[i]] <- gmt[[i]]
     }
   }
-  
+
   # Remove NULL elements from the list
   filtered_gmt <- filtered_gmt[!sapply(filtered_gmt, is.null)]
-  
+
   return(filtered_gmt)
 }
 

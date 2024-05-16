@@ -2,38 +2,29 @@
 % Please edit documentation in R/compare_models.R
 \name{select_best_model}
 \alias{select_best_model}
-\title{Select the Best Pathway Model Based on AICc}
+\title{Select Best Model Based on AICc and P-Values}
 \usage{
-select_best_model(models)
+select_best_model(model_list, p_value_list, alpha = 0.05)
 }
 \arguments{
-\item{models}{A named list of models, where:
-- 'null' corresponds to the model with only a random intercept.
-- 'base', 'linear', and 'cubic' are models with varying fixed effects, but all incorporate
-  random effects for the genes in the pathways.}
+\item{model_list}{A list of lme4 model objects.}
+
+\item{p_value_list}{A named list of p-values for model comparisons.}
+
+\item{alpha}{Significance level for p-value comparison (default is 0.05).}
 }
 \value{
-A character string indicating the name of the best model for the pathway.
+The name of the best fitting model ('null', 'linear', or 'non_linear').
 }
 \description{
-This function evaluates the goodness-of-fit for models that incorporate random effects
-for the genes within pathways. The function uses the AICc criterion to determine the best
-model among the provided options. The null model contains only a random intercept for the genes.
-}
-\details{
-The best model is chosen as the one giving the lowest AICc value.
-Models with an AICc value not lower than the AICc of the null model minus 2 are eliminated.
+Compares null, linear, and non-linear models sequentially using AICc and p-values.
+Starts with null vs. linear; if linear is significantly better, compares linear to non-linear.
+The best model has the lowest AICc and significant p-value improvement over predecessors.
 }
 \examples{
 \dontrun{
-library(lme4)
-data <- data.frame(y = rnorm(100), x = rnorm(100), gene = sample(letters[1:5], 100, replace = TRUE))
-null_model <- lmer(y ~ 1 + (1|gene), data = data)
-base_model <- lmer(y ~ x + (1|gene), data = data)
-linear_model <- lmer(y ~ poly(x, 2) + (1|gene), data = data)
-cubic_model <- lmer(y ~ poly(x, 3) + (1|gene), data = data)
-models_list <- list(null = null_model, base = base_model, linear = linear_model, cubic = cubic_model)
-best <- select_best_model(models_list)
-print(best)
+# Assuming you have a list of lme4 models called 'model_list'
+# and a list of p-values called 'p_value_list':
+best_model <- select_best_model(model_list, p_value_list)
 }
 }
