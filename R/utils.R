@@ -28,8 +28,53 @@ adjust_pvalues_doserider_result <- function(results, method){
     results[[i]]$adjusted_non_linear_mixed_p_value <- adjusted_non_linear_mixed_p_values[i]
     results[[i]]$adjusted_linear_p_value <- adjusted_linear_p_values[i]
   }
+  # Add best_model_padj coulmn
+  results <- add_best_model_adj_pvalue(results)
   return(results)
 }
+
+#' Add Best Model Adjusted P-value to DoseRider Object
+#'
+#' This function adds a column "best_model_adj_pvalue" to a DoseRider object, containing the adjusted p-value
+#' corresponding to the best model for each gene set.
+#'
+#' @param doseRiderObj A DoseRider object containing results from dose-response analysis.
+#'
+#' @return A DoseRider object with an added column "best_model_adj_pvalue".
+#'
+#' @examples
+#' \dontrun{
+#' updated_results <- add_best_model_adj_pvalue(doseRiderObj)
+#' }
+#'
+#' @export
+add_best_model_adj_pvalue <- function(doseRiderObj) {
+  if (!inherits(doseRiderObj, "DoseRider")) {
+    stop("The provided object is not a DoseRider object.")
+  }
+
+  for (i in seq_along(doseRiderObj)) {
+    result <- doseRiderObj[[i]]
+    best_model <- result$best_model
+
+    if (best_model == "linear") {
+      result$best_model_adj_pvalue <- result$adjusted_linear_p_value
+    } else if (best_model == "non_linear_fixed") {
+      result$best_model_adj_pvalue <- result$adjusted_non_linear_fixed_p_value
+    } else if (best_model == "non_linear_mixed") {
+      result$best_model_adj_pvalue <- result$adjusted_non_linear_mixed_p_value
+    } else {
+      result$best_model_adj_pvalue <- NA
+    }
+
+    doseRiderObj[[i]] <- result
+  }
+
+  class(doseRiderObj) <- "DoseRider"
+  return(doseRiderObj)
+}
+
+
 
 custom_palette <- c(
   "#D32F2F", "#7B1FA2", "#303F9F", "#0288D1", "#00796B",

@@ -1,7 +1,7 @@
 Package: doseRider
 Type: Package
 Title: DoseRider: A multi-omic approach to studying dose-response relationships at the pathway level using mixed models.
-Version: 1.1
+Version: 1.1.1
 Authors@R: c(person("Pablo", "Monfort-Lanzas", email = "pablo.monfort@i-med.ac.at", role = c("aut", "cre")))
 Description: DoseRider facilitates intricate dose-response analysis in gene expression studies, employing both Linear Mixed Models (LMMs) and Generalized Additive Mixed Models (GAMMs) with cubic splines. It adeptly handles varied omic data, automatically selecting Gaussian or negative binomial distributions based on data type. The package efficiently discerns significant relationships between gene expression and compound doses, comparing null, linear, and non-linear models to ascertain the best fit. DoseRider offers a suite of visualization tools, including plots for random effects and model comparisons, enriching the understanding of gene-specific responses and model dynamics in dose-response studies.
 License: MIT + file LICENSE
