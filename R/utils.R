@@ -49,9 +49,6 @@ adjust_pvalues_doserider_result <- function(results, method){
 #'
 #' @export
 add_best_model_adj_pvalue <- function(doseRiderObj) {
-  if (!inherits(doseRiderObj, "DoseRider")) {
-    stop("The provided object is not a DoseRider object.")
-  }
 
   for (i in seq_along(doseRiderObj)) {
     result <- doseRiderObj[[i]]
