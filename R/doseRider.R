@@ -333,6 +333,70 @@ DoseRiderParallel <- function(se, gmt, dose_col = "dose", sample_col = "sample",
 }
 
 
+#' Filter DoseRider Object
+#'
+#' This function filters a DoseRider object based on the specified model type and p-value criteria.
+#'
+#' @param doseRiderObj A DoseRider object containing results from dose-response analysis.
+#' @param model_type The type of model to filter by. Options are "all", "linear", "non_linear" (which includes "non_linear_fixed" and "non_linear_mixed").
+#' @param filter_type The type of p-value to filter by. Options are "pvalue" for raw p-value and "fdr" for adjusted p-value.
+#' @param threshold The p-value threshold for filtering. Defaults to 0.05.
+#'
+#' @return A filtered DoseRider object.
+#'
+#' @examples
+#' \dontrun{
+#' filtered_results <- filter_DoseRider(doseRiderObj, model_type = "linear", filter_type = "fdr", threshold = 0.05)
+#' }
+#'
+#' @export
+filter_DoseRider <- function(doseRiderObj, model_type = "all", filter_type = "pvalue", threshold = 0.05) {
+  if (!inherits(doseRiderObj, "DoseRider")) {
+    stop("The provided object is not a DoseRider object.")
+  }
+
+  valid_model_types <- c("all", "linear", "non_linear", "non_linear_fixed", "non_linear_mixed")
+  valid_filter_types <- c("pvalue", "fdr")
+
+  if (!model_type %in% valid_model_types) {
+    stop("Invalid model_type. Choose from 'all', 'linear', 'non_linear', 'non_linear_fixed', 'non_linear_mixed'.")
+  }
+
+  if (!filter_type %in% valid_filter_types) {
+    stop("Invalid filter_type. Choose from 'pvalue' or 'fdr'.")
+  }
+
+  # Function to determine if a result meets the filter criteria
+  meets_criteria <- function(result) {
+    if (model_type == "all" || result$best_model == model_type ||
+        (model_type == "non_linear" && (result$best_model == "non_linear_fixed" || result$best_model == "non_linear_mixed"))) {
+      pvalue_col <- switch(filter_type,
+                           "pvalue" = "best_model_pvalue",
+                           "fdr" = "best_model_adj_pvalue")
+      if (!is.null(result[[pvalue_col]]) && !is.na(result[[pvalue_col]]) && result[[pvalue_col]] <= threshold) {
+        return(TRUE)
+      }
+    }
+    return(FALSE)
+  }
+
+  # Filter the DoseRider object
+  filtered_results <- lapply(doseRiderObj, function(result) {
+    if (meets_criteria(result)) {
+      return(result)
+    } else {
+      return(NULL)
+    }
+  })
+
+  # Remove NULL entries
+  filtered_results <- Filter(Negate(is.null), filtered_results)
+
+  class(filtered_results) <- "DoseRider"
+  return(filtered_results)
+}
+
+
 
 #' Convert a DoseRider Object to a Data Frame
 #'
@@ -352,15 +416,16 @@ DoseRiderParallel <- function(se, gmt, dose_col = "dose", sample_col = "sample",
 #' @export
 as.data.frame.DoseRider <- function(object) {
   # Define the attributes to extract
-  attrs_to_extract <- geneset_results_fields <- c("Geneset","Geneset_Size","Genes",
-    "null_AIC", "null_AICc","null_BIC","null_df",
-    "linear_AIC","linear_AICc", "inear_BIC", "linear_df","linear_ICC",
-    "non_linear_fixed_AIC","non_linear_fixed_AICc","non_linear_fixed_BIC","non_linear_fixed_df", "non_linear_fixed_ICC",
-    "non_linear_mixed_AIC", "non_linear_mixed_AICc","non_linear_mixed_BIC","non_linear_mixed_df","non_linear_mixed_ICC",
-    "p_value_inear","p_value_non_linear_fixed","p_value_non_linear_mixed",
-    "adjusted_linear_p_value","adjusted_non_linear_fixed_p_value","adjusted_non_linear_mixed_p_value",
-    "best_model", "best_model_pvalue", "best_model_aicc", "best_model_bic",
-    "OptimalClusters" )
+  # Define the attributes to extract
+  attrs_to_extract <- c("Geneset","Geneset_Size","Genes",
+                        "null_AIC", "null_AICc","null_BIC","null_df","null_ICC",
+                        "linear_AIC","linear_AICc", "linear_BIC", "linear_df","linear_ICC",
+                        "non_linear_fixed_AIC","non_linear_fixed_AICc","non_linear_fixed_BIC","non_linear_fixed_df", "non_linear_fixed_ICC",
+                        "non_linear_mixed_AIC", "non_linear_mixed_AICc","non_linear_mixed_BIC","non_linear_mixed_df","non_linear_mixed_ICC",
+                        "p_value_linear","p_value_non_linear_fixed","p_value_non_linear_mixed",
+                        "adjusted_linear_p_value","adjusted_non_linear_fixed_p_value","adjusted_non_linear_mixed_p_value",
+                        "best_model", "best_model_pvalue", "best_model_adj_pvalue","best_model_aicc", "best_model_bic",
+                        "OptimalClusters" )
 
 
   # Convert the DoseRider object to a list of data frames, handling nested lists

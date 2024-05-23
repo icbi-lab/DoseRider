@@ -110,6 +110,7 @@ lSign <-  (res_df$best_model == "non_linear_mixed" & res_df$adjusted_non_linear_
           (res_df$best_model == "linear" & res_df$adjusted_linear_p_value < 0.001) 
 
 #save(res, file = "../../doseRider_save/res_bpa_20_1000.rda")
+filter_DoseRider(dose_rider_results)
 ```
 
 ## Results and Discussion
