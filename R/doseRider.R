@@ -351,10 +351,6 @@ DoseRiderParallel <- function(se, gmt, dose_col = "dose", sample_col = "sample",
 #'
 #' @export
 filter_DoseRider <- function(doseRiderObj, model_type = "all", filter_type = "pvalue", threshold = 0.05) {
-  if (!inherits(doseRiderObj, "DoseRider")) {
-    stop("The provided object is not a DoseRider object.")
-  }
-
   valid_model_types <- c("all", "linear", "non_linear", "non_linear_fixed", "non_linear_mixed")
   valid_filter_types <- c("pvalue", "fdr")
 
