@@ -14,7 +14,8 @@ DoseRider(
   minGSsize = 5,
   maxGSsize = 300,
   method = "fdr",
-  modelType = "LMM"
+  modelType = "LMM",
+  clusterResults = TRUE
 )
 }
 \arguments{
@@ -38,6 +39,9 @@ DoseRider(
 
 \item{modelType}{Type of model to be used for analysis, "LMM" for Linear Mixed Models or "GAMM"
 for Generalized Additive Mixed Models. Defaults to "LMM".}
+
+\item{clusterResults}{Boolean, if TRUE the genes within a gene set will be clustered
+to find similar expression patterns. Defaults to TRUE.}
 }
 \value{
 A list containing results for each gene set including various metrics, p-values,

@@ -4,7 +4,7 @@
 \alias{find_geneset_index}
 \title{Find the Index of a Geneset in a GMT Object}
 \usage{
-find_geneset_index(gmt, geneset_name, pathway_col)
+find_geneset_index(gmt, geneset_name, pathway_col = "pathway")
 }
 \arguments{
 \item{gmt}{A list, where each element represents a geneset. Each geneset should be a named list with at least a field corresponding to the geneset name.}

@@ -2,23 +2,24 @@
 % Please edit documentation in R/bmd.R
 \name{get_bmd_range}
 \alias{get_bmd_range}
-\title{Plot Benchmark Dose (BMD) Density and Peaks}
+\title{Compute BMD Range and Find Peaks}
 \usage{
 get_bmd_range(dose_rider_results)
 }
 \arguments{
-\item{bmd_range_output}{A list containing the output from `get_bmd_range` function,
-which includes x (BMD values), y (density), and bmd (peaks).}
+\item{dose_rider_results}{A list containing the results of DoseRider analysis.}
 }
 \value{
-A ggplot object visualizing the density of BMD values with peaks marked.
+A list containing the BMD values (`x`), their density (`y`), and the identified peaks (`bmd`).
 }
 \description{
-This function creates a plot visualizing the density of BMD values and highlights
-the peaks where the highest density of BMD values are found.
+This function computes the range of Benchmark Dose (BMD) values from the DoseRider results and identifies peaks in the density of BMD values.
 }
 \examples{
-bmd_range_output <- get_bmd_range(dose_rider_results)
-plot_bmd_density_and_peaks(bmd_range_output)
+\dontrun{
+dose_rider_results <- DoseRider(se, gmt, "dose", "sample")
+bmd_range <- get_bmd_range(dose_rider_results)
+print(bmd_range)
+}
 
 }

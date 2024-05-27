@@ -1,26 +1,25 @@
-# DoseRider: A multi-omic approach to studying dose-response relationships at the pathway level using mixed models.
-
+# DoseRider: A multi-omics approach to study dose-response relationships at the pathway level using mixed models
 
 [![CRAN_Status_Badge](https://www.r-pkg.org/badges/version/doseRider)](https://cran.r-project.org/package=doseRider)
 [![License](https://img.shields.io/badge/License-MIT-blue.svg)](https://opensource.org/licenses/MIT)
 
 ## Overview
 
-DoseRider is an advanced R package designed for comprehensive analysis of dose-response relationships in gene expression data. It employs both Linear Mixed Models with cubic splines and Generalized Mixed Models, making it adept at handling complex, non-linear dose-response patterns. This package is tailored for a multi-omic approach, seamlessly adapting to various types of omic data, including RNA-Seq and microarray.
+DoseRider enhances toxicogenomics by employing mixed models with cubic splines for the analysis of nonlinear dose-response relationships at the pathway level. This methodology is suitable for multi-omics research and accessible both as an R package and [web application](https://doserider.i-med.ac.at/). It can determine pathway trends and calculate the trend change doses (TCD) and benchmark doses (BMD). DoseRider uncovers essential dose-response pathways and molecular patterns, improving insights into the effects of compounds or drugs at varying doses.
 
 ## Key Features
 
 - **Versatile Modeling Capability:** Implements Linear Mixed Models with cubic splines and Generalized Mixed Models to accommodate non-linear dose-response relationships.
-- **Breakpoint Identification:** Extract significant breakpoints in dose-response curves to identify critical dose levels impacting gene expression.
-- **Multi-Omic Approach:** Automatically adjusts to different omic technologies, choosing appropriate statistical models for RNA-Seq or microarray data.
-- **Automatic Model Selection:** Dynamically selects the most significant model between null, linear, and non-linear models, ensuring robust analysis.
-- **Omics-Specific Distribution Selection:** Automatically opts for Gaussian or negative binomial distribution based on the omic technology used, enhancing the accuracy of the analysis.
+- **Breakpoint Identification:** Determines significant breakpoints in dose-response curves to identify critical dose levels impacting gene expression.
+- **Multi-Omic Approach:** Adapts to various omics data, including RNA-Seq and microarray, ensuring robust analysis across different technologies.
+- **Automatic Model Selection:** Dynamically selects the most appropriate model between null, linear, and non-linear models.
+- **Omics-Specific Distribution Selection:** Automatically chooses Gaussian or negative binomial distributions based on the omic technology used, enhancing analysis accuracy.
 - **Parallel Processing:** Utilizes parallel computing for efficient processing of large-scale datasets.
-- **Preprocessed Toxicogenomics Gene Set**: Offers a ready-to-use, preprocessed, and precomputed toxicogenomics gene set from the TG-GATES dataset, facilitating streamlined dose-response analyses.
+- **Curated Gene Sets:** Provides preprocessed and customizable gene sets and pathway databases, facilitating streamlined dose-response analyses.
 
 ## Installation
 
-Or install the development version from GitHub:
+To install the latest development version from GitHub, use the following commands:
 
 ```R
 # install.packages("devtools")
@@ -48,15 +47,11 @@ gmt_filtered <- filter_gmt_by_size(gmt, minGenesetSize = 10, maxGenesetSize = 50
 dose_rider_results <- DoseRiderParallel(se = data, gmt = gmt_filtered, dose_col = "dose", 
                             sample_col = "sample", omic = "rnaseq", minGSsize = 10, 
                             maxGSsize = 200, num_cores = 4, modelType = "LMM")
-
 ```
 
 ### Visualization
 
-Visualizations in DoseRider provide insightful representations of the dose-response data. The package offers various plotting functions to explore and interpret the results effectively. Here's an overview of some key visualizations:
-Given your instructions and the code snippets provided, here's how you can update the visualization section of the README to reflect the new plots while maintaining the style of the original documentation:
-
-
+Visualizations in DoseRider provide insightful representations of the dose-response data. The package offers various plotting functions to explore and interpret the results effectively. Here’s an overview of some key visualizations:
 
 1. **Dose Response Heatmap:**
 
@@ -124,14 +119,11 @@ The **Toxicogenomics Gene Set** within DoseRider focuses on genes identified fro
 
 Scores were calculated by multiplying NES by the negative logarithm of the p-value for each compound and dose level, emphasizing gene sets with significant and robust expression changes. These scores were then averaged across dose levels per compound, and a final normalization step across all compounds produced Z-score normalized weights. This process prioritizes gene sets by their responsiveness to toxicological exposure across the dataset.
 
-
 ![Gene Heatmap for Specific Pathway](./plots/HeatmapHighResponsive.jpeg)
-
 
 ## Upcoming Features
 
 - Cumulative Distribution Function plots for a detailed analysis of the distribution of random effects, aiding in the identification of outlier genes or unusual patterns.
-
 
 ## Contributing
 
@@ -140,4 +132,3 @@ We welcome contributions to DoseRider! If you find bugs, have feature requests, 
 ## License
 
 DoseRider is licensed under the MIT License. For more details, see the [LICENSE](LICENSE) file.
-

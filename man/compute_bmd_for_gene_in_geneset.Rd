@@ -8,8 +8,8 @@ compute_bmd_for_gene_in_geneset(
   dose_rider_results,
   gene_set_name,
   gene_name,
-  z = 1,
-  dose_var = "Dose"
+  dose_var = "Dose",
+  z = 1
 )
 }
 \arguments{
@@ -19,6 +19,8 @@ compute_bmd_for_gene_in_geneset(
 
 \item{gene_name}{The name of the specific gene within the gene set.}
 
+\item{dose_var}{The name of the dose variable in the results. Default is "Dose".}
+
 \item{z}{A numeric value specifying the number of standard deviations above the control response to define the target response for BMD. Default is 1.}
 }
 \value{
@@ -27,4 +29,12 @@ A numeric value representing the calculated BMD for the specified gene. If no BM
 \description{
 This function calculates the Benchmark Dose (BMD) for a specific gene within a given gene set based on smoothed trend data from DoseRider analysis.
 The BMD is identified as the dose level where the predicted response for the specific gene exceeds a threshold defined as a specified number of standard deviations (`z`) above the control response.
+}
+\examples{
+\dontrun{
+dose_rider_results <- DoseRider(se, gmt, "dose", "sample")
+bmd <- compute_bmd_for_gene_in_geneset(dose_rider_results, "geneSet1", "gene1")
+print(bmd)
+}
+
 }

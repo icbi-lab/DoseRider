@@ -13,7 +13,7 @@
 }
 \description{
 This function prints a summary of a DoseRider object.
-It shows the class of the object and the number of gene sets it contains.
+It shows the class of the object, the number of gene sets it contains, and some details about the first few gene sets.
 }
 \examples{
 \dontrun{

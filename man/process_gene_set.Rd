@@ -14,7 +14,8 @@ process_gene_set(
   minGSsize = 5,
   maxGSsize = 300,
   covariates = c(),
-  modelType = "LMM"
+  modelType = "LMM",
+  clusterResults = TRUE
 )
 }
 \arguments{
@@ -36,6 +37,9 @@ process_gene_set(
 
 \item{modelType}{Type of model to fit for each gene set, options are "LMM" for Linear Mixed Models
 and "GAMM" for Generalized Additive Mixed Models. Defaults to "LMM".}
+
+\item{clusterResults}{Boolean, if TRUE the genes within a gene set will be clustered
+to find similar expression patterns. Defaults to TRUE.}
 
 \item{method}{Method for multiple testing adjustment, defaults to "fdr".}
 }

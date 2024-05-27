@@ -18,7 +18,7 @@
 #' find_geneset_index(gmt, "nonexistent_geneset", "pathway") # returns NULL
 #'
 #' @export
-find_geneset_index <- function(gmt, geneset_name, pathway_col) {
+find_geneset_index <- function(gmt, geneset_name, pathway_col = "pathway") {
   for (i in seq_along(gmt)) {
     if (gmt[[i]][[pathway_col]] == geneset_name) {
       return(i)
