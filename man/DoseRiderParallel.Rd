@@ -15,7 +15,8 @@ DoseRiderParallel(
   maxGSsize = 300,
   method = "fdr",
   num_cores = 5,
-  modelType = "LMM"
+  modelType = "LMM",
+  clusterResults = TRUE
 )
 }
 \arguments{
@@ -41,6 +42,9 @@ DoseRiderParallel(
 
 \item{modelType}{Type of model to be used for analysis, "LMM" for Linear Mixed Models or "GAMM"
 for Generalized Additive Mixed Models. Defaults to "LMM".}
+
+\item{clusterResults}{Boolean, if TRUE the genes within a gene set will be clustered
+to find similar expression patterns. Defaults to TRUE.}
 }
 \value{
 A list containing the results of the DoseRider analysis for each gene set.
@@ -49,4 +53,12 @@ A list containing the results of the DoseRider analysis for each gene set.
 This function conducts DoseRider analysis in parallel, applying either Linear Mixed Models (LMMs) or Generalized
 Additive Mixed Models (GAMMs) to each gene set in the gene matrix transposed (GMT) format. It evaluates dose-response
 relationships in gene sets, computing various model metrics and significance.
+}
+\examples{
+\dontrun{
+data("SummarizedExperiment")
+gmt <- list(geneSet1 = list(genes = c("gene1", "gene2")))
+results <- DoseRiderParallel(se, gmt, "dose", "sample", "covariate", "rnaseq", num_cores = 4, modelType = "GAMM")
+}
+
 }

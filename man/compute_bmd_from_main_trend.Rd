@@ -4,7 +4,12 @@
 \alias{compute_bmd_from_main_trend}
 \title{Compute Benchmark Dose (BMD) from Smoothed Trend}
 \usage{
-compute_bmd_from_main_trend(smooth_pathway, dose_var, z = 1, center_values = T)
+compute_bmd_from_main_trend(
+  smooth_pathway,
+  dose_var,
+  z = 1,
+  center_values = TRUE
+)
 }
 \arguments{
 \item{smooth_pathway}{Data frame containing smoothed trend predictions, typically from a dose-response model.}
@@ -13,14 +18,22 @@ compute_bmd_from_main_trend(smooth_pathway, dose_var, z = 1, center_values = T)
 
 \item{z}{A numeric value specifying the number of standard deviations above the control response
 to define the target response for BMD. Default is 1.}
+
+\item{center_values}{Logical, if TRUE the predictions are centered around their mean. Default is TRUE.}
 }
 \value{
-A list or a numeric value representing the calculated BMD. If no BMD is found within a
-        reasonable range, NA is returned.
+A numeric value representing the calculated BMD. If no BMD is found within a reasonable range, NA is returned.
 }
 \description{
 This function calculates the Benchmark Dose (BMD) based on a smoothed trend from model predictions.
 The BMD is identified as the dose level where the predicted response exceeds a threshold defined
-as a specified number of standard deviations (`z`) above the control response. It's designed to
-work with smoothed trend data, typically derived from `lmer` or `glmer` model predictions.
+as a specified number of standard deviations (`z`) above the control response.
+}
+\examples{
+\dontrun{
+smooth_pathway <- data.frame(Dose = c(0, 1, 2, 3), predictions = c(0.1, 0.5, 0.9, 1.2))
+bmd <- compute_bmd_from_main_trend(smooth_pathway, "Dose")
+print(bmd)
+}
+
 }

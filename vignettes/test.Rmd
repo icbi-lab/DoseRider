@@ -100,14 +100,12 @@ dose_rider_results <- DoseRiderParallel(se = filter_bpaf_data, gmt = gmt_p_data,
                                            dose_col = "Dose", omic = "rnaseq", 
                                            minGSsize = 20, maxGSsize = 100, 
                                            method = "bonferroni", covariates = c(),
-                                          modelType = "LMM", num_cores = 10)
+                                          modelType = "LMM", num_cores = 10,
+                                          clusterResults = T)
 
 res_df <- as.data.frame.DoseRider(dose_rider_results)
 table(res_df$best_model)
 
-lSign <-  (res_df$best_model == "non_linear_mixed" & res_df$adjusted_non_linear_mixed_p_value < 0.001) |
-          (res_df$best_model == "non_linear_fixed" & res_df$adjusted_non_linear_fixed_p_value < 0.001) |
-          (res_df$best_model == "linear" & res_df$adjusted_linear_p_value < 0.001) 
 
 #save(res, file = "../../doseRider_save/res_bpa_20_1000.rda")
 filter_DoseRider(dose_rider_results)
@@ -116,7 +114,7 @@ filter_DoseRider(dose_rider_results)
 ## Results and Discussion
 
 ```{r}
-top <- 15
+top <- 3
 save_path <- "/home/monfortl/plots/Example_results/MSIGDB/"
 #dir.create(save_path)
 
@@ -126,17 +124,6 @@ p2 <- plot_gene_set_random_effects(dose_rider_results, dose_col = "Dose",order_c
 plotFile2 <- paste0(save_path,"/plot2.jpeg")
 p3 <- plot_top_pathway_responses(dose_rider_results, top = 6, ncol = 3, order_column = "best_model_pvalue")
 plotFile3 <- paste0(save_path,"/plot3.jpeg")
-
-for (geneset in res_df$Geneset[lSign]) {
-  center_values = ifelse(dose_rider_results[[geneset]]$best_model == "linear", F , ifelse(
-    dose_rider_results[[geneset]]$best_model == "non_linear_fixed",F,T
-  ))
-  p9 <- plot_pathway_response(dose_rider_results, gene_set_name = geneset, center_values = center_values) + theme(plot.margin = margin(1,1,1.5,1.2, "cm")) + ggtitle(stringr::str_wrap(geneset,10))
-
-  plotFile9 <- paste0(save_path,"/",stringr::str_replace_all(geneset,"/","_"),".jpeg")
-  ggsave(plotFile9, plot = p9, width = 150, height = 150, units = "mm", dpi = 600)
-}
-
 p4 <- plot_gene_random_effect_relationship(dose_rider_results, "DUTERTRE_ESTRADIOL_RESPONSE_6HR_DN")
 plotFile4 <- paste0(save_path,"/plot4.jpeg")
 p5 <- plot_dotplot_top_pathways(dose_rider_results, top = top, order_column = "Genes", decreasing = T)

@@ -147,7 +147,7 @@ plot_pathway_response <- function(dose_rider_results, gene_set_name, dose_col = 
 
   # If there are smoothed data
   if (!is.null(smooth_pathway) && length(smooth_pathway) > 0) {
-    mean_data <- aggregate(as.formula(paste0("predictions ~ ",dose_col," + gene")), data = as.data.frame(smooth_pathway), FUN = mean)
+    mean_data <- aggregate(as.formula(paste0("predictions ~ ", dose_col," + gene")), data = as.data.frame(smooth_pathway), FUN = mean)
     mean_data <- merge(mean_data, ClusterAssignments, by = "gene")
 
     # If center_values option is enabled, adjust predictions
@@ -170,7 +170,13 @@ plot_pathway_response <- function(dose_rider_results, gene_set_name, dose_col = 
     p <- ggplot() + geom_line(data = mean_data, aes(x = Dose, y = predictions, group = gene,color = as.factor(Cluster)), linewidth = 0.5)
     #PLot specific data for the clusters
     for (j in c(1:n_cluster)) {
-      cluster_data <- ClusterSpecificResults[paste0("Cluster ",j)][[1]]
+      if ("AllGenes" %in% names(ClusterSpecificResults)){
+        cluster_data <- ClusterSpecificResults["AllGenes"][[1]]
+        j <- "AllGenes"
+
+      } else {
+        cluster_data <- ClusterSpecificResults[paste0("Cluster ",j)][[1]]
+      }
       cluster_derivate <- c(cluster_data$Derivative$zero_points_first_deriv,cluster_data$Derivative$zero_points_second_deriv)
       cluster_bmd <- cluster_data$BMD
       cluster_trend <- aggregate(as.formula(paste0("predictions ~ ",dose_col)), data = as.data.frame(mean_data[mean_data$Cluster == j,]), FUN = mean)

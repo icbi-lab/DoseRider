@@ -16,6 +16,8 @@
 #' @param method Method for multiple testing adjustment, defaults to "fdr".
 #' @param modelType Type of model to fit for each gene set, options are "LMM" for Linear Mixed Models
 #'                  and "GAMM" for Generalized Additive Mixed Models. Defaults to "LMM".
+#' @param clusterResults Boolean, if TRUE the genes within a gene set will be clustered
+#'                       to find similar expression patterns. Defaults to TRUE.
 #'
 #' @return A list containing results for each gene set including various metrics, p-values,
 #'         and adjusted p-values. The structure of results will depend on the model type used.
@@ -30,7 +32,7 @@
 #' @importFrom stats p.adjust
 #' @import utils
 
-process_gene_set <- function(se, dose_col, sample_col, omic, gmt, i, minGSsize = 5, maxGSsize = 300, covariates = c(), modelType = "LMM") {
+process_gene_set <- function(se, dose_col, sample_col, omic, gmt, i, minGSsize = 5, maxGSsize = 300, covariates = c(), modelType = "LMM", clusterResults = TRUE) {
   # Helper function to summarize a model
   is_fitted_model <- function(model) {
     if(inherits(model, c("lmerMod", "glmerMod"))) {
@@ -41,6 +43,7 @@ process_gene_set <- function(se, dose_col, sample_col, omic, gmt, i, minGSsize =
       return(FALSE)
     }
   }
+
   geneset <- gmt[[i]]$genes
   # Prepare data for the gene set
   long_df <- suppressWarnings(prepare_data(se=se, geneset=geneset, dose_col=dose_col, sample_col=sample_col, omic=omic))
@@ -106,37 +109,45 @@ process_gene_set <- function(se, dose_col, sample_col, omic, gmt, i, minGSsize =
     smooth_values <- smooth_pathway_trend(best_model, long_df, dose_col, sample_col, omic, TRUE, covariates, dose_points = 50)
     random_effect <- if (modelType == "LMM") extract_random_effects_lmm(best_model, dose_col) else extract_random_effects_gamm(best_model, dose_col)
     long_df$predictions <- predict(best_model, newdata = long_df)
-    optimal_clusters_silhouette <- optimal_clusters_silhouette(smooth_values, dose_col, max_clusters = 10)
-    cluster <- optimal_clusters_silhouette$Cluster
-    n_cluster <- optimal_clusters_silhouette$OptimalClusters
-    cluster_specific_results <- list()
 
-    #Compute mean trend, bmd and derivates for each cluster
-    for (j in c(1:n_cluster)) {
-      cluster_genes <- names(cluster[cluster == j])
-      smooth_cluster <- smooth_values[smooth_values$gene %in% cluster_genes,]
+    cluster_specific_results <- list()
+    if (clusterResults) {
+      max_cluster <- length(unique(long_df$gene)) - 1
+      optimal_clusters_silhouette <- optimal_clusters_silhouette(smooth_values, dose_col, max_clusters = max_cluster)
+      cluster <- optimal_clusters_silhouette$Cluster
+      n_cluster <- optimal_clusters_silhouette$OptimalClusters
+
+      # Compute mean trend, BMD, and derivatives for each cluster
+      for (j in c(1:n_cluster)) {
+        cluster_genes <- names(cluster[cluster == j])
+        smooth_cluster <- smooth_values[smooth_values$gene %in% cluster_genes,]
+        derivative_cluster <- compute_derivatives(smooth_cluster, dose_col)
+        bmd_cluster <- compute_bmd_from_main_trend(smooth_cluster, dose_col, z = 1)
+        # Store the cluster-specific results
+        cluster_specific_results[[paste("Cluster", j)]] <- list(
+          Derivative = derivative_cluster,
+          BMD = bmd_cluster
+        )
+      }
+    } else {
+      smooth_cluster <- smooth_values
       derivative_cluster <- compute_derivatives(smooth_cluster, dose_col)
       bmd_cluster <- compute_bmd_from_main_trend(smooth_cluster, dose_col, z = 1)
-      # Store the cluster-specific results
-      # Store the cluster-specific results
-      cluster_specific_results[[paste("Cluster", j)]] <- list(
+      cluster_specific_results[["AllGenes"]] <- list(
         Derivative = derivative_cluster,
-        #SmoothPathway = smooth_pathway_cluster,
         BMD = bmd_cluster
       )
+      cluster <- rep("AllGenes", length(unique(smooth_values$gene)))
+      names(cluster) <- unique(smooth_values$gene)
+      n_cluster <- 1
     }
-
   } else {
     smooth_values <- NA
-    smooth_pathway <- NA
-    derivative <- NA
-    #bmd <- NA
     random_effect <- NA
     cluster <- NA
     n_cluster <- NA
     cluster_specific_results <- NA
   }
-
 
   # Compile results into a list
   geneset_results <- list(
@@ -215,6 +226,8 @@ process_gene_set <- function(se, dose_col, sample_col, omic, gmt, i, minGSsize =
 #' @param method Method for multiple testing adjustment, defaults to "fdr".
 #' @param modelType Type of model to be used for analysis, "LMM" for Linear Mixed Models or "GAMM"
 #' for Generalized Additive Mixed Models. Defaults to "LMM".
+#' @param clusterResults Boolean, if TRUE the genes within a gene set will be clustered
+#'                       to find similar expression patterns. Defaults to TRUE.
 #'
 #' @return A list containing results for each gene set including various metrics, p-values,
 #' and adjusted p-values.
@@ -232,11 +245,12 @@ process_gene_set <- function(se, dose_col, sample_col, omic, gmt, i, minGSsize =
 #' @import progress
 #' @export
 DoseRider <- function(se, gmt, dose_col = "dose", sample_col = "sample",
-                         covariates = c(), omic = "rnaseq", minGSsize = 5,
-                         maxGSsize = 300, method = "fdr", modelType = "LMM") {
+                      covariates = c(), omic = "rnaseq", minGSsize = 5,
+                      maxGSsize = 300, method = "fdr", modelType = "LMM",
+                      clusterResults = TRUE) {
 
   # Validate input data
-  validate_input_doserider(se,dose_col,sample_col,covariates)
+  validate_input_doserider(se, dose_col, sample_col, covariates)
 
   # Initialize results list
   results <- list()
@@ -246,8 +260,11 @@ DoseRider <- function(se, gmt, dose_col = "dose", sample_col = "sample",
   # Process each gene set
   for (i in seq_along(gmt)) {
     setTxtProgressBar(pb, i)
-    geneset_results <- suppressMessages(suppressWarnings(process_gene_set(se, dose_col,
-                                        sample_col, omic, gmt, i, minGSsize, maxGSsize, covariates, modelType)))
+    geneset_results <- suppressMessages(suppressWarnings(process_gene_set(
+      se = se, dose_col = dose_col, sample_col = sample_col, omic = omic, gmt = gmt,
+      i = i, minGSsize = minGSsize, maxGSsize = maxGSsize, covariates = covariates,
+      modelType = modelType, clusterResults = clusterResults
+    )))
     if (!is.null(geneset_results)) {
       results[[gmt[[i]]$pathway]] <- geneset_results
     }
@@ -261,6 +278,7 @@ DoseRider <- function(se, gmt, dose_col = "dose", sample_col = "sample",
   class(results) <- "DoseRider"
   return(results)
 }
+
 
 #' Perform DoseRider analysis in parallel using multiple cores.
 #'
@@ -280,6 +298,8 @@ DoseRider <- function(se, gmt, dose_col = "dose", sample_col = "sample",
 #' @param modelType Type of model to be used for analysis, "LMM" for Linear Mixed Models or "GAMM"
 #' for Generalized Additive Mixed Models. Defaults to "LMM".
 #' @param num_cores The number of cores to use for parallel processing (default is 5).
+#' @param clusterResults Boolean, if TRUE the genes within a gene set will be clustered
+#'                       to find similar expression patterns. Defaults to TRUE.
 #'
 #' @return A list containing the results of the DoseRider analysis for each gene set.
 #' @import SummarizedExperiment
@@ -291,18 +311,24 @@ DoseRider <- function(se, gmt, dose_col = "dose", sample_col = "sample",
 #' @importFrom utils txtProgressBar
 #' @importFrom doSNOW registerDoSNOW
 #'
+#' @examples
+#' \dontrun{
+#' data("SummarizedExperiment")
+#' gmt <- list(geneSet1 = list(genes = c("gene1", "gene2")))
+#' results <- DoseRiderParallel(se, gmt, "dose", "sample", "covariate", "rnaseq", num_cores = 4, modelType = "GAMM")
+#' }
 #'
 #' @export
 DoseRiderParallel <- function(se, gmt, dose_col = "dose", sample_col = "sample",
-                                 covariates = c(), omic = "rnaseq", minGSsize = 5,
-                                 maxGSsize = 300, method = "fdr", num_cores = 5,
-                                 modelType = "LMM") {
+                              covariates = c(), omic = "rnaseq", minGSsize = 5,
+                              maxGSsize = 300, method = "fdr", num_cores = 5,
+                              modelType = "LMM", clusterResults = TRUE) {
   # Register the parallel backend
   cl <- makeCluster(num_cores)
   registerDoSNOW(cl)
 
   # Validate input data and metadata columns
-  validate_input_doserider(se,dose_col,sample_col,covariates)
+  validate_input_doserider(se, dose_col, sample_col, covariates)
 
   # Initialize progress bar and options for parallel processing
   total_gene_sets <- length(gmt)
@@ -310,10 +336,13 @@ DoseRiderParallel <- function(se, gmt, dose_col = "dose", sample_col = "sample",
   opts <- list(progress = function(n) setTxtProgressBar(pb, n))
 
   # Loop over gene sets in parallel
-  results <- foreach(i = seq_along(gmt), .packages = c("SummarizedExperiment", "lme4", "doseRider","dplyr"),
+  results <- foreach(i = seq_along(gmt), .packages = c("SummarizedExperiment", "lme4", "doseRider", "dplyr"),
                      .combine = 'c', .options.snow = opts) %dopar% {
-                       geneset_results <- suppressWarnings(process_gene_set(se, dose_col, sample_col,
-                                                            omic, gmt, i, minGSsize, maxGSsize, covariates, modelType))
+                       geneset_results <- suppressWarnings(process_gene_set(
+                         se = se, dose_col = dose_col, sample_col = sample_col, omic = omic, gmt = gmt,
+                         i = i, minGSsize = minGSsize, maxGSsize = maxGSsize, covariates = covariates,
+                         modelType = modelType, clusterResults = clusterResults
+                       ))
                        if (!is.null(geneset_results)) {
                          setNames(list(geneset_results), gmt[[i]]$pathway)
                        } else {
@@ -460,7 +489,7 @@ convert_nested_list_to_df <- function(lst) {
 #' Print method for DoseRider
 #'
 #' This function prints a summary of a DoseRider object.
-#' It shows the class of the object and the number of gene sets it contains.
+#' It shows the class of the object, the number of gene sets it contains, and some details about the first few gene sets.
 #'
 #' @param x A DoseRider object.
 #' @param ... Further arguments passed to or from other methods.
@@ -475,4 +504,26 @@ convert_nested_list_to_df <- function(lst) {
 print.DoseRider <- function(x, ...) {
   cat("Object of class DoseRider\n")
   cat(paste("Number of gene sets:", length(x), "\n"))
+
+  if (length(x) > 0) {
+    cat("Summary of the first few gene sets:\n")
+    max_display <- min(3, length(x))
+    for (i in seq_len(max_display)) {
+      geneset_name <- names(x)[i]
+      geneset_info <- x[[geneset_name]]
+      cat(paste("\nGene Set", i, ":", geneset_name, "\n"))
+      cat(paste("  Number of genes:", geneset_info$Genes, "\n"))
+      cat(paste("  Best model type:", geneset_info$best_model, "\n"))
+      cat(paste("  Best model AICc:", geneset_info$best_model_aicc, "\n"))
+      cat(paste("  P-value of best model:", geneset_info$best_model_pvalue, "\n"))
+      if (!is.null(geneset_info$OptimalClusters)) {
+        cat(paste("  Optimal number of clusters:", geneset_info$OptimalClusters, "\n"))
+      }
+    }
+
+    if (length(x) > max_display) {
+      cat(paste("\n...and", length(x) - max_display, "more gene sets.\n"))
+    }
+  }
 }
+

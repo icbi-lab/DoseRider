@@ -20,3 +20,11 @@ This function calculates the first and second derivatives of the predicted
 values from a mixed model and identifies points where these derivatives
 are approximately zero.
 }
+\examples{
+\dontrun{
+smooth_pathway <- data.frame(Dose = c(0, 1, 2, 3), predictions = c(0.1, 0.5, 0.9, 1.2))
+derivatives <- compute_derivatives(smooth_pathway, "Dose")
+print(derivatives)
+}
+
+}
