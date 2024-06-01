@@ -6,10 +6,10 @@
 \usage{
 dose_response_heatmap(
   dose_rider_results,
-  dose_col,
+  dose_col = "Dose",
   top = 15,
   order_column = "best_model_pvalue",
-  decreasing = F
+  decreasing = FALSE
 )
 }
 \arguments{

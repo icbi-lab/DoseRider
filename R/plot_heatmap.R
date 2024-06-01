@@ -24,12 +24,12 @@
 #' }
 #'
 #' @export
-dose_response_heatmap <- function(dose_rider_results, dose_col, top = 15, order_column = "best_model_pvalue", decreasing = F) {
+dose_response_heatmap <- function(dose_rider_results, dose_col = "Dose", top = 15, order_column = "best_model_pvalue", decreasing = FALSE) {
   # Initialize an empty matrix to store the average expressions
   heatmap_data <- list()
 
   #Top pathways in function of P-Value
-  dose_rider_df <- as.data.frame(dose_rider_results)
+  dose_rider_df <- as.data.frame.DoseRider(dose_rider_results)
   dose_rider_df <- dose_rider_df[with(dose_rider_df, order(order_column, decreasing=decreasing))]
 
   # Gene set names
@@ -42,9 +42,10 @@ dose_response_heatmap <- function(dose_rider_results, dose_col, top = 15, order_
     raw_values <- res_geneset$Raw_Values[[1]]
 
     # Calculate the average expression for each dose
-    if ("predictions" %in% colnames(raw_values)){
+    if ("predictions" %in% colnames(raw_values)) {
       avg_expression <- aggregate(predictions ~ get(dose_col, raw_values), data = raw_values, FUN = mean)
       rownames(avg_expression) <- avg_expression$`get(dose_col, raw_values)`
+      gene_set_name <- gsub("_", " ", gene_set_name)
       # Store the average expressions with gene set name as column name
       heatmap_data[[gene_set_name]] <- setNames(avg_expression[["predictions"]], avg_expression[[dose_col]])
     }
@@ -55,7 +56,7 @@ dose_response_heatmap <- function(dose_rider_results, dose_col, top = 15, order_
 
   # Calculate Z-scores across all doses for each gene set
   z_score_matrix <- t(apply(t(heatmap_matrix), 1, function(x) (x - mean(x)) / sd(x)))
-  rownames(z_score_matrix) <- unlist(lapply(colnames(heatmap_matrix),function(x){str_wrap(x,width = 35)}))
+  rownames(z_score_matrix) <- unlist(lapply(colnames(heatmap_matrix), function(x) {str_wrap(x, width = 35)}))
   colnames(z_score_matrix) <- rownames(avg_expression)
 
   # Create the heatmap
@@ -69,16 +70,21 @@ dose_response_heatmap <- function(dose_rider_results, dose_col, top = 15, order_
                 column_gap = unit(2, "mm"),
                 border_gp = grid::gpar(col = "black", lty = 1),
                 rect_gp = grid::gpar(col = "black", lwd = 1),
-                row_names_gp = gpar(fontsize = 10, fontface = "bold"),
-                column_names_gp = gpar(fontsize = 10, fontface = "bold", just = "center"),
+                row_names_gp = gpar(fontsize = 12),  # Matches axis.text size in theme
+                column_names_gp = gpar(fontsize = 12, just = "center"),  # Matches axis.text size in theme
                 column_names_rot = 0,
                 cluster_columns = FALSE,
                 show_row_dend = FALSE,
-                col = col_fun)
-
+                col = col_fun,
+                heatmap_legend_param = list(
+                  title_gp = gpar(fontsize = 14),  # Matches legend.title size in theme
+                  labels_gp = gpar(fontsize = 12),  # Matches legend.text size in theme
+                  legend_direction = "horizontal",
+                  legend_position = "bottom"
+                ))
 
   return(ha)
-  }
+}
 
 #' Create Heatmap for Individual Genes within a Gene Set
 #'
@@ -131,10 +137,10 @@ create_gene_heatmap <- function(dose_rider_results, gene_set_name, dose_col) {
 
 
   # Calculate Z-scores for standardization
-  z_score_matrix <- t(apply(heatmap_data[-1], 1, scale))
-
+  z_score_matrix <- t(apply(heatmap_data, 1, scale))
+  colnames(z_score_matrix) <- colnames(heatmap_data)
   # Define color function for the heatmap
-  col_fun <- colorRamp2(c(-2, 0, 2), c("blue", "white", "red"))
+  col_fun <- colorRamp2(c(-2, -1, 0, 1, 2), c("blue", "lightblue", "white", "lightcoral", "red"))
 
   # Create the heatmap
   ha <- Heatmap(z_score_matrix,
@@ -145,12 +151,18 @@ create_gene_heatmap <- function(dose_rider_results, gene_set_name, dose_col) {
                 column_gap = unit(2, "mm"),
                 border_gp = grid::gpar(col = "black", lty = 1),
                 rect_gp = grid::gpar(col = "black", lwd = 1),
-                row_names_gp = gpar(fontsize = 10, fontface = "bold"),
-                column_names_gp = gpar(fontsize = 10, fontface = "bold", just = "center"),
+                row_names_gp = gpar(fontsize = 12),  # Matches axis.text size in theme
+                column_names_gp = gpar(fontsize = 12, just = "center"),  # Matches axis.text size in theme
                 column_names_rot = 0,
                 cluster_columns = FALSE,
                 show_row_dend = FALSE,
-                col = col_fun)
+                col = col_fun,
+                heatmap_legend_param = list(
+                  title_gp = gpar(fontsize = 14),  # Matches legend.title size in theme
+                  labels_gp = gpar(fontsize = 12),  # Matches legend.text size in theme
+                  legend_direction = "horizontal",
+                  legend_position = "bottom"
+                ))
 
   return(ha)
 }

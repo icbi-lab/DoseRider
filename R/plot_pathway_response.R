@@ -189,7 +189,7 @@ plot_pathway_response <- function(dose_rider_results, gene_set_name, dose_col = 
       if (sum(!is.na(cluster_bmd))>0){
         for (bmd_dose in cluster_bmd) {
 
-          p <- p + geom_vline(xintercept = bmd_dose,color="#F57C00",linetype="dashed",linewidth=1.5)
+          p <- p + geom_vline(xintercept = bmd_dose, color="#F57C00",linetype="dashed",linewidth=1.5)
 
         }
       }
@@ -203,14 +203,7 @@ plot_pathway_response <- function(dose_rider_results, gene_set_name, dose_col = 
 
     # Finalize the plot settings
     # Finalize the plot settings and add custom legend labels
-    p <- p + labs(x = "Dose", y = "Expression", title = str_wrap(gene_set_name, width = 35), caption = paste(legend_labels)) +
-      theme_minimal() +
-      theme(
-        legend.position = "none", # Place the legend at the bottom
-        axis.text = element_text(size = 12),
-        axis.title = element_text(size = 14),
-        plot.title = element_text(size = 16)
-      )
+    p <- p + labs(x = "Dose", y = "Expression", title = str_wrap(gsub("_", " ", gene_set_name), width = 35), caption = paste(legend_labels)) + theme_dose_rider()
 
     return(p)
   } else {
@@ -231,7 +224,7 @@ plot_pathway_response <- function(dose_rider_results, gene_set_name, dose_col = 
 #' @return A combined ggplot object with top significant pathway response plots.
 #' @importFrom cowplot plot_grid
 #' @export
-plot_top_pathway_responses <- function(dose_rider_results, top=15, ncol = 3, order_column = "best_model_pvalue", decreasing = F) {
+plot_top_pathway_responses <- function(dose_rider_results, top=6, ncol = 3, order_column = "best_model_pvalue", decreasing = F) {
   # Extract and order gene sets by adjusted cubic p-value
   dose_rider_df <- as.data.frame.DoseRider(dose_rider_results)
   dose_rider_df <- dose_rider_df[order(dose_rider_df[[order_column]], decreasing = decreasing), ]
@@ -294,7 +287,7 @@ plot_gene_set_random_effects <- function(dose_rider_results, dose_col = "Dose", 
                                    RandomEffect = numeric(),
                                    stringsAsFactors = FALSE)
   #Top pathways in function of P-Value
-  dose_rider_df <- as.data.frame(dose_rider_results)
+  dose_rider_df <- as.data.frame.DoseRider(dose_rider_results)
   dose_rider_df <- dose_rider_df[order(dose_rider_df[[order_column]], decreasing = decreasing), ]
 
   # Extract the top gene set names
@@ -303,9 +296,9 @@ plot_gene_set_random_effects <- function(dose_rider_results, dose_col = "Dose", 
   for (gene_set_name in gene_set_names) {
     random_effects <- dose_rider_results[[gene_set_name]]$random_effect
 
-    if (length(random_effects$RandomEffect) > 1){
+    if (length(random_effects$RandomIntercept) > 1){
     # Replace with actual way to access the model
-    random_effects$gene_set <- gene_set_name
+    random_effects$gene_set <- gsub("_", " ", gene_set_name)
     random_effects$gene <- rownames(random_effects)
     all_random_effects <- rbind(all_random_effects, random_effects)
     }
@@ -317,9 +310,9 @@ plot_gene_set_random_effects <- function(dose_rider_results, dose_col = "Dose", 
     geom_vline(xintercept = 0, color = "red", linetype = "dashed") +
     geom_density_ridges() +
     scale_fill_manual(values = custom_palette) +
-    labs(x = "Random Effect", y = "Gene Set") +
+    labs(x = "Gene-Specific Difference in Dose Effect (b₁)", y = "") +
     theme_ridges() +
-    theme(legend.position = "none")
+    theme(legend.position = "none") + theme_dose_rider()
 
   return(p)
 }
@@ -357,7 +350,7 @@ plot_gene_random_effect_relationship <- function(dose_rider_results, gene_set_na
 
   random_effects <- dose_rider_results[[gene_set_name]]$random_effect
 
-  if (length(random_effects$RandomEffect) > 1) {
+  if (length(random_effects$RandomIntercept) > 1) {
     random_effects$gene_set <- gene_set_name
     random_effects$gene <- rownames(random_effects)
 
@@ -365,8 +358,8 @@ plot_gene_random_effect_relationship <- function(dose_rider_results, gene_set_na
       geom_point(color = "black", fill = "white", shape = 21, size = 3, stroke = 2) +
       geom_label_repel(aes(label = gene), box.padding = 0.35, point.padding = 0.3,
                        size = 3, force = 1) +
-      labs(x = "Random Slope", y = "Random Intercept", title = str_wrap(gene_set_name, 35)) +
-      theme_bw()
+      labs(x = "Gene-Specific Difference in Dose Effect (b₁)", y = "Gene-Specific Difference in Baseline Expression (b₀)", title = str_wrap(gene_set_name, 35)) +
+      theme_minimal()
 
     return(p)
   } else {
@@ -402,15 +395,14 @@ plot_dotplot_top_pathways <- function(dose_rider_results, top = 10, order_column
   dose_rider_df <- dose_rider_df[order(dose_rider_df[[order_column]], decreasing = decreasing), ]
   dose_rider_df <- dose_rider_df[!is.na(dose_rider_df$NegLogPValue),]
   top_pathways_df <- head(dose_rider_df, top)
-  top_pathways_df$Geneset <- unlist(lapply(top_pathways_df$Geneset, function(x){str_wrap(x,35)}))
+  top_pathways_df$Geneset <- unlist(lapply(top_pathways_df$Geneset, function(x){str_wrap(gsub("_", " ", x),35)}))
   # Create Dot Plot
   dot_plot <- ggplot(top_pathways_df, aes(x = NegLogPValue, y = reorder(Geneset, NegLogPValue), size = Genes, fill = best_model)) +
     geom_point(shape = 21) +
     scale_size_continuous(name = "Gene Set Size") +
     labs(x = "-log10(Adjusted non-linear P-Value)", y = "") +
     scale_fill_manual(values = c("non_linear_mixed" = "orange","non_linear_fixed" = "blue", "linear" = "green", "null" = "red"), name = "Best Model") +
-    theme_bw() +
-    theme(axis.text.x = element_text(angle = 45, hjust = 1))
+    theme_dose_rider() +    theme(axis.text.x = element_text(angle = 45, hjust = 1))
 
   return(dot_plot)
 }
@@ -441,7 +433,7 @@ plot_bmd_density_and_peaks <- function(bmd_range_output) {
     geom_vline(xintercept = bmd_range_output$bmd, color = "red", linetype = "dashed") +
     labs(x = "BMD", y = "Density", title = "BMD Density and Peaks") +
     theme_bw() +
-    theme(axis.text.x = element_text(angle = 45, hjust = 1))
+    theme(axis.text.x = element_text(angle = 45, hjust = 1)) + theme_dose_rider()
 
   return(p)
 }
