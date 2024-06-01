@@ -6,7 +6,7 @@
 \usage{
 plot_top_pathway_responses(
   dose_rider_results,
-  top = 15,
+  top = 6,
   ncol = 3,
   order_column = "best_model_pvalue",
   decreasing = F

@@ -4,12 +4,18 @@
 \alias{transform_smooth_values}
 \title{Transform Smooth Values to Gene vs. Dose Dataframe}
 \usage{
-transform_smooth_values(smooth_values, dose_col)
+transform_smooth_values(
+  smooth_values,
+  dose_col = "Dose",
+  expression_col = "predictions"
+)
 }
 \arguments{
 \item{smooth_values}{Dataframe containing smooth values from doseRider results.}
 
 \item{dose_col}{Character string specifying the name of the dose column in `smooth_values`.}
+
+\item{expression_col}{Character string specifying the name of the expression column in `smooth_values`.}
 }
 \value{
 A transformed dataframe with genes as rows, doses as columns, and each row centered to 0.

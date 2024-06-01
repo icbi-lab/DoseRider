@@ -60,14 +60,20 @@ select_best_model <- function(model_list, p_value_list, alpha = 0.05) {
   # Initialize best model as null
   best_model <- "null"
   # Null vs linear model comparison
-  if (p_value_list$p_value_linear < alpha && AICc(model_list$linear) < (AICc(model_list$null) - 2)) {
+  if (p_value_list$p_value_linear < alpha
+      && AICc(model_list$linear) < (AICc(model_list$null) - 2)
+      && p_value_list$p_value_linear != 0) {
     best_model <- "linear"
 
     # Linear vs non-linear model comparison
-    if (p_value_list$p_value_non_linear_fixed < alpha && AICc(model_list$non_linear_fixed) < (AICc(model_list$null) - 2)) {
+    if (p_value_list$p_value_non_linear_fixed < alpha
+        && AICc(model_list$non_linear_fixed) < (AICc(model_list$null) - 2)
+        && p_value_list$p_value_non_linear_fixed != 0) {
       best_model <- "non_linear_fixed"
 
-      if (p_value_list$p_value_non_linear_mixed < alpha && AICc(model_list$non_linear_mixed) < (AICc(model_list$null) - 2)) {
+      if (p_value_list$p_value_non_linear_mixed < alpha
+          && AICc(model_list$non_linear_mixed) < (AICc(model_list$null) - 2)
+          && p_value_list$p_value_non_linear_mixed != 0 ) {
         best_model <- "non_linear_mixed"
 
       }

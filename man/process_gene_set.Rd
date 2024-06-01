@@ -15,7 +15,9 @@ process_gene_set(
   maxGSsize = 300,
   covariates = c(),
   modelType = "LMM",
-  clusterResults = TRUE
+  clusterResults = TRUE,
+  FilterPathway = FALSE,
+  pca_threshold = 0.6
 )
 }
 \arguments{
@@ -40,6 +42,10 @@ and "GAMM" for Generalized Additive Mixed Models. Defaults to "LMM".}
 
 \item{clusterResults}{Boolean, if TRUE the genes within a gene set will be clustered
 to find similar expression patterns. Defaults to TRUE.}
+
+\item{FilterPathway}{Boolean, if TRUE the function will apply PCA filtering to detect antagonist patterns. Defaults to FALSE.}
+
+\item{pca_threshold}{Numeric value specifying the variance threshold for PC1 to filter pathways. Default is 0.6.}
 
 \item{method}{Method for multiple testing adjustment, defaults to "fdr".}
 }

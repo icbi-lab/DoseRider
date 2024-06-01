@@ -18,6 +18,8 @@
 #'                  and "GAMM" for Generalized Additive Mixed Models. Defaults to "LMM".
 #' @param clusterResults Boolean, if TRUE the genes within a gene set will be clustered
 #'                       to find similar expression patterns. Defaults to TRUE.
+#' @param FilterPathway Boolean, if TRUE the function will apply PCA filtering to detect antagonist patterns. Defaults to FALSE.
+#' @param pca_threshold Numeric value specifying the variance threshold for PC1 to filter pathways. Default is 0.6.
 #'
 #' @return A list containing results for each gene set including various metrics, p-values,
 #'         and adjusted p-values. The structure of results will depend on the model type used.
@@ -32,7 +34,9 @@
 #' @importFrom stats p.adjust
 #' @import utils
 
-process_gene_set <- function(se, dose_col, sample_col, omic, gmt, i, minGSsize = 5, maxGSsize = 300, covariates = c(), modelType = "LMM", clusterResults = TRUE) {
+process_gene_set <- function(se, dose_col, sample_col, omic, gmt, i, minGSsize = 5,
+                             maxGSsize = 300, covariates = c(), modelType = "LMM", clusterResults = TRUE,
+                             FilterPathway = FALSE, pca_threshold = 0.6 ) {
   # Helper function to summarize a model
   is_fitted_model <- function(model) {
     if(inherits(model, c("lmerMod", "glmerMod"))) {
@@ -51,6 +55,14 @@ process_gene_set <- function(se, dose_col, sample_col, omic, gmt, i, minGSsize =
   # Check gene set size criteria
   if (is.null(long_df) || length(unique(long_df$gene)) < minGSsize || length(unique(long_df$gene)) > maxGSsize) {
     return(NULL)
+  }
+
+  # Apply PCA filtering if specified
+  if (FilterPathway) {
+    should_keep_pathway <- filter_pathway_by_pca(long_df, dose_col = dose_col, pca_threshold = pca_threshold)
+    if (!should_keep_pathway) {
+      return(NULL)
+    }
   }
 
   # Fit LMM with null and cubic spline models
@@ -83,6 +95,7 @@ process_gene_set <- function(se, dose_col, sample_col, omic, gmt, i, minGSsize =
   fitted_models <- list(null = null_results, linear = linear_results,
                         non_linear_fixed = non_linear_fixed_results,
                         non_linear_mixed = non_linear_mixed_results)
+
   is_fitted <- sapply(fitted_models, is_fitted_model)
   fitted_models <- fitted_models[is_fitted]
 
@@ -228,6 +241,8 @@ process_gene_set <- function(se, dose_col, sample_col, omic, gmt, i, minGSsize =
 #' for Generalized Additive Mixed Models. Defaults to "LMM".
 #' @param clusterResults Boolean, if TRUE the genes within a gene set will be clustered
 #'                       to find similar expression patterns. Defaults to TRUE.
+#' @param FilterPathway Boolean, if TRUE the function will apply PCA filtering to detect antagonist patterns. Defaults to FALSE.
+#' @param pca_threshold Numeric value specifying the variance threshold for PC1 to filter pathways. Default is 0.6.
 #'
 #' @return A list containing results for each gene set including various metrics, p-values,
 #' and adjusted p-values.
@@ -247,7 +262,8 @@ process_gene_set <- function(se, dose_col, sample_col, omic, gmt, i, minGSsize =
 DoseRider <- function(se, gmt, dose_col = "dose", sample_col = "sample",
                       covariates = c(), omic = "rnaseq", minGSsize = 5,
                       maxGSsize = 300, method = "fdr", modelType = "LMM",
-                      clusterResults = TRUE) {
+                      clusterResults = TRUE, FilterPathway = FALSE,
+                      pca_threshold = 0.6) {
 
   # Validate input data
   validate_input_doserider(se, dose_col, sample_col, covariates)
@@ -263,7 +279,8 @@ DoseRider <- function(se, gmt, dose_col = "dose", sample_col = "sample",
     geneset_results <- suppressMessages(suppressWarnings(process_gene_set(
       se = se, dose_col = dose_col, sample_col = sample_col, omic = omic, gmt = gmt,
       i = i, minGSsize = minGSsize, maxGSsize = maxGSsize, covariates = covariates,
-      modelType = modelType, clusterResults = clusterResults
+      modelType = modelType, clusterResults = clusterResults, FilterPathway =FilterPathway,
+      pca_threshold = pca_threshold
     )))
     if (!is.null(geneset_results)) {
       results[[gmt[[i]]$pathway]] <- geneset_results
@@ -300,6 +317,8 @@ DoseRider <- function(se, gmt, dose_col = "dose", sample_col = "sample",
 #' @param num_cores The number of cores to use for parallel processing (default is 5).
 #' @param clusterResults Boolean, if TRUE the genes within a gene set will be clustered
 #'                       to find similar expression patterns. Defaults to TRUE.
+#' @param FilterPathway Boolean, if TRUE the function will apply PCA filtering to detect antagonist patterns. Defaults to FALSE.
+#' @param pca_threshold Numeric value specifying the variance threshold for PC1 to filter pathways. Default is 0.6.
 #'
 #' @return A list containing the results of the DoseRider analysis for each gene set.
 #' @import SummarizedExperiment
@@ -322,7 +341,8 @@ DoseRider <- function(se, gmt, dose_col = "dose", sample_col = "sample",
 DoseRiderParallel <- function(se, gmt, dose_col = "dose", sample_col = "sample",
                               covariates = c(), omic = "rnaseq", minGSsize = 5,
                               maxGSsize = 300, method = "fdr", num_cores = 5,
-                              modelType = "LMM", clusterResults = TRUE) {
+                              modelType = "LMM", clusterResults = TRUE,
+                              FilterPathway = FALSE, pca_threshold = 0.6) {
   # Register the parallel backend
   cl <- makeCluster(num_cores)
   registerDoSNOW(cl)
@@ -341,7 +361,8 @@ DoseRiderParallel <- function(se, gmt, dose_col = "dose", sample_col = "sample",
                        geneset_results <- suppressWarnings(process_gene_set(
                          se = se, dose_col = dose_col, sample_col = sample_col, omic = omic, gmt = gmt,
                          i = i, minGSsize = minGSsize, maxGSsize = maxGSsize, covariates = covariates,
-                         modelType = modelType, clusterResults = clusterResults
+                         modelType = modelType, clusterResults = clusterResults,
+                         FilterPathway = FilterPathway, pca_threshold = pca_threshold
                        ))
                        if (!is.null(geneset_results)) {
                          setNames(list(geneset_results), gmt[[i]]$pathway)
