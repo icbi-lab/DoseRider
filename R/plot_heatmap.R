@@ -56,7 +56,7 @@ dose_response_heatmap <- function(dose_rider_results, dose_col = "Dose", top = 1
 
   # Calculate Z-scores across all doses for each gene set
   z_score_matrix <- t(apply(t(heatmap_matrix), 1, function(x) (x - mean(x)) / sd(x)))
-  rownames(z_score_matrix) <- unlist(lapply(colnames(heatmap_matrix), function(x) {str_wrap(x, width = 35)}))
+  rownames(z_score_matrix) <- unlist(lapply(colnames(heatmap_matrix), function(x) {str_wrap(x, width = 20)}))
   colnames(z_score_matrix) <- rownames(avg_expression)
 
   # Create the heatmap

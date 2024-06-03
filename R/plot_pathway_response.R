@@ -402,7 +402,7 @@ plot_dotplot_top_pathways <- function(dose_rider_results, top = 10, order_column
     scale_size_continuous(name = "Gene Set Size") +
     labs(x = "-log10(Adjusted non-linear P-Value)", y = "") +
     scale_fill_manual(values = c("non_linear_mixed" = "orange","non_linear_fixed" = "blue", "linear" = "green", "null" = "red"), name = "Best Model") +
-    theme_dose_rider() +    theme(axis.text.x = element_text(angle = 45, hjust = 1))
+    theme_dose_rider(legend_position="bottom") +    theme(axis.text.x = element_text(angle = 45, hjust = 1))
 
   return(dot_plot)
 }
