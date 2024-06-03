@@ -73,16 +73,21 @@ add_best_model_adj_pvalue <- function(doseRiderObj) {
 
 
 # Custom theme for dose_rider plots
-theme_dose_rider <- function(legend_position = "none") {
+theme_dose_rider <- function(legend_position = "none", text_size=5) {
   theme_minimal() +
   theme(
-    plot.title = element_text(size = 16, hjust = 0.5),
-    axis.title = element_text(size = 14),
-    axis.text = element_text(size = 12),
-    legend.title = element_text(size = 14),
-    legend.text = element_text(size = 12),
+    text=element_text(size = text_size),
+    plot.caption=element_text(size = text_size-2),
+    plot.title = element_text(size = text_size+2, hjust = 0.5),
+    axis.title = element_text(size = text_size+1),
+    axis.text = element_text(size = text_size),
+    legend.title = element_text(size = text_size+1),
+    legend.text = element_text(size = text_size),
     legend.position = legend_position,
-    plot.margin = unit(c(50, 50, 50, 50), "pt"),
+    plot.margin = margin(t = 1,  # Top margin
+                         r = 1,  # Right margin
+                         b = 1,  # Bottom margin
+                         l = 1),
     aspect.ratio = 1  # Ensure square format
   )
 }

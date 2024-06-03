@@ -96,8 +96,8 @@ dose_rider_results <- DoseRiderParallel(se = se, gmt = gmt_p_data,
                                            minGSsize = 10, maxGSsize = 800, 
                                            method = "fdr", covariates = c(),
                                            modelType = "LMM", num_cores = 10,
-                                           clusterResults = TRUE, FilterPathway = TRUE,
-                                           pca_threshold = 0.6)
+                                           clusterResults = F, FilterPathway = TRUE,
+                                           pca_threshold = 0.65)
 #print(dose_rider_results)
 
 # Filter DoseRider results
@@ -116,7 +116,8 @@ library(ggplot2)
 # Custom theme for dose_rider plots
 top <- 10
 save_path <- "/home/monfortl/plots/Example_results/Array/"
-
+plot_width <- 2000
+plot_height <- 2000
 # Create directory to save plots
 dir.create(save_path, showWarnings = FALSE)
 
@@ -124,34 +125,34 @@ dir.create(save_path, showWarnings = FALSE)
 p1 <- dose_response_heatmap(dose_rider_results_filter, dose_col = "Dose", top = top, order_column = "best_model_pvalue", decreasing = FALSE )
 plotFile1 <- paste0(save_path, "/plot1.jpeg")
 jpeg(file=plotFile1, width = 600, height = 500, units = "px")
-plot(p1, heatmap_legend_side = "bottom", annotation_legend_side = "bottom",padding = unit(c(2, 2, 2, 2), "cm"))
+plot(p1, heatmap_legend_side = "bottom", annotation_legend_side = "bottom",padding = unit(c(1, 1, 1, 1), "cm"))
 dev.off()
 
 p2 <- plot_gene_set_random_effects(dose_rider_results_filter, dose_col = "Dose", order_column = "best_model_pvalue", top = top) 
 plotFile2 <- paste0(save_path, "/plot2.jpeg")
-ggsave(plotFile2, plot = p2, width = 250, height = 150, units = "mm", dpi = 600)
+ggsave(plotFile2, plot = p2, width = plot_width, height = plot_height, units = "px", dpi = 300) 
 
 p3 <- plot_top_pathway_responses(dose_rider_results_filter, top = 6, ncol = 3, order_column = "best_model_pvalue")
 plotFile3 <- paste0(save_path, "/plot3.jpeg")
-ggsave(plotFile3, plot = p3, width = 400, height = 200, units = "mm", dpi = 600)
+ggsave(plotFile3, plot = p3,  width = plot_width+1000, height = plot_height, units = "px", dpi = 300) 
 
 p4 <- plot_gene_random_effect_relationship(dose_rider_results_filter, "JOHNSTONE_PARVB_TARGETS_2_UP")
 plotFile4 <- paste0(save_path, "/plot4.jpeg")
-ggsave(plotFile4, plot = p4, width = 400, height = 200, units = "mm", dpi = 600)
+ggsave(plotFile4, plot = p4,  width = plot_width, height = plot_height, units = "px", dpi = 300) 
 
 p5 <- plot_dotplot_top_pathways(dose_rider_results_filter, top = top, order_column = "Genes", decreasing = TRUE)
 plotFile5 <- paste0(save_path, "/plot5.jpeg")
-ggsave(plotFile5, plot = p5, width = 400, height = 200, units = "mm", dpi = 600)
+ggsave(plotFile5, plot = p5,  width = plot_width, height = plot_height, units = "px", dpi = 300) 
 
 p6 <- create_gene_heatmap(dose_rider_results_filter, dose_col = "Dose", gene_set_name = "JOHNSTONE_PARVB_TARGETS_2_UP")
 plotFile6 <- paste0(save_path, "/plot6.jpeg")
-jpeg(file=plotFile6, width = 700, height = 700, units = "px")
+jpeg(file=plotFile6,  width = plot_width, height = plot_height, units = "px", dpi = 300)
 plot(p6)
 dev.off()
 
 data_bmd <- get_bmd_range(dose_rider_results = dose_rider_results_filter)
 p7 <- plot_bmd_density_and_peaks(data_bmd)
 plotFile7 <- paste0(save_path, "/plot7.jpeg")
-ggsave(plotFile7, plot = p7, width = 400, height = 200, units = "mm", dpi = 600)
+ggsave(plotFile7, plot = p7, width = plot_width, height = plot_height, units = "px", dpi = 300)
 ```
 
