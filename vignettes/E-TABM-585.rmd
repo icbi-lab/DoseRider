@@ -124,7 +124,7 @@ dir.create(save_path, showWarnings = FALSE)
 p1 <- dose_response_heatmap(dose_rider_results_filter, dose_col = "Dose", top = top, order_column = "best_model_pvalue", decreasing = FALSE )
 plotFile1 <- paste0(save_path, "/plot1.jpeg")
 jpeg(file=plotFile1, width = 600, height = 500, units = "px")
-plot(p1)
+plot(p1, heatmap_legend_side = "bottom", annotation_legend_side = "bottom",padding = unit(c(2, 2, 2, 2), "cm"))
 dev.off()
 
 p2 <- plot_gene_set_random_effects(dose_rider_results_filter, dose_col = "Dose", order_column = "best_model_pvalue", top = top) 
