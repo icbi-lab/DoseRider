@@ -52,7 +52,7 @@ prepare_data <- function(se, geneset, dose_col, sample_col, omic = "rnaseq") {
   common_genes <- intersect(geneset, rownames(se))
   if (length(common_genes) > 0) {
     long_df <- suppressWarnings(as.data.frame(reshape::melt(t(assay(se)[common_genes,]), as.is = TRUE), warning = FALSE))
-    colnames(long_df) <- c("sample", "gene", "counts")
+    colnames(long_df) <- c(sample_col, "gene", "counts")
 
     if (omic == "rnaseq"){
       # Match size_factors, theta, and dispersions
@@ -60,7 +60,10 @@ prepare_data <- function(se, geneset, dose_col, sample_col, omic = "rnaseq") {
       long_df$theta <- rowData(se)$theta[match(long_df$gene, rownames(rowData(se)))]
       long_df$dispersion <- rowData(se)$dispersions[match(long_df$gene, rownames(rowData(se)))]
     }
-    long_df <- merge(long_df, colData(se), by = "sample")
+    colData(se)$sample <- colnames(se)
+    colData(se)[sample_col] <- colnames(se)
+
+    long_df <- merge(long_df, colData(se), by = sample_col)
     long_df$dose <- unlist(as.numeric(long_df[[dose_col]]))
     long_df <- as.data.frame(long_df, warning = FALSE)
   } else {
