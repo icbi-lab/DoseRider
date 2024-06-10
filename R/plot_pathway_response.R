@@ -122,14 +122,18 @@ adjust_trend_visuals <- function(cluster_trend, dose_col, zero_points, t = 0.000
 #' @param dose_rider_results A list containing the results from the DoseRider analysis.
 #' @param gene_set_name The name of the gene set for which to plot the response.
 #' @param dose_col The name of the column representing dose information.
+#' @param center_values Logical, indicating whether to center the prediction values.
+#' @param legend_position The position of the legend in the plot.
+#' @param text_size The size of the text in the plot.
+#' @param margin_space The margin space around the plot.
 #'
 #' @return A ggplot object representing the pathway response plot.
 #'
 #' @import ggplot2
 #' @importFrom stringr str_wrap
-#'
+#' @importFrom dplyr mutate group_by ungroup
 #' @export
-plot_pathway_response <- function(dose_rider_results, gene_set_name, dose_col = "Dose", center_values = T) {
+plot_pathway_response <- function(dose_rider_results, gene_set_name, dose_col = "Dose", center_values = T, legend_position = "none", text_size=4, margin_space = 0) {
 
   # Extract the specific gene set results from dose_rider_results
   gene_set_results <- dose_rider_results[[gene_set_name]]
@@ -203,7 +207,9 @@ plot_pathway_response <- function(dose_rider_results, gene_set_name, dose_col = 
 
     # Finalize the plot settings
     # Finalize the plot settings and add custom legend labels
-    p <- p + labs(x = "Dose", y = "Expression", title = str_wrap(gsub("_", " ", gene_set_name), width = 35), caption = paste(legend_labels)) + theme_dose_rider()
+    p <- p + labs(x = "Dose", y = "Expression", title = str_wrap(gsub("_", " ", gene_set_name), width = 35), caption = paste(legend_labels))
+    #Add custom theme
+    p <- p + theme_dose_rider(legend_position = legend_position, text_size=text_size, margin_space = margin_space)
 
     return(p)
   } else {
@@ -219,12 +225,14 @@ plot_pathway_response <- function(dose_rider_results, gene_set_name, dose_col = 
 #' @param dose_rider_results A list containing the results from doseRider analysis.
 #' @param top An integer specifying the number of top gene sets to include in the plot. Default is 15.
 #' @param order_column A character string specifying the column to use for ordering gene sets in the plot.
-#'
+#' @param legend_position The position of the legend in the plot.
+#' @param text_size The size of the text in the plot.
+#' @param margin_space The margin space around the plot.
 #'
 #' @return A combined ggplot object with top significant pathway response plots.
 #' @importFrom cowplot plot_grid
 #' @export
-plot_top_pathway_responses <- function(dose_rider_results, top=6, ncol = 3, order_column = "best_model_pvalue", decreasing = F) {
+plot_top_pathway_responses <- function(dose_rider_results, top=6, ncol = 3, order_column = "best_model_pvalue", decreasing = F,legend_position = "none", text_size=4, margin_space = 0) {
   # Extract and order gene sets by adjusted cubic p-value
   dose_rider_df <- as.data.frame.DoseRider(dose_rider_results)
   dose_rider_df <- dose_rider_df[order(dose_rider_df[[order_column]], decreasing = decreasing), ]
@@ -241,7 +249,7 @@ plot_top_pathway_responses <- function(dose_rider_results, top=6, ncol = 3, orde
     best_model <- res_path$best_model
 
     if (!is.na(best_model) && best_model != "null") {
-      plot_list[[gene_set_name]] <- plot_pathway_response(dose_rider_results, gene_set_name)
+      plot_list[[gene_set_name]] <- plot_pathway_response(dose_rider_results, gene_set_name,legend_position = legend_position, text_size=text_size, margin_space = margin_space)
     }
   }
 
@@ -402,7 +410,7 @@ plot_dotplot_top_pathways <- function(dose_rider_results, top = 10, order_column
     scale_size_continuous(name = "Gene Set Size") +
     labs(x = "-log10(Adjusted non-linear P-Value)", y = "") +
     scale_fill_manual(values = c("non_linear_mixed" = "orange","non_linear_fixed" = "blue", "linear" = "green", "null" = "red"), name = "Best Model") +
-    theme_dose_rider(legend_position="bottom") +    theme(axis.text.x = element_text(angle = 45, hjust = 1))
+    theme_dose_rider(legend_position="right") +    theme(axis.text.x = element_text(angle = 45, hjust = 1))
 
   return(dot_plot)
 }

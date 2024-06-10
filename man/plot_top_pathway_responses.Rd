@@ -9,7 +9,10 @@ plot_top_pathway_responses(
   top = 6,
   ncol = 3,
   order_column = "best_model_pvalue",
-  decreasing = F
+  decreasing = F,
+  legend_position = "none",
+  text_size = 4,
+  margin_space = 0
 )
 }
 \arguments{
@@ -18,6 +21,12 @@ plot_top_pathway_responses(
 \item{top}{An integer specifying the number of top gene sets to include in the plot. Default is 15.}
 
 \item{order_column}{A character string specifying the column to use for ordering gene sets in the plot.}
+
+\item{legend_position}{The position of the legend in the plot.}
+
+\item{text_size}{The size of the text in the plot.}
+
+\item{margin_space}{The margin space around the plot.}
 }
 \value{
 A combined ggplot object with top significant pathway response plots.

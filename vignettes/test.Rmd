@@ -101,7 +101,7 @@ dose_rider_results <- DoseRiderParallel(se = filter_bpaf_data, gmt = gmt_p_data,
                                            minGSsize = 20, maxGSsize = 100, 
                                            method = "bonferroni", covariates = c(),
                                           modelType = "LMM", num_cores = 10,
-                                          clusterResults = T)
+                                          clusterResults = T, FilterPathway = T)
 
 res_df <- as.data.frame.DoseRider(dose_rider_results)
 table(res_df$best_model)
@@ -114,38 +114,57 @@ filter_DoseRider(dose_rider_results)
 ## Results and Discussion
 
 ```{r}
-top <- 3
-save_path <- "/home/monfortl/plots/Example_results/MSIGDB/"
+top <- 5
+save_path <- "/home/monfortl/doseRider/plots/"
 #dir.create(save_path)
+PLOT_HEIGHT <- 3000
+PLOT_WIDTH <- 3000
+
+plot_width <- PLOT_WIDTH
+plot_height <- PLOT_WIDTH
+
 
 p1 <- dose_response_heatmap(dose_rider_results, dose_col = "Dose", top = top, order_column = "best_model_pvalue", decreasing = F )
 plotFile1 <- paste0(save_path,"/plot1.jpeg")
+
 p2 <- plot_gene_set_random_effects(dose_rider_results, dose_col = "Dose",order_column = "best_model_pvalue", top = top)
 plotFile2 <- paste0(save_path,"/plot2.jpeg")
-p3 <- plot_top_pathway_responses(dose_rider_results, top = 6, ncol = 3, order_column = "best_model_pvalue")
+
+p3 <- plot_top_pathway_responses(dose_rider_results, top = 6, ncol = 2, order_column = "best_model_pvalue", text_size = 5)
 plotFile3 <- paste0(save_path,"/plot3.jpeg")
-p4 <- plot_gene_random_effect_relationship(dose_rider_results, "DUTERTRE_ESTRADIOL_RESPONSE_6HR_DN")
+
+p4 <- plot_gene_random_effect_relationship(dose_rider_results, "MENSE_HYPOXIA_UP")
 plotFile4 <- paste0(save_path,"/plot4.jpeg")
+
 p5 <- plot_dotplot_top_pathways(dose_rider_results, top = top, order_column = "Genes", decreasing = T)
 plotFile5 <- paste0(save_path,"/plot5.jpeg")
-p6 <- create_gene_heatmap(dose_rider_results,dose_col = "Dose", gene_set_name = "DUTERTRE_ESTRADIOL_RESPONSE_6HR_DN")
+
+p6 <- create_gene_heatmap(dose_rider_results,dose_col = "Dose", gene_set_name = "MENSE_HYPOXIA_UP")
 plotFile6 <- paste0(save_path,"/plot6.jpeg")
+
 data_bmd <- get_bmd_range(dose_rider_results = dose_rider_results)
 p7 <- plot_bmd_density_and_peaks(data_bmd)
 plotFile7 <- paste0(save_path,"/plot7.jpeg")
 
 
-jpeg(file=plotFile1,width = 600, height = 500, units = "px")
- plot(p1)
+jpeg(file=plotFile1, width = PLOT_WIDTH - 1000, height = PLOT_HEIGHT - 1000, units = "px")
+  plot(p1, heatmap_legend_side = "bottom", annotation_legend_side = "bottom",padding = unit(c(1, 1, 1, 1), "cm"))
 dev.off()
-ggsave(plotFile2, plot = p2, width = 250, height = 150, units = "mm", dpi = 600)
-ggsave(plotFile3, plot = p3, width = 400, height = 200, units = "mm", dpi = 600)
-ggsave(plotFile4, plot = p4, width = 400, height = 200, units = "mm", dpi = 600)
-ggsave(plotFile5, plot = p5, width = 400, height = 200, units = "mm", dpi = 600)
-jpeg(file=plotFile6,width = 700, height = 700, units = "px")
- plot(p6)
+
+
+ggsave(plotFile2, plot = p2, width = PLOT_WIDTH, height = PLOT_HEIGHT, units = "px", dpi = 600)
+
+ggsave(plotFile3, plot = p3, width = plot_width, height = plot_height, units = "px", dpi = 600)
+
+ggsave(plotFile4, plot = p4, width = PLOT_WIDTH, height = PLOT_HEIGHT, units = "px", dpi = 600)
+
+ggsave(plotFile5, plot = p5, width = PLOT_WIDTH + 1500, height = PLOT_HEIGHT + 1500, units = "px", dpi = 600)
+
+jpeg(file=plotFile6, width = PLOT_WIDTH - 1000, height = PLOT_HEIGHT - 1000, units = "px")
+ plot(p6, heatmap_legend_side = "bottom", annotation_legend_side = "bottom",padding = unit(c(1, 1, 1, 1), "cm"))
 dev.off()
-ggsave(plotFile7, plot = p7, width = 400, height = 200, units = "mm", dpi = 600)
+
+ggsave(plotFile7, plot = p7, width = PLOT_WIDTH, height = PLOT_HEIGHT, units = "px", dpi = 600)
 
 ```
 

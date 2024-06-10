@@ -8,7 +8,10 @@ plot_pathway_response(
   dose_rider_results,
   gene_set_name,
   dose_col = "Dose",
-  center_values = T
+  center_values = T,
+  legend_position = "none",
+  text_size = 4,
+  margin_space = 0
 )
 }
 \arguments{
@@ -17,6 +20,14 @@ plot_pathway_response(
 \item{gene_set_name}{The name of the gene set for which to plot the response.}
 
 \item{dose_col}{The name of the column representing dose information.}
+
+\item{center_values}{Logical, indicating whether to center the prediction values.}
+
+\item{legend_position}{The position of the legend in the plot.}
+
+\item{text_size}{The size of the text in the plot.}
+
+\item{margin_space}{The margin space around the plot.}
 }
 \value{
 A ggplot object representing the pathway response plot.
