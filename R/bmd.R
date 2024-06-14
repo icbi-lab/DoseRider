@@ -220,3 +220,76 @@ get_bmd_range <- function(dose_rider_results) {
 
   return(res)
 }
+
+#' Extract TCD (Compute Derivatives and Identify Zero Points) Values for a Pathway
+#'
+#' This function extracts the TCD (Threshold Concentration Dose) values for all clusters within a specified pathway from the DoseRider results.
+#'
+#' @param dose_rider_results A list containing the results of DoseRider analysis.
+#' @param gene_set_name The name of the gene set/pathway.
+#' @return A numeric vector containing the TCD values for the specified pathway. If no cluster-specific results are available, NA is returned.
+#'
+#' @examples
+#' \dontrun{
+#' dose_rider_results <- DoseRider(se, gmt, "dose", "sample")
+#' tcd_values <- extract_tcd_for_pathway(dose_rider_results, "geneSet1")
+#' print(tcd_values)
+#' }
+#'
+#' @export
+extract_tcd_for_pathway <- function(dose_rider_results, gene_set_name) {
+  all_tcd_values <- c()
+
+  gene_set_results <- dose_rider_results[gene_set_name]
+  gene_set_results <- gene_set_results[[1]]
+
+  if (!is.null(gene_set_results$ClusterSpecificResults)) {
+    for (cluster_name in names(gene_set_results$ClusterSpecificResults)) {
+      cluster_data <- gene_set_results$ClusterSpecificResults[[cluster_name]]
+      all_tcd_values <- c(all_tcd_values, cluster_data$Derivative$zero_points_second_deriv,cluster_data$Derivative$zero_points_first_deriv)
+    }
+  } else {
+    all_tcd_values <- NA
+  }
+
+  return(all_tcd_values)
+}
+
+
+#' Compute TCD Range and Find Zero Points
+#'
+#' This function computes the range of TCD (Threshold Concentration Dose) values from the DoseRider results and identifies zero points in the density of TCD values.
+#'
+#' @param dose_rider_results A list containing the results of DoseRider analysis.
+#' @return A list containing the TCD values (`x`), their density (`y`), and the identified zero points (`tcd`).
+#'
+#' @examples
+#' \dontrun{
+#' dose_rider_results <- DoseRider(se, gmt, "dose", "sample")
+#' tcd_range <- get_tcd_range(dose_rider_results)
+#' print(tcd_range)
+#' }
+#'
+#' @export
+get_tcd_range <- function(dose_rider_results) {
+  find_zero_points <- function(density_obj) {
+    slope <- diff(density_obj$y)
+    zero_points <- which(diff(sign(slope)) == -2) + 1
+    return(density_obj$x[zero_points])
+  }
+
+  tcd_values <- c()
+  for (gene_set_name in names(dose_rider_results)) {
+    tcd_values <- c(tcd_values, extract_tcd_for_pathway(dose_rider_results, gene_set_name))
+  }
+
+  all_tcds <- unique(tcd_values)
+  all_tcds <- all_tcds[!is.na(all_tcds)]
+
+  tcd_density <- density(all_tcds)
+  zero_points <- find_zero_points(tcd_density)
+  res <- list(x = tcd_density$x, y = tcd_density$y, tcd = zero_points)
+
+  return(res)
+}
+

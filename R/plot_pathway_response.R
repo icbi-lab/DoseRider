@@ -292,7 +292,7 @@ plot_gene_set_random_effects <- function(dose_rider_results, dose_col = "Dose", 
   all_random_effects <- data.frame(gene = character(),
                                    gene_set = character(),
                                    RandomIntercept = numeric(),
-                                   RandomEffect = numeric(),
+                                   RandomEffect1 = numeric(),
                                    stringsAsFactors = FALSE)
   #Top pathways in function of P-Value
   dose_rider_df <- as.data.frame.DoseRider(dose_rider_results)
@@ -304,11 +304,15 @@ plot_gene_set_random_effects <- function(dose_rider_results, dose_col = "Dose", 
   for (gene_set_name in gene_set_names) {
     random_effects <- dose_rider_results[[gene_set_name]]$random_effect
 
-    if (length(random_effects$RandomIntercept) > 1){
-    # Replace with actual way to access the model
-    random_effects$gene_set <- gsub("_", " ", gene_set_name)
-    random_effects$gene <- rownames(random_effects)
-    all_random_effects <- rbind(all_random_effects, random_effects)
+    if (length(random_effects$RandomIntercept) > 1) {
+      # Replace with actual way to access the model
+      random_effects$gene_set <- gsub("_", " ", gene_set_name)
+      random_effects$gene <- rownames(random_effects)
+
+      # Ensure that the columns match
+      random_effects <- random_effects[, colnames(all_random_effects)]
+
+      all_random_effects <- rbind(all_random_effects, random_effects)
     }
   }
 
@@ -356,7 +360,7 @@ plot_gene_random_effect_relationship <- function(dose_rider_results, gene_set_na
     stop("The specified gene set name is not found in the results.")
   }
 
-  random_effects <- dose_rider_results[[gene_set_name]]$random_effect
+  random_effects <- dose_rider_results[gene_set_name][[1]]$random_effect
 
   if (length(random_effects$RandomIntercept) > 1) {
     random_effects$gene_set <- gene_set_name
@@ -447,3 +451,34 @@ plot_bmd_density_and_peaks <- function(bmd_range_output) {
 }
 
 
+#' Plot Trend Change Dose (TCD) Density
+#'
+#' This function creates a plot visualizing the density of TCD values and highlights
+#' the zero points where the highest density of TCD values are found.
+#'
+#' @param tcd_range_output A list containing the output from `get_tcd_range` function,
+#' which includes x (TCD values), y (density), and tcd (zero points).
+#'
+#' @return A ggplot object visualizing the density of TCD values with zero points marked.
+#' @import ggplot2
+#' @examples
+#' \dontrun{
+#' tcd_range_output <- get_tcd_range(dose_rider_results)
+#' plot_tcd_density_and_zero_points(tcd_range_output)
+#' }
+#'
+#' @export
+plot_tcd_density <- function(tcd_range_output) {
+  # Convert the list to a dataframe for plotting
+  data_to_plot <- data.frame(x = tcd_range_output$x, y = tcd_range_output$y)
+
+  # Create the plot
+  p <- ggplot(data_to_plot, aes(x = x, y = y)) +
+    geom_line() +
+    geom_vline(xintercept = tcd_range_output$tcd, color = "blue", linetype = "dashed") +
+    labs(x = "TCD", y = "Density", title = "TCD Density") +
+    theme_bw() +
+    theme(axis.text.x = element_text(angle = 45, hjust = 1))
+
+  return(p)
+}
