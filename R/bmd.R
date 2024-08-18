@@ -166,7 +166,6 @@ compute_bmd_for_gene_in_geneset <- function(dose_rider_results, gene_set_name, g
 #' @import doParallel
 #' @import parallel
 #' @import progress
-#' for Generalized Additive Mixed Models. Defaults to "LMM".
 #' @return A list containing the lower and upper BMD bounds for each significant gene set.
 #'
 #' @examples
