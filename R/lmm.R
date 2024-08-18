@@ -94,12 +94,12 @@ create_lmm_formula <- function(response, fixed_effects, random_effects, covariat
   # Include random effects with appropriate spline
   if (model_type == "non_linear_mixed") {
     #"Random Spline Non-linear Model"
-    random_effect_term <- paste0("(bs(", fixed_effects,  ") | ", random_effects, ")")
+    random_effect_term <- paste0(" ",fixed_effects," + ","(bs(", fixed_effects,  ") | ", random_effects, ")")
   } else if (model_type == "non_linear_fixed") {
     #"Random Intercept and Slope Non-linear Model"
-    random_effect_term <- paste0("bs(", fixed_effects,  ")"," + (",fixed_effects,"|",random_effects,")")
+    random_effect_term <- paste0(" ",fixed_effects," + ","bs(", fixed_effects,  ")"," + (",fixed_effects,"|",random_effects,")")
   } else if (model_type == "linear") {
-    random_effect_term <- paste0("(",fixed_effects, " | ", random_effects, ")")
+    random_effect_term <- paste0(" ",fixed_effects," + ","(",fixed_effects, " | ", random_effects, ")")
   } else {
     random_effect_term <- paste0("( 1 | ", random_effects, ")")
 

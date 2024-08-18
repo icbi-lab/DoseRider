@@ -108,7 +108,7 @@ table(res_df$best_model)
 
 
 #save(res, file = "../../doseRider_save/res_bpa_20_1000.rda")
-filter_DoseRider(dose_rider_results, model_type = "non_linear")
+dose_rider_results <- filter_DoseRider(dose_rider_results, model_type = "non_linear", threshold = 0.001)
 ```
 
 ## Results and Discussion

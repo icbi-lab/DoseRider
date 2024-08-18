@@ -72,24 +72,30 @@ add_best_model_adj_pvalue <- function(doseRiderObj) {
 }
 
 
-# Custom theme for dose_rider plots
-theme_dose_rider <- function(legend_position = "none", text_size=5, margin_space = 1) {
-  theme_minimal() +
-  theme(
-    text=element_text(size = text_size),
-    plot.caption=element_text(size = text_size-2),
-    plot.title = element_text(size = text_size, hjust = 0.5),
-    axis.title = element_text(size = text_size),
-    axis.text = element_text(size = text_size),
-    legend.title = element_text(size = text_size),
-    legend.text = element_text(size = text_size),
-    legend.position = legend_position,
-    plot.margin = margin(t = margin_space,  # Top margin
-                         r = margin_space,  # Right margin
-                         b = margin_space,  # Bottom margin
-                         l = margin_space),
-    aspect.ratio = 1  # Ensure square format
-  )
+theme_dose_rider <- function(legend_position = "none", text_size = 5, margin_space = 1, fix_ratio = TRUE) {
+  # Base theme
+  custom_theme <- theme_minimal() +
+    theme(
+      text = element_text(size = text_size),
+      plot.caption = element_text(size = text_size - 2),
+      plot.title = element_text(size = text_size, hjust = 0.5),
+      axis.title = element_text(size = text_size),
+      axis.text = element_text(size = text_size),
+      legend.title = element_text(size = text_size),
+      legend.text = element_text(size = text_size),
+      legend.position = legend_position,
+      plot.margin = margin(t = margin_space,  # Top margin
+                           r = margin_space,  # Right margin
+                           b = margin_space,  # Bottom margin
+                           l = margin_space)
+    )
+
+  # Conditionally set aspect ratio
+  if (fix_ratio) {
+    custom_theme <- custom_theme + theme(aspect.ratio = 1)
+  }
+
+  return(custom_theme)
 }
 
 

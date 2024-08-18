@@ -414,7 +414,7 @@ plot_dotplot_top_pathways <- function(dose_rider_results, top = 10, order_column
     scale_size_continuous(name = "Gene Set Size") +
     labs(x = "-log10(Adjusted non-linear P-Value)", y = "") +
     scale_fill_manual(values = c("non_linear_mixed" = "orange","non_linear_fixed" = "blue", "linear" = "green", "null" = "red"), name = "Best Model") +
-    theme_dose_rider(legend_position="right") +    theme(axis.text.x = element_text(angle = 45, hjust = 1))
+    theme_dose_rider(legend_position="right", fix_ratio=F) +    theme(axis.text.x = element_text(angle = 45, hjust = 1))
 
   return(dot_plot)
 }
@@ -450,6 +450,43 @@ plot_bmd_density_and_peaks <- function(bmd_range_output) {
   return(p)
 }
 
+#' Plot Bubble Plot of BMD with Confidence Intervals
+#'
+#' This function creates a bubble plot visualizing the BMD results with confidence intervals.
+#' The size of the bubbles represents the median BMD, while the error bars show the confidence intervals.
+#'
+#' @param bmd_bounds_df A data frame containing the BMD results with columns for lower bound, upper bound, mean BMD, and median BMD.
+#' @return A ggplot object representing the bubble plot of BMD with confidence intervals.
+#' @import ggplot2
+#' @importFrom stringr str_wrap
+#' @examples
+#' \dontrun{
+#'   # Assuming bmd_bounds_df is available
+#'   bmd_plot <- plot_bmd_confidence_intervals(bmd_bounds_df, top = 10)
+#'   print(bmd_plot)
+#' }
+#'
+#' @export
+plot_bmd_confidence_intervals <- function(bmd_bounds_df) {
+  # Sort by the specified order column
+  bmd_bounds_df <- bmd_bounds_df[!is.na(bmd_bounds_df$Median_BMD),]
+  # Wrap the pathway names for better readability
+  bmd_bounds_df$Geneset <- unlist(lapply(bmd_bounds_df$Geneset, function(x){str_wrap(gsub("_", " ", x), 35)}))
+
+  # Create Bubble Plot
+  bmd_plot <- ggplot(bmd_bounds_df, aes(x = Mean_BMD, y = reorder(Geneset, Mean_BMD), fill = best_model)) +
+    geom_errorbarh(aes(xmin = Lower_Bound, xmax = Upper_Bound), height = 0.2, color = "red", size = 1) +
+    geom_point(shape = 21, alpha = 0.6, size = 5) +
+    scale_fill_manual(values = c("non_linear_mixed" = "orange","non_linear_fixed" = "blue", "linear" = "green", "null" = "red"), name = "Best Model") +
+    labs(x = "Benchmark Dose (BMD)", y = "Pathway") +
+    theme_minimal() +
+    theme(axis.text.x = element_text(angle = 45, hjust = 1)) +
+    theme_dose_rider()
+
+  return(bmd_plot)
+}
+
+
 
 #' Plot Trend Change Dose (TCD) Density
 #'
@@ -482,3 +519,5 @@ plot_tcd_density <- function(tcd_range_output) {
 
   return(p)
 }
+
+

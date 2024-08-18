@@ -57,7 +57,7 @@ dose_response_heatmap <- function(dose_rider_results, dose_col = "Dose", top = 1
   # Calculate Z-scores across all doses for each gene set
   z_score_matrix <- t(apply(t(heatmap_matrix), 1, function(x) (x - mean(x)) / sd(x)))
   rownames(z_score_matrix) <- unlist(lapply(colnames(heatmap_matrix), function(x) {str_wrap(x, width = 20)}))
-  colnames(z_score_matrix) <- rownames(avg_expression)
+  colnames(z_score_matrix) <- round(as.numeric(rownames(avg_expression)), 3)
 
   # Create the heatmap
   col_fun <- colorRamp2(c(-2, -1, 0, 1, 2), c("blue", "lightblue", "white", "lightcoral", "red"))
@@ -97,7 +97,7 @@ dose_response_heatmap <- function(dose_rider_results, dose_col = "Dose", top = 1
 #'
 #' @return An object of class `Heatmap` representing the constructed heatmap for the specified gene set.
 #'
-#' @importFrom ComplexHeatmap Heatmap
+#' @importFrom ComplexHeatmap Heatmap HeatmapAnnotation
 #' @importFrom grid gpar
 #' @importFrom circlize colorRamp2
 #' @importFrom reshape2 dcast
@@ -140,7 +140,19 @@ create_gene_heatmap <- function(dose_rider_results, gene_set_name, dose_col) {
   z_score_matrix <- t(apply(heatmap_data, 1, scale))
   colnames(z_score_matrix) <- colnames(heatmap_data)
   # Define color function for the heatmap
+
   col_fun <- colorRamp2(c(-2, -1, 0, 1, 2), c("blue", "lightblue", "white", "lightcoral", "red"))
+  names(custom_palette) <- as.character(1:length(custom_palette))
+
+  if("ClusterAssignments" %in% names(res_geneset)){
+    row_ha = HeatmapAnnotation(Cluster = res_geneset$ClusterAssignments,
+                               col = list(Cluster = custom_palette), which = "row",
+                               show_annotation_name = FALSE,
+                               show_legend = F)
+  } else {
+    row_ha = rowAnnotation(foo = anno_empty(border = FALSE,
+                                            width = unit(0.1, "mm")))
+  }
 
   # Create the heatmap
   ha <- Heatmap(z_score_matrix,
@@ -154,6 +166,7 @@ create_gene_heatmap <- function(dose_rider_results, gene_set_name, dose_col) {
                 row_names_gp = gpar(fontsize = 12),  # Matches axis.text size in theme
                 column_names_gp = gpar(fontsize = 12, just = "center"),  # Matches axis.text size in theme
                 column_names_rot = 0,
+                right_annotation = row_ha,
                 cluster_columns = FALSE,
                 show_row_dend = FALSE,
                 col = col_fun,
