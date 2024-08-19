@@ -42,10 +42,10 @@ compute_derivatives <- function(smooth_pathway, dose_var) {
 #'
 #' This function calculates the Benchmark Dose (BMD) based on a smoothed trend from model predictions.
 #' The BMD is identified as the dose level where the predicted response exceeds a threshold defined
-#' as a specified number of standard deviations (`z`) above the control response.
+#' as a specified number of standard deviations (z) above the control response.
 #'
 #' @param smooth_pathway Data frame containing smoothed trend predictions, typically from a dose-response model.
-#' @param dose_var The name of the dose variable in `smooth_pathway`.
+#' @param dose_var The name of the dose variable in smooth_pathway.
 #' @param z A numeric value specifying the number of standard deviations above the control response
 #'          to define the target response for BMD. Default is 1.
 #' @param center_values Logical, if TRUE the predictions are centered around their mean. Default is TRUE.
@@ -108,6 +108,113 @@ compute_bmd_from_main_trend <- function(smooth_pathway, dose_var, z = 1, center_
     return(NA)
   }
 }
+
+
+#' Compute BMD Bounds using Bootstrapping with Parallel Bootstrap Sampling
+#'
+#' This function calculates the lower and upper bounds of the Benchmark Dose (BMD)
+#' using bootstrapping on the raw data for significant gene sets, with the bootstrap
+#' sampling process parallelized across multiple cores.
+#'
+#' @param dose_rider_results A DoseRider object containing results of the analysis.
+#' @param dose_col Name of the column representing dose information.
+#' @param sample_col Name of the column representing sample information.
+#' @param covariates Optional, vector specifying the covariate column(s) in `se`.
+#' @param omic Type of omics data, defaults to "rnaseq".
+#' @param n_bootstrap The number of bootstrap samples to generate. Default is 1000.
+#' @param ci_level Confidence interval level, default is 0.95.
+#' @param num_cores The number of cores to use for parallel processing of bootstrap samples. Default is 5.
+#' @import foreach
+#' @import doParallel
+#' @import parallel
+#' @import progress
+#' @return A data frame containing the lower and upper BMD bounds for each significant gene set.
+#'
+#' @examples
+#' \dontrun{
+#' data("SummarizedExperiment")
+#' gmt <- list(geneSet1 = list(genes = c("gene1", "gene2")))
+#' results <- DoseRider(se, gmt, "dose", "sample", "covariate", "rnaseq", modelType = "GAMM")
+#' bmd_bounds <- compute_bmd_bounds_parallel(results, "dose", "sample", n_bootstrap = 1000, ci_level = 0.95, num_cores = 4)
+#' print(bmd_bounds)
+#' }
+#'
+#' @export
+compute_bmd_bounds_parallel <- function(dose_rider_results, dose_col = "dose", sample_col = "sample", ci_level = 0.95,
+                                        covariates = c(), omic = "rnaseq", n_bootstrap = 1000, num_cores = 5) {
+
+  # Register the parallel backend for bootstrap sampling
+  cl <- makeCluster(num_cores)
+  registerDoParallel(cl)
+
+  # Initialize a list to store results
+  bmd_bounds_list <- vector("list", length(dose_rider_results))
+
+  # Initialize progress bar
+  pb <- txtProgressBar(min = 0, max = length(dose_rider_results) * n_bootstrap, style = 3)
+  progress <- 0
+
+  # Loop over gene sets sequentially
+  for (geneset_idx in seq_along(dose_rider_results)) {
+    geneset_name <- names(dose_rider_results)[geneset_idx]
+    geneset <- dose_rider_results[[geneset_name]]
+    long_df <- geneset$Raw_Values[[1]]
+    best_model <- geneset$best_model
+    formula <- create_lmm_formula("counts", dose_col, "gene", covariates, best_model, omic)
+    bmd <- extract_bmd_for_pathway(dose_rider_results, geneset_name)
+
+    if (sum(!is.na(bmd)) > 1) {
+
+      # Perform parallel bootstrap sampling
+      bmd_values <- foreach(i = 1:n_bootstrap, .combine = c, .packages = c("lme4", "doseRider", "dplyr")) %dopar% {
+        bootstrap_indices <- sample.int(n = nrow(long_df), size = nrow(long_df), replace = TRUE)
+        long_df_bootstrap <- long_df[bootstrap_indices, , drop = FALSE]
+        bootstrap_results <- suppressMessages(doseRider:::fit_model_compute_bmd(long_df_bootstrap, formula, omic = omic, clusterResults = FALSE, dose_col = dose_col))
+        if (!is.na(bootstrap_results)) {
+          return(unlist(bootstrap_results$AllGenes)[1])
+        }
+        return(NA)
+      }
+
+      # Remove NA values from BMD calculations
+      bmd_values <- na.omit(bmd_values)
+
+      if (length(bmd_values) > 0) {
+        # Calculate the lower and upper bounds for the BMD
+        lower_bound <- quantile(bmd_values, probs = (1 - ci_level) / 2)
+        upper_bound <- quantile(bmd_values, probs = 1 - (1 - ci_level) / 2)
+        mean_bmd <- mean(bmd_values)
+        median_bmd <- median(bmd_values)
+
+        # Store the results in a list
+        bmd_bounds_list[[geneset_idx]] <- data.frame(
+          Geneset = geneset_name,
+          Lower_Bound = lower_bound,
+          Upper_Bound = upper_bound,
+          Mean_BMD = mean_bmd,
+          Median_BMD = median_bmd,
+          Best_Model = best_model,
+          stringsAsFactors = FALSE
+        )
+      }
+    }
+
+    # Update progress bar
+    progress <- progress + n_bootstrap
+    setTxtProgressBar(pb, progress)
+  }
+
+  # Stop the parallel backend
+  stopCluster(cl)
+  close(pb)
+
+  # Combine the list into a data frame
+  bmd_bounds_df <- do.call(rbind, bmd_bounds_list)
+
+  return(bmd_bounds_df)
+}
+
+
 
 
 #' Compute Benchmark Dose (BMD) for a Specific Gene within a Gene Set

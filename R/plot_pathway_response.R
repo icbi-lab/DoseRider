@@ -467,21 +467,21 @@ plot_bmd_density_and_peaks <- function(bmd_range_output) {
 #' }
 #'
 #' @export
-plot_bmd_confidence_intervals <- function(bmd_bounds_df) {
+plot_bmd_confidence_intervals <- function(bmd_bounds_df, top = 10) {
   # Sort by the specified order column
   bmd_bounds_df <- bmd_bounds_df[!is.na(bmd_bounds_df$Median_BMD),]
   # Wrap the pathway names for better readability
   bmd_bounds_df$Geneset <- unlist(lapply(bmd_bounds_df$Geneset, function(x){str_wrap(gsub("_", " ", x), 35)}))
 
   # Create Bubble Plot
-  bmd_plot <- ggplot(bmd_bounds_df, aes(x = Mean_BMD, y = reorder(Geneset, Mean_BMD), fill = best_model)) +
+  bmd_plot <- ggplot(bmd_bounds_df, aes(x = Mean_BMD, y = reorder(Geneset, Mean_BMD), fill = Best_Model)) +
     geom_errorbarh(aes(xmin = Lower_Bound, xmax = Upper_Bound), height = 0.2, color = "red", size = 1) +
-    geom_point(shape = 21, alpha = 0.6, size = 5) +
+    geom_point(shape = 21, alpha = 0.6, size = 3) +
     scale_fill_manual(values = c("non_linear_mixed" = "orange","non_linear_fixed" = "blue", "linear" = "green", "null" = "red"), name = "Best Model") +
     labs(x = "Benchmark Dose (BMD)", y = "Pathway") +
     theme_minimal() +
     theme(axis.text.x = element_text(angle = 45, hjust = 1)) +
-    theme_dose_rider()
+    theme_dose_rider(fix_ratio = F)
 
   return(bmd_plot)
 }

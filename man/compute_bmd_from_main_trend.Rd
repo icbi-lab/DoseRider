@@ -14,7 +14,7 @@ compute_bmd_from_main_trend(
 \arguments{
 \item{smooth_pathway}{Data frame containing smoothed trend predictions, typically from a dose-response model.}
 
-\item{dose_var}{The name of the dose variable in `smooth_pathway`.}
+\item{dose_var}{The name of the dose variable in smooth_pathway.}
 
 \item{z}{A numeric value specifying the number of standard deviations above the control response
 to define the target response for BMD. Default is 1.}
@@ -27,7 +27,7 @@ A numeric value representing the calculated BMD. If no BMD is found within a rea
 \description{
 This function calculates the Benchmark Dose (BMD) based on a smoothed trend from model predictions.
 The BMD is identified as the dose level where the predicted response exceeds a threshold defined
-as a specified number of standard deviations (`z`) above the control response.
+as a specified number of standard deviations (z) above the control response.
 }
 \examples{
 \dontrun{

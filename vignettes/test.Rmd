@@ -18,6 +18,7 @@ library(doseRider)
 library(DESeq2)
 library(ggplot2)
 library(dplyr)
+library(edgeR)
 ```
 
 ### 2. Data Import
@@ -100,7 +101,7 @@ dose_rider_results <- DoseRiderParallel(se = filter_bpaf_data, gmt = gmt_p_data,
                                            dose_col = "Dose", omic = "rnaseq", 
                                            minGSsize = 20, maxGSsize = 200, 
                                            method = "bonferroni", covariates = c(),
-                                          modelType = "LMM", num_cores = 10,
+                                          modelType = "LMM", num_cores = 20,
                                           clusterResults = T, FilterPathway = F)
 
 res_df <- as.data.frame.DoseRider(dose_rider_results)
@@ -108,7 +109,8 @@ table(res_df$best_model)
 
 
 #save(res, file = "../../doseRider_save/res_bpa_20_1000.rda")
-dose_rider_results <- filter_DoseRider(dose_rider_results, model_type = "non_linear", threshold = 0.001)
+dose_rider_results_filter <- filter_DoseRider(dose_rider_results, model_type = "all", threshold = 0.1)
+bmd_bounds_df <- compute_bmd_bounds_parallel(dose_rider_results = dose_rider_results_filter, dose_col = "Dose", sample_col = "sample", covariates = c(), omic = "rnaseq", n_bootstrap = 50, num_cores = 20)
 ```
 
 ## Results and Discussion
@@ -146,6 +148,10 @@ data_bmd <- get_bmd_range(dose_rider_results = dose_rider_results)
 p7 <- plot_bmd_density_and_peaks(data_bmd)
 plotFile7 <- paste0(save_path,"/plot7.jpeg")
 
+p10 <- plot_bmd_confidence_intervals(head(bmd_bounds_df,20))
+plotFile10 <- paste0(save_path,"/plot10.jpeg")
+
+
 data_tcd <- get_tcd_range(dose_rider_results = filter_DoseRider(dose_rider_results, model_type = "non_linear"))
 p8 <- plot_tcd_density(data_tcd)
 plotFile8 <- paste0(save_path,"/plot8.jpeg")
@@ -168,6 +174,8 @@ jpeg(file=plotFile6, width = PLOT_WIDTH - 1500, height = PLOT_HEIGHT - 1500, uni
 dev.off()
 
 ggsave(plotFile7, plot = p7, width = PLOT_WIDTH, height = PLOT_HEIGHT, units = "px", dpi = 600)
+
+ggsave(plotFile10, plot = p10, width = PLOT_WIDTH, height = PLOT_HEIGHT+500, units = "px", dpi = 600)
 
 ```
 

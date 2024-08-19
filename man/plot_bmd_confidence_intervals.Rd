@@ -4,7 +4,7 @@
 \alias{plot_bmd_confidence_intervals}
 \title{Plot Bubble Plot of BMD with Confidence Intervals}
 \usage{
-plot_bmd_confidence_intervals(bmd_bounds_df)
+plot_bmd_confidence_intervals(bmd_bounds_df, top = 10)
 }
 \arguments{
 \item{bmd_bounds_df}{A data frame containing the BMD results with columns for lower bound, upper bound, mean BMD, and median BMD.}
