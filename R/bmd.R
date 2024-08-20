@@ -163,8 +163,6 @@ compute_bmd_bounds_parallel <- function(dose_rider_results, dose_col = "dose", s
     formula <- create_lmm_formula("counts", dose_col, "gene", covariates, best_model, omic)
     bmd <- extract_bmd_for_pathway(dose_rider_results, geneset_name)
 
-    if (sum(!is.na(bmd)) > 1) {
-
       # Perform parallel bootstrap sampling
       bmd_values <- foreach(i = 1:n_bootstrap, .combine = c, .packages = c("lme4", "doseRider", "dplyr")) %dopar% {
         bootstrap_indices <- sample.int(n = nrow(long_df), size = nrow(long_df), replace = TRUE)
@@ -197,7 +195,7 @@ compute_bmd_bounds_parallel <- function(dose_rider_results, dose_col = "dose", s
           stringsAsFactors = FALSE
         )
       }
-    }
+
 
     # Update progress bar
     progress <- progress + n_bootstrap
