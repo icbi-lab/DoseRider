@@ -56,7 +56,7 @@ optimal_clusters_silhouette <- function(data, dose_col, max_clusters = 10) {
 
   for (k in 2:max_clusters) {
     set.seed(123)  # for reproducibility
-    km_res <- kmeans(data, centers = k, nstart = 25)
+    km_res <- kmeans(data, centers = k, nstart = max_clusters)
     sil <- silhouette(km_res$cluster, dist(data))
     sil_widths[k-1] <- mean(sil[, "sil_width"])
   }
@@ -64,7 +64,7 @@ optimal_clusters_silhouette <- function(data, dose_col, max_clusters = 10) {
   # Find the optimal number of clusters
   optimal_clusters <- which.max(sil_widths) + 1
   #optimal_clusters <- 4
-  final_km_res <- kmeans(data, centers = optimal_clusters, nstart = 25)
+  final_km_res <- kmeans(data, centers = optimal_clusters, nstart = max_clusters)
 
   # Creating a list of genes and their corresponding cluster assignments
   #cluster_assignments <- data.frame(gene = rownames(data), Cluster = final_km_res$cluster)

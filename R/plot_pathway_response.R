@@ -478,7 +478,7 @@ plot_bmd_confidence_intervals <- function(bmd_bounds_df, top = 10) {
     geom_errorbarh(aes(xmin = Lower_Bound, xmax = Upper_Bound), height = 0.2, color = "red", size = 1) +
     geom_point(shape = 21, alpha = 0.6, size = 3) +
     scale_fill_manual(values = c("non_linear_mixed" = "orange","non_linear_fixed" = "blue", "linear" = "green", "null" = "red"), name = "Best Model") +
-    labs(x = "Benchmark Dose (BMD)", y = "Pathway") +
+    labs(x = "Benchmark Dose (BMD)", y = "") +
     theme_minimal() +
     theme(axis.text.x = element_text(angle = 45, hjust = 1)) +
     theme_dose_rider(fix_ratio = F)

@@ -60,48 +60,52 @@ compute_derivatives <- function(smooth_pathway, dose_var) {
 #'
 #' @export
 compute_bmd_from_main_trend <- function(smooth_pathway, dose_var, z = 1, center_values = TRUE) {
-  # Aggregate by Dose and fit
+  # Center the predictions if specified
   if (center_values) {
     smooth_pathway <- smooth_pathway %>%
       group_by(gene) %>%
       mutate(predictions = predictions - mean(predictions, na.rm = TRUE)) %>%
       ungroup()
-    smooth_pathway <- as.data.frame(smooth_pathway)
   }
 
-  mean_trend <- aggregate(as.formula(paste0("predictions ~ ", dose_var)), data = as.data.frame(smooth_pathway), FUN = mean)
+  # Aggregate the data by the dose variable using as.formula
+  mean_trend <- aggregate(as.formula(paste0("predictions ~ ", dose_var)), data = smooth_pathway, FUN = mean)
 
   # Calculate control response (mean response at the lowest dose)
   min_dose <- min(smooth_pathway[[dose_var]])
-  control_response <- smooth_pathway[smooth_pathway[dose_var] == min_dose, "predictions"]
+  control_response <- as.vector(unlist(smooth_pathway[smooth_pathway[[dose_var]] == min_dose, "predictions"]))
+
+  # Compute the mean and standard deviation of the control response
   mean_control <- mean(control_response, na.rm = TRUE)
   mean_SD <- sd(control_response, na.rm = TRUE)
+
+  # Calculate the thresholds
   threshold_up <- mean_control + z * mean_SD
   threshold_down <- mean_control - z * mean_SD
 
-  # Find doses where response crosses the threshold
-  bmd_doses <- c()
-  for (i in 3:nrow(mean_trend)) {
-    current_dose <- mean_trend[i, dose_var]
-    previous_dose <- mean_trend[i - 1, dose_var]
-    current_response <- mean_trend[i, "predictions"]
-    previous_response <- mean_trend[i - 1, "predictions"]
+  # Print the calculated thresholds for debugging purposes
+  print(paste("Threshold Up:", threshold_up))
+  print(paste("Threshold Down:", threshold_down))
 
-    if ((previous_response < threshold_up && current_response >= threshold_up) ||
-        (previous_response > threshold_up && current_response <= threshold_up)) {
-      ratio_up <- (threshold_up - previous_response) / (current_response - previous_response)
-      interpolated_dose_up <- previous_dose + ratio_up * (current_dose - previous_dose)
-      bmd_doses <- c(bmd_doses, interpolated_dose_up)
-    }
+  # Vectorized identification of crossing points
+  crossing_up <- which(diff(sign(mean_trend$predictions - threshold_up)) != 0)
+  crossing_down <- which(diff(sign(mean_trend$predictions - threshold_down)) != 0)
 
-    if ((previous_response < threshold_down && current_response >= threshold_down) ||
-        (previous_response > threshold_down && current_response <= threshold_down)) {
-      ratio_down <- (threshold_down - previous_response) / (current_response - previous_response)
-      interpolated_dose_down <- previous_dose + ratio_down * (current_dose - previous_dose)
-      bmd_doses <- c(bmd_doses, interpolated_dose_down)
-    }
-  }
+  # Vectorized calculation of interpolated doses
+  interpolated_dose_up <- mean_trend[[dose_var]][crossing_up] +
+    (threshold_up - mean_trend$predictions[crossing_up]) /
+    (mean_trend$predictions[crossing_up + 1] - mean_trend$predictions[crossing_up]) *
+    (mean_trend[[dose_var]][crossing_up + 1] - mean_trend[[dose_var]][crossing_up])
 
+  interpolated_dose_down <- mean_trend[[dose_var]][crossing_down] +
+    (threshold_down - mean_trend$predictions[crossing_down]) /
+    (mean_trend$predictions[crossing_down + 1] - mean_trend$predictions[crossing_down]) *
+    (mean_trend[[dose_var]][crossing_down + 1] - mean_trend[[dose_var]][crossing_down])
+
+  # Combine the results
+  bmd_doses <- c(interpolated_dose_up, interpolated_dose_down)
+
+  # Return the BMD doses if any were found, otherwise return NA
   if (length(bmd_doses) > 0) {
     return(bmd_doses)
   } else {
@@ -110,11 +114,12 @@ compute_bmd_from_main_trend <- function(smooth_pathway, dose_var, z = 1, center_
 }
 
 
-#' Compute BMD Bounds using Bootstrapping with Parallel Bootstrap Sampling
+
+#' Compute BMD Bounds using Bootstrapping with Parallel Gene Set Processing
 #'
 #' This function calculates the lower and upper bounds of the Benchmark Dose (BMD)
-#' using bootstrapping on the raw data for significant gene sets, with the bootstrap
-#' sampling process parallelized across multiple cores.
+#' using bootstrapping on the raw data for significant gene sets, with the gene set
+#' processing parallelized across multiple cores.
 #'
 #' @param dose_rider_results A DoseRider object containing results of the analysis.
 #' @param dose_col Name of the column representing dose information.
@@ -123,7 +128,7 @@ compute_bmd_from_main_trend <- function(smooth_pathway, dose_var, z = 1, center_
 #' @param omic Type of omics data, defaults to "rnaseq".
 #' @param n_bootstrap The number of bootstrap samples to generate. Default is 1000.
 #' @param ci_level Confidence interval level, default is 0.95.
-#' @param num_cores The number of cores to use for parallel processing of bootstrap samples. Default is 5.
+#' @param num_cores The number of cores to use for parallel processing of gene sets. Default is 5.
 #' @import foreach
 #' @import doParallel
 #' @import parallel
@@ -143,75 +148,69 @@ compute_bmd_from_main_trend <- function(smooth_pathway, dose_var, z = 1, center_
 compute_bmd_bounds_parallel <- function(dose_rider_results, dose_col = "dose", sample_col = "sample", ci_level = 0.95,
                                         covariates = c(), omic = "rnaseq", n_bootstrap = 1000, num_cores = 5) {
 
-  # Register the parallel backend for bootstrap sampling
+  # Register the parallel backend for gene set processing
   cl <- makeCluster(num_cores)
   registerDoParallel(cl)
 
-  # Initialize a list to store results
-  bmd_bounds_list <- vector("list", length(dose_rider_results))
-
   # Initialize progress bar
-  pb <- txtProgressBar(min = 0, max = length(dose_rider_results) * n_bootstrap, style = 3)
-  progress <- 0
+  pb <- txtProgressBar(min = 0, max = length(dose_rider_results), style = 3)
 
-  # Loop over gene sets sequentially
-  for (geneset_idx in seq_along(dose_rider_results)) {
+  # Perform parallel processing of gene sets
+  bmd_bounds_list <- foreach(geneset_idx = seq_along(dose_rider_results), .combine = rbind, .packages = c("lme4", "doseRider", "dplyr")) %dopar% {
     geneset_name <- names(dose_rider_results)[geneset_idx]
     geneset <- dose_rider_results[[geneset_name]]
     long_df <- geneset$Raw_Values[[1]]
     best_model <- geneset$best_model
-    formula <- create_lmm_formula("counts", dose_col, "gene", covariates, best_model, omic)
+    formula <- doseRider:::create_lmm_formula("counts", dose_col, "gene", covariates, best_model, omic)
     bmd <- extract_bmd_for_pathway(dose_rider_results, geneset_name)
 
-      # Perform parallel bootstrap sampling
-      bmd_values <- foreach(i = 1:n_bootstrap, .combine = c, .packages = c("lme4", "doseRider", "dplyr")) %dopar% {
-        bootstrap_indices <- sample.int(n = nrow(long_df), size = nrow(long_df), replace = TRUE)
-        long_df_bootstrap <- long_df[bootstrap_indices, , drop = FALSE]
-        bootstrap_results <- suppressMessages(doseRider:::fit_model_compute_bmd(long_df_bootstrap, formula, omic = omic, clusterResults = FALSE, dose_col = dose_col))
-        if (!is.na(bootstrap_results)) {
-          return(unlist(bootstrap_results$AllGenes)[1])
-        }
-        return(NA)
+    # Perform bootstrap sampling
+    bmd_values <- replicate(n_bootstrap, {
+      bootstrap_indices <- sample.int(n = nrow(long_df), size = nrow(long_df)*0.5, replace = TRUE)
+      long_df_bootstrap <- long_df[bootstrap_indices, , drop = FALSE]
+      bootstrap_results <- suppressMessages(doseRider:::fit_model_compute_bmd(long_df_bootstrap, formula, omic = omic, clusterResults = FALSE, dose_col = dose_col))
+      if (!is.na(bootstrap_results)) {
+        return(unlist(bootstrap_results$AllGenes)[1])
       }
+      return(NA)
+    })
 
-      # Remove NA values from BMD calculations
-      bmd_values <- na.omit(bmd_values)
+    # Remove NA values from BMD calculations
+    bmd_values <- na.omit(bmd_values)
 
-      if (length(bmd_values) > 0) {
-        # Calculate the lower and upper bounds for the BMD
-        lower_bound <- quantile(bmd_values, probs = (1 - ci_level) / 2)
-        upper_bound <- quantile(bmd_values, probs = 1 - (1 - ci_level) / 2)
-        mean_bmd <- mean(bmd_values)
-        median_bmd <- median(bmd_values)
+    if (length(bmd_values) > 0) {
+      # Calculate the lower and upper bounds for the BMD
+      lower_bound <- quantile(bmd_values, probs = (1 - ci_level) / 2)
+      upper_bound <- quantile(bmd_values, probs = 1 - (1 - ci_level) / 2)
+      mean_bmd <- mean(bmd_values)
+      median_bmd <- median(bmd_values)
 
-        # Store the results in a list
-        bmd_bounds_list[[geneset_idx]] <- data.frame(
-          Geneset = geneset_name,
-          Lower_Bound = lower_bound,
-          Upper_Bound = upper_bound,
-          Mean_BMD = mean_bmd,
-          Median_BMD = median_bmd,
-          Best_Model = best_model,
-          stringsAsFactors = FALSE
-        )
-      }
-
+      # Create a data frame with the results
+      result <- data.frame(
+        Geneset = geneset_name,
+        Lower_Bound = lower_bound,
+        Upper_Bound = upper_bound,
+        Mean_BMD = mean_bmd,
+        Median_BMD = median_bmd,
+        Best_Model = best_model,
+        stringsAsFactors = FALSE
+      )
+    } else {
+      result <- NULL
+    }
 
     # Update progress bar
-    progress <- progress + n_bootstrap
-    setTxtProgressBar(pb, progress)
+    setTxtProgressBar(pb, geneset_idx)
+
+    return(result)
   }
 
   # Stop the parallel backend
   stopCluster(cl)
   close(pb)
 
-  # Combine the list into a data frame
-  bmd_bounds_df <- do.call(rbind, bmd_bounds_list)
-
-  return(bmd_bounds_df)
+  return(bmd_bounds_list)
 }
-
 
 
 
