@@ -211,7 +211,10 @@ plot_pathway_response <- function(dose_rider_results, gene_set_name, dose_col = 
 
     # Finalize the plot settings
     # Finalize the plot settings and add custom legend labels
-    p <- p + labs(x = "Dose", y = "Expression", title = str_wrap(gsub("_", " ", gene_set_name), width = 35), caption = paste(legend_labels))
+    p <- p + labs(x = "Dose", y = "Expression", title = str_wrap(gsub("_", " ", gene_set_name), width = 35))
+    if (model_metrics){
+      p <- p + labs(caption = paste(legend_labels))
+    }
     #Add custom theme
     p <- p + theme_dose_rider(legend_position = legend_position, text_size=text_size, margin_space = margin_space)
 
