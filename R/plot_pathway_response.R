@@ -133,7 +133,7 @@ adjust_trend_visuals <- function(cluster_trend, dose_col, zero_points, t = 0.000
 #' @importFrom stringr str_wrap
 #' @importFrom dplyr mutate group_by ungroup
 #' @export
-plot_pathway_response <- function(dose_rider_results, gene_set_name, dose_col = "Dose", center_values = T, legend_position = "none", text_size=4, margin_space = 0) {
+plot_pathway_response <- function(dose_rider_results, gene_set_name, dose_col = "Dose", center_values = T, legend_position = "none", text_size=4, margin_space = 0, model_metrics = F, v_size = 0.5) {
 
   # Extract the specific gene set results from dose_rider_results
   gene_set_results <- dose_rider_results[[gene_set_name]]
@@ -168,7 +168,11 @@ plot_pathway_response <- function(dose_rider_results, gene_set_name, dose_col = 
     # Now proceed with plotting,
 
     # Create custom legend labels
-    legend_labels <- create_legend_labels(dose_rider_results, gene_set_name)
+    if (model_metrics) {
+      legend_labels <- create_legend_labels(dose_rider_results, gene_set_name)
+    } else {
+      legend_labels <- NaN
+    }
 
     # Add gene-specific trends
     p <- ggplot() + geom_line(data = mean_data, aes(x = Dose, y = predictions, group = gene,color = as.factor(Cluster)), linewidth = 0.5)
@@ -193,7 +197,7 @@ plot_pathway_response <- function(dose_rider_results, gene_set_name, dose_col = 
       if (sum(!is.na(cluster_bmd))>0){
         for (bmd_dose in cluster_bmd) {
 
-          p <- p + geom_vline(xintercept = bmd_dose, color="#F57C00",linetype="dashed",linewidth=1.5)
+          p <- p + geom_vline(xintercept = bmd_dose, color="#F57C00",linetype="dashed",linewidth=v_size)
 
         }
       }
@@ -319,8 +323,8 @@ plot_gene_set_random_effects <- function(dose_rider_results, dose_col = "Dose", 
   # Ridge plot
   all_random_effects$gene_set <- unlist(lapply(all_random_effects$gene_set,function(x){str_wrap(x,width = 35)}))
   p <- ggplot(all_random_effects, aes(x = RandomEffect1, y = gene_set, fill = gene_set)) +
-    geom_vline(xintercept = 0, color = "red", linetype = "dashed") +
     geom_density_ridges() +
+    geom_vline(xintercept = 0, color = "red", linetype = "dashed") +
     scale_fill_manual(values = custom_palette) +
     labs(x = "Gene-Specific Difference in Dose Effect (b₁)", y = "") +
     theme_ridges() +
@@ -475,8 +479,8 @@ plot_bmd_confidence_intervals <- function(bmd_bounds_df, top = 10) {
 
   # Create Bubble Plot
   bmd_plot <- ggplot(bmd_bounds_df, aes(x = Mean_BMD, y = reorder(Geneset, Mean_BMD), fill = Best_Model)) +
-    geom_errorbarh(aes(xmin = Lower_Bound, xmax = Upper_Bound), height = 0.2, color = "red", size = 1) +
-    geom_point(shape = 21, alpha = 0.6, size = 3) +
+    geom_errorbarh(aes(xmin = Lower_Bound, xmax = Upper_Bound), height = 0.2, color = "black", size = 1) +
+    geom_point(shape = 21, size = 3) +
     scale_fill_manual(values = c("non_linear_mixed" = "orange","non_linear_fixed" = "blue", "linear" = "green", "null" = "red"), name = "Best Model") +
     labs(x = "Benchmark Dose (BMD)", y = "") +
     theme_minimal() +

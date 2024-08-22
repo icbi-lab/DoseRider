@@ -1,0 +1,188 @@
+---
+title: "Using doseRider for Studying Non-Linear Dose-Response in BPA"
+author: "Pablo Monfort-Lanzas"
+date: "2023-08-01"
+output: html_document
+---
+
+# Using doseRider for Studying Non-Linear Dose-Response in BPA
+
+The `doseRider` package is used for analyzing dose-response relationships in gene expression data using Generalized Additive Mixed Models (GAMMs). This report focuses on bisphenol A (BPA) and its alternatives, analyzing their impact on gene expression in MCF-7 cells.
+
+## RMarkdown Workflow for doseRider Analysis
+
+### 1. Loading Required Packages
+
+```{r, warning=FALSE, message=FALSE}
+# Load necessary libraries
+library(doseRider)
+library(DESeq2)
+library(ggplot2)
+library(dplyr)
+library(edgeR)
+library(doParallel)
+setwd("/home/monfortl/doseRider")
+```
+
+### 2. Data Import
+
+Data from PRJNA869442 (GSE211183) has been preprocessed for this analysis.
+
+```{r}
+# Load preprocessed data
+load("../data/PRJNA869442.rda")
+```
+
+#### Dose Selection for Each Compound
+
+Doses were selected based on criteria such as precipitation, stress response biomarkers, and cell proliferation.
+
+```{r}
+# Define the doses for BPAF compound
+compound_doses <- list("BPAF" = c(0.0005, 0.001, 0.01, 0.1, 0.5, 1, 5))
+doses <- c(0, compound_doses["BPAF"][[1]])
+
+# Filter data for BPAF
+bpaf_data <- PRJNA869442[
+  (colData(PRJNA869442)$Chemical %in% c("Cells, no treatment", "BPAF")) &
+  (colData(PRJNA869442)$Dose %in% doses)
+]
+bpaf_data$sample <- colnames(bpaf_data)
+```
+
+### 3. Differential Expression Analysis
+
+```{r}
+# Prepare the data for DESeq2 analysis
+colData(bpaf_data)$Dose <- unlist(colData(bpaf_data)$Dose)
+
+# Create DESeq2 dataset
+dds <- DESeqDataSetFromMatrix(
+  countData = assay(bpaf_data),
+  colData   = colData(bpaf_data),
+  design    = ~ Dose * Dose
+)
+
+# Run DESeq2 analysis
+dds <- DESeq(dds, parallel = TRUE, quiet = TRUE)
+res <- results(dds)
+
+# Filter results based on criteria
+filter_res <- as.data.frame(res[(res$baseMean > 11) & (res$pvalue < 0.1),])
+bpaf_data <- estimate_model_parameters(bpaf_data)
+
+# Filter out low express genes
+filter_bpaf_data <- bpaf_data[rownames(bpaf_data) %in% rownames(filter_res),]
+
+# Save filtered metadata and expression data
+metadata <- colData(filter_bpaf_data)
+expression_data <- assay(filter_bpaf_data)
+
+write.table(metadata, "metadata.tsv", sep="\t", quote=FALSE)
+write.table(expression_data, "expression_data.tsv", sep="\t", quote=FALSE)
+```
+
+### 4. Load Gene Sets
+
+```{r}
+# Specify the path to your GMT files
+gmt_h_path <- "../external/h.all.v2023.2.Hs.symbols.gmt" 
+gmt_perturbation_path <- "../external/c2.cgp.v2023.2.Hs.symbols.gmt"
+
+# Read and filter GMT files
+gmt <- filter_gmt_by_size(read_gmt(gmt_perturbation_path), 20, 1000)
+```
+
+### 5. Dose-Response Model with doseRider
+
+```{r}
+# Run doseRider analysis
+dose_rider_results <- DoseRiderParallel(
+  se = filter_bpaf_data, 
+  gmt = gmt, 
+  dose_col = "Dose", 
+  omic = "rnaseq", 
+  minGSsize = 20, 
+  maxGSsize = 500, 
+  method = "bonferroni", 
+  covariates = c(),
+  modelType = "LMM", 
+  num_cores = 10,
+  clusterResults = TRUE, 
+  FilterPathway = FALSE
+)
+
+# Convert results to data frame
+res_df <- as.data.frame.DoseRider(dose_rider_results)
+table(res_df$best_model)
+
+# Filter doseRider results based on FDR
+dose_rider_results_filter <- filter_DoseRider(
+  dose_rider_results, 
+  model_type = "all", 
+  filter_type = "fdr", 
+  threshold = 0.1
+)
+
+# Compute BMD bounds
+bmd_bounds_df <- doseRider::compute_bmd_bounds_parallel(
+  dose_rider_results = dose_rider_results_filter, 
+  dose_col = "Dose", 
+  sample_col = "sample", 
+  covariates = c(), 
+  omic = "rnaseq", 
+  n_bootstrap = 100, 
+  num_cores = 10
+)
+
+# Save doseRider results and BMD bounds
+save(dose_rider_results, file = "doseRider_results.rda")
+save(dose_rider_results_filter, file = "doseRider_results_filter.rda")
+save(bmd_bounds_df, file = "bmd_bounds_df.rda")
+```
+
+### 6. Results and Discussion
+
+Generate and save plots based on the analysis.
+
+```{r}
+# Define plotting parameters
+top <- 20
+save_path <- "plots/"
+dir.create(save_path, showWarnings = FALSE)
+PLOT_WIDTH <- 2500
+PLOT_HEIGHT <- 2500
+
+# Generate and save plots
+p1 <- dose_response_heatmap(dose_rider_results, dose_col = "Dose", top = top, order_column = "best_model_pvalue", decreasing = FALSE)
+jpeg(file=paste0(save_path,"plot1.jpeg"), width = PLOT_WIDTH - 1500, height = PLOT_HEIGHT - 1500, units = "px")
+plot(p1, heatmap_legend_side = "bottom", annotation_legend_side = "bottom", padding = unit(c(1, 1, 1, 1), "cm"))
+dev.off()
+
+p2 <- plot_gene_set_random_effects(dose_rider_results, dose_col = "Dose", order_column = "best_model_pvalue", top = top)
+ggsave(paste0(save_path,"plot2.jpeg"), plot = p2, width = PLOT_WIDTH, height = PLOT_HEIGHT, units = "px", dpi = 600)
+
+p3 <- plot_top_pathway_responses(dose_rider_results, top = 6, ncol = 2, order_column = "best_model_pvalue", text_size = 5)
+ggsave(paste0(save_path,"plot3.jpeg"), plot = p3, width = PLOT_WIDTH, height = PLOT_HEIGHT + 1000, units = "px", dpi = 600)
+
+p4 <- plot_gene_random_effect_relationship(dose_rider_results, "BENPORATH_ES_CORE_NINE_CORRELATED")
+ggsave(paste0(save_path,"plot4.jpeg"), plot = p4, width = PLOT_WIDTH + 1800, height = PLOT_HEIGHT + 600, units = "px", dpi = 600)
+
+p5 <- plot_dotplot_top_pathways(dose_rider_results, top = top, order_column = "Genes", decreasing = TRUE)
+ggsave(paste0(save_path,"plot5.jpeg"), plot = p5, width = PLOT_WIDTH + 500, height = PLOT_HEIGHT + 500, units = "px", dpi = 600)
+
+p6 <- create_gene_heatmap(dose_rider_results, dose_col = "Dose", gene_set_name = "MENSE_HYPOXIA_UP")
+jpeg(file=paste0(save_path,"plot6.jpeg"), width = PLOT_WIDTH - 1500, height = PLOT_HEIGHT - 1500, units = "px")
+plot(p6, heatmap_legend_side = "bottom", annotation_legend_side = "bottom", padding = unit(c(1, 1, 1, 1), "cm"))
+dev.off()
+
+data_bmd <- get_bmd_range(dose_rider_results = dose_rider_results)
+p7 <- plot_bmd_density_and_peaks(data_bmd)
+ggsave(paste0(save_path,"plot7.jpeg"), plot = p7, width = PLOT_WIDTH, height = PLOT_HEIGHT, units = "px", dpi = 600)
+
+p10 <- plot_bmd_confidence_intervals(head(bmd_bounds_df, 20))
+ggsave(paste0(save_path,"plot10.jpeg"), plot = p10, width = PLOT_WIDTH, height = PLOT_HEIGHT + 500, units = "px", dpi = 600)
+```
+
+
+
