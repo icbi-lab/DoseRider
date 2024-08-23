@@ -133,7 +133,7 @@ adjust_trend_visuals <- function(cluster_trend, dose_col, zero_points, t = 0.000
 #' @importFrom stringr str_wrap
 #' @importFrom dplyr mutate group_by ungroup
 #' @export
-plot_pathway_response <- function(dose_rider_results, gene_set_name, dose_col = "Dose", center_values = T, legend_position = "none", text_size=4, margin_space = 0, model_metrics = F, v_size = 0.5) {
+plot_pathway_response <- function(dose_rider_results, gene_set_name, dose_col = "Dose", center_values = T, legend_position = "none", text_size=4, margin_space = 0, model_metrics = F, v_size = 0.5, annotate_gene = F) {
 
   # Extract the specific gene set results from dose_rider_results
   gene_set_results <- dose_rider_results[[gene_set_name]]
@@ -176,7 +176,18 @@ plot_pathway_response <- function(dose_rider_results, gene_set_name, dose_col = 
 
     # Add gene-specific trends
     p <- ggplot() + geom_line(data = mean_data, aes(x = Dose, y = predictions, group = gene,color = as.factor(Cluster)), linewidth = 0.5)
-    #PLot specific data for the clusters
+    if (annotate_gene){
+      sampled_mean_data <- mean_data %>%
+        group_by(gene) %>%
+        slice_sample(n = 1) %>%
+        ungroup()
+
+      p <- p + geom_text_repel(data = sampled_mean_data, aes(x = Dose, y = predictions, label = gene), size = 3,
+                                 nudge_y = 0.2, # Adjust as needed to position the labels
+                                 direction = "y", # Position text vertically
+                                 segment.color = 'grey50', # Line connecting text to the point
+                                 show.legend = FALSE) # Exclude text from the legend
+    }
     for (j in c(1:n_cluster)) {
       if ("AllGenes" %in% names(ClusterSpecificResults)){
         cluster_data <- ClusterSpecificResults["AllGenes"][[1]]
