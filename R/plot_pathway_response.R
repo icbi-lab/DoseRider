@@ -134,7 +134,7 @@ adjust_trend_visuals <- function(cluster_trend, dose_col, zero_points, t = 0.000
 #' @importFrom stringr str_wrap
 #' @importFrom dplyr mutate group_by ungroup
 #' @export
-plot_pathway_response <- function(dose_rider_results, gene_set_name, dose_col = "Dose", center_values = T, legend_position = "none", text_size=4, margin_space = 0, model_metrics = F, v_size = 0.5, annotate_gene = F) {
+plot_pathway_response <- function(dose_rider_results, gene_set_name, dose_col = "Dose", center_values = T, legend_position = "none", text_size=4, margin_space = 0, model_metrics = F, v_size = 0.5, annotate_gene = F, annotation_text_size = 5) {
 
   # Extract the specific gene set results from dose_rider_results
   gene_set_results <- dose_rider_results[[gene_set_name]]
@@ -188,7 +188,7 @@ plot_pathway_response <- function(dose_rider_results, gene_set_name, dose_col = 
         slice_sample(n = 1) %>%
         ungroup()
 
-      p <- p + geom_text_repel(data = sampled_mean_data, aes(x = Dose, y = predictions, label = gene), size = 3,
+      p <- p + geom_text_repel(data = sampled_mean_data, aes(x = Dose, y = predictions, label = gene), size = annotation_text_size,
                                  nudge_y = 0.2, # Adjust as needed to position the labels
                                  direction = "y", # Position text vertically
                                  segment.color = 'grey50', # Line connecting text to the point
