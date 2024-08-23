@@ -182,18 +182,6 @@ plot_pathway_response <- function(dose_rider_results, gene_set_name, dose_col = 
     p <- ggplot() + geom_line(data = mean_data, aes(x = Dose, y = predictions, group = gene,color = as.factor(Cluster)), linewidth = 0.5)
     p <-  p + scale_color_manual(values = custom_palette)
 
-    if (annotate_gene){
-      sampled_mean_data <- mean_data %>%
-        group_by(gene) %>%
-        slice_sample(n = 1) %>%
-        ungroup()
-
-      p <- p + geom_text_repel(data = sampled_mean_data, aes(x = Dose, y = predictions, label = gene), size = annotation_text_size,
-                                 nudge_y = 0.2, # Adjust as needed to position the labels
-                                 direction = "y", # Position text vertically
-                                 segment.color = 'grey50', # Line connecting text to the point
-                                 show.legend = FALSE) # Exclude text from the legend
-    }
     for (j in c(1:n_cluster)) {
       if ("AllGenes" %in% names(ClusterSpecificResults)){
         cluster_data <- ClusterSpecificResults["AllGenes"][[1]]
@@ -234,6 +222,19 @@ plot_pathway_response <- function(dose_rider_results, gene_set_name, dose_col = 
     p <- p + labs(x = "Dose", y = "Expression", title = str_wrap(gsub("_", " ", gene_set_name), width = 35))
     if (model_metrics){
       p <- p + labs(caption = paste(legend_labels))
+    }
+
+    if (annotate_gene){
+      sampled_mean_data <- mean_data %>%
+        group_by(gene) %>%
+        slice_sample(n = 1) %>%
+        ungroup()
+
+      p <- p + geom_text_repel(data = sampled_mean_data, aes(x = Dose, y = predictions, label = gene), size = annotation_text_size,
+                               nudge_y = 0.2, # Adjust as needed to position the labels
+                               direction = "y", # Position text vertically
+                               segment.color = 'grey50', # Line connecting text to the point
+                               show.legend = FALSE) # Exclude text from the legend
     }
     #Add custom theme
     p <- p + theme_dose_rider(legend_position = legend_position, text_size=text_size, margin_space = margin_space)
