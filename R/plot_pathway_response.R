@@ -130,6 +130,7 @@ adjust_trend_visuals <- function(cluster_trend, dose_col, zero_points, t = 0.000
 #' @return A ggplot object representing the pathway response plot.
 #'
 #' @import ggplot2
+#' @import ggrepl
 #' @importFrom stringr str_wrap
 #' @importFrom dplyr mutate group_by ungroup
 #' @export
@@ -174,8 +175,13 @@ plot_pathway_response <- function(dose_rider_results, gene_set_name, dose_col = 
       legend_labels <- NaN
     }
 
+    custom_palette <- c(custom_palette, "#F8766D")
+    names(custom_palette) <- c(as.character(1:(length(custom_palette)-1)),"AllGenes")
+
     # Add gene-specific trends
     p <- ggplot() + geom_line(data = mean_data, aes(x = Dose, y = predictions, group = gene,color = as.factor(Cluster)), linewidth = 0.5)
+    p <-  p + scale_color_manual(values = custom_palette)
+
     if (annotate_gene){
       sampled_mean_data <- mean_data %>%
         group_by(gene) %>%
@@ -204,6 +210,9 @@ plot_pathway_response <- function(dose_rider_results, gene_set_name, dose_col = 
       #Plot TCD
       cluster_trend <- adjust_trend_visuals(cluster_trend, dose_col, cluster_derivate)
       p <- p + geom_line(data = cluster_trend, aes(x = Dose, y = predictions, linewidth = line_thickness))
+
+
+      #F8766D
       #Plot BMD
       if (sum(!is.na(cluster_bmd))>0){
         for (bmd_dose in cluster_bmd) {
