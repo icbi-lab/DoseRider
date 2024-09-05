@@ -104,6 +104,7 @@ smooth_pathway_trend <- function(model, long_df, dose_col = "dose", sample_col =
 #' @param draw_bmd Logical, indicating whether to draw the benchmark dose (BMD) on the plot. Default is TRUE.
 #' @param plot_original_data Logical, indicating whether to draw original data, or predict the whole range of doses. Default is FALSE.
 #' @param clusterResults Boolean, if TRUE the genes within a gene set will be clustered to find similar expression patterns. Defaults to TRUE.
+#' @param scale_values Logical, indicating whether to scale the prediction values. Default is TRUE.
 #' @return A ggplot object representing the pathway response plot.
 #' @export
 plot_pathway_response <- function(dose_rider_results, gene_set_name, dose_col = "Dose",
@@ -146,7 +147,8 @@ plot_pathway_response <- function(dose_rider_results, gene_set_name, dose_col = 
 #' @param legend_position The position of the legend in the plot.
 #' @param text_size The size of the text in the plot.
 #' @param margin_space The margin space around the plot.
-#'
+#' @param scale_values Logical, indicating whether to scale the prediction values. Default is TRUE.
+
 #' @return A combined ggplot object with top significant pathway response plots.
 #' @importFrom cowplot plot_grid
 #' @export
