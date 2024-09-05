@@ -12,6 +12,7 @@ plot_top_pathway_responses(
   decreasing = F,
   dose_col = "Dose",
   center_values = TRUE,
+  scale_values = TRUE,
   legend_position = "none",
   text_size = 4,
   margin_space = 0,
@@ -20,7 +21,8 @@ plot_top_pathway_responses(
   annotate_gene = FALSE,
   annotation_text_size = 5,
   draw_bmd = TRUE,
-  plot_original_data = F
+  plot_original_data = F,
+  clusterResults = F
 )
 }
 \arguments{
@@ -29,6 +31,8 @@ plot_top_pathway_responses(
 \item{top}{An integer specifying the number of top gene sets to include in the plot. Default is 15.}
 
 \item{order_column}{A character string specifying the column to use for ordering gene sets in the plot.}
+
+\item{scale_values}{Logical, indicating whether to scale the prediction values. Default is TRUE.}
 
 \item{legend_position}{The position of the legend in the plot.}
 

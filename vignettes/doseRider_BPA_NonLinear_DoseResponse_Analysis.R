@@ -178,5 +178,5 @@ for (gs in res_df$Geneset[1:50]) {
 }
 
 
-p11 <- plot_pathway_response(dose_rider_results, gene_set_name = "FARMER_BREAST_CANCER_BASAL_VS_LULMINAL", dose_col = "log_Dose", center_values = F)
+p11 <- plot_pathway_response(dose_rider_results, gene_set_name = "GLASS_IGF2BP1_CLIP_TARGETS_KNOCKDOWN_DN", dose_col = "log_Dose", center_values = T, clusterResults = F)
 p11

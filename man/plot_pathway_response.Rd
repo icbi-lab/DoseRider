@@ -9,6 +9,7 @@ plot_pathway_response(
   gene_set_name,
   dose_col = "Dose",
   center_values = TRUE,
+  scale_values = TRUE,
   legend_position = "none",
   text_size = 4,
   margin_space = 0,
@@ -17,7 +18,8 @@ plot_pathway_response(
   annotate_gene = FALSE,
   annotation_text_size = 5,
   draw_bmd = TRUE,
-  plot_original_data = FALSE
+  plot_original_data = FALSE,
+  clusterResults = TRUE
 )
 }
 \arguments{
@@ -28,6 +30,8 @@ plot_pathway_response(
 \item{dose_col}{The name of the column representing dose information. Default is "Dose".}
 
 \item{center_values}{Logical, indicating whether to center the prediction values. Default is TRUE.}
+
+\item{scale_values}{Logical, indicating whether to scale the prediction values. Default is TRUE.}
 
 \item{legend_position}{The position of the legend in the plot. Default is "none".}
 
@@ -46,13 +50,13 @@ plot_pathway_response(
 \item{draw_bmd}{Logical, indicating whether to draw the benchmark dose (BMD) on the plot. Default is TRUE.}
 
 \item{plot_original_data}{Logical, indicating whether to draw original data, or predict the whole range of doses. Default is FALSE.}
+
+\item{clusterResults}{Boolean, if TRUE the genes within a gene set will be clustered to find similar expression patterns. Defaults to TRUE.}
 }
 \value{
 A ggplot object representing the pathway response plot.
 }
 \description{
 This function creates a plot showing the pathway response with enhanced line thickness
-at specific zero points of first and second derivatives. The plot can be customized
-with various options, including centering prediction values, adjusting text size,
-adding annotations, and more.
+at specific zero points of first and second derivatives.
 }
