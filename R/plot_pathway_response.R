@@ -84,42 +84,11 @@ smooth_pathway_trend <- function(model, long_df, dose_col = "dose", sample_col =
 }
 
 
-#Function to clos the TCD trend
-adjust_trend_visuals <- function(cluster_trend, dose_col, zero_points, t = 0.0001, line_thickness = 0.3, new_line_thickness = 0.4) {
-  # Initialize columns if they don't exist
-  if (!"line_thickness" %in% names(cluster_trend)) {
-    cluster_trend$line_thickness <- line_thickness # Default line thickness
-  }
-  if (!"color" %in% names(cluster_trend)) {
-    cluster_trend$color <- "#D32F2F" # Default color
-  }
-
-  # Define the delta for zero point range calculation
-  delta <- max(cluster_trend[[dose_col]]) * t
-
-  for (z in unique(zero_points)) {
-    range_around_zero <- c(z - delta, z + delta)
-
-    # Find the closest values within the range
-    closest_lower <- cluster_trend[[dose_col]][which.min(abs(cluster_trend[[dose_col]] - range_around_zero[1]))]
-    closest_upper <- cluster_trend[[dose_col]][which.min(abs(cluster_trend[[dose_col]] - range_around_zero[2]))]
-
-    # Adjust line thickness and color for doses within the zero point range
-    within_range <- cluster_trend[[dose_col]] >= closest_lower & cluster_trend[[dose_col]] <= closest_upper
-    cluster_trend$line_thickness[within_range] <- new_line_thickness
-    cluster_trend$color[within_range] <- "#7B1FA2"
-  }
-
-  return(cluster_trend)
-}
-
 
 #' Plot Pathway Response with Enhanced Visualization at Specific Points
 #'
 #' This function creates a plot showing the pathway response with enhanced line thickness
-#' at specific zero points of first and second derivatives. The plot can be customized
-#' with various options, including centering prediction values, adjusting text size,
-#' adding annotations, and more.
+#' at specific zero points of first and second derivatives.
 #'
 #' @param dose_rider_results A list containing the results from the DoseRider analysis.
 #' @param gene_set_name The name of the gene set for which to plot the response.
@@ -133,127 +102,37 @@ adjust_trend_visuals <- function(cluster_trend, dose_col, zero_points, t = 0.000
 #' @param annotate_gene Logical, indicating whether to annotate the gene in the plot. Default is FALSE.
 #' @param annotation_text_size Numeric, specifying the size of the annotation text. Default is 5.
 #' @param draw_bmd Logical, indicating whether to draw the benchmark dose (BMD) on the plot. Default is TRUE.
-#'
+#' @param plot_original_data Logical, indicating whether to draw original data, or predict the whole range of doses. Default is FALSE.
+#' @param clusterResults Boolean, if TRUE the genes within a gene set will be clustered to find similar expression patterns. Defaults to TRUE.
 #' @return A ggplot object representing the pathway response plot.
-#'
-#' @import ggplot2
-#' @import ggrepl
-#' @importFrom stringr str_wrap
-#' @importFrom dplyr mutate group_by ungroup
 #' @export
 plot_pathway_response <- function(dose_rider_results, gene_set_name, dose_col = "Dose",
                                   center_values = TRUE, legend_position = "none", text_size = 4,
                                   margin_space = 0, model_metrics = FALSE, v_size = 0.5,
-                                  annotate_gene = FALSE, annotation_text_size = 5, draw_bmd = TRUE)
-{
+                                  annotate_gene = FALSE, annotation_text_size = 5, draw_bmd = TRUE,
+                                  plot_original_data = FALSE, clusterResults = TRUE) {
 
-  # Extract the specific gene set results from dose_rider_results
-  gene_set_results <- dose_rider_results[[gene_set_name]]
+  # Extract the gene set results
+  gene_set_results <- extract_gene_set_results(dose_rider_results, gene_set_name, plot_original_data)
 
-  # Smooth Predictions for the gene set
-  smooth_pathway <- gene_set_results$Smooth_Predictions[[1]]
+  # Process smooth pathway data
+  mean_data <- prepare_mean_data(gene_set_results, dose_col, center_values, clusterResults)
 
-  # Cluster Assignments for the gene set, converted to a data frame and adding gene names as a column
-  ClusterAssignments <- data.frame(Cluster = gene_set_results$ClusterAssignments)
-  ClusterAssignments$gene <- rownames(ClusterAssignments)
+  # Initialize plot with gene-specific trends
+  p <- initialize_plot(mean_data, dose_col, model_metrics, gene_set_name)
 
-  # Cluster-specific results and the number of optimal clusters for the gene set
-  ClusterSpecificResults <- gene_set_results$ClusterSpecificResults
-  n_cluster <- gene_set_results$OptimalClusters
+  # Add cluster-specific trends and BMD lines
+  p <- add_cluster_trends_and_bmd(p, gene_set_results, mean_data, dose_col, draw_bmd, v_size, clusterResults)
 
-  # If there are smoothed data
-  if (!is.null(smooth_pathway) && length(smooth_pathway) > 0) {
-    mean_data <- aggregate(as.formula(paste0("predictions ~ ", dose_col," + gene")), data = as.data.frame(smooth_pathway), FUN = mean)
-    mean_data <- merge(mean_data, ClusterAssignments, by = "gene")
-
-    # If center_values option is enabled, adjust predictions
-    if (center_values) {
-      mean_data <- mean_data %>%
-        group_by(gene) %>%
-        mutate(predictions = predictions - mean(predictions, na.rm = TRUE)) %>%
-        ungroup()
-      predictions_col <- "predictions_centered"
-    } else {
-      predictions_col <- "predictions"
-    }
-
-    # Now proceed with plotting,
-
-    # Create custom legend labels
-    if (model_metrics) {
-      legend_labels <- create_legend_labels(dose_rider_results, gene_set_name)
-    } else {
-      legend_labels <- NaN
-    }
-
-    custom_palette <- c(custom_palette, "#F8766D")
-    names(custom_palette) <- c(as.character(1:(length(custom_palette)-1)),"AllGenes")
-
-    # Add gene-specific trends
-    p <- ggplot() + geom_line(data = mean_data, aes(x = Dose, y = predictions, group = gene,color = as.factor(Cluster)), linewidth = 0.5)
-    p <-  p + scale_color_manual(values = custom_palette)
-
-    for (j in c(1:n_cluster)) {
-      if ("AllGenes" %in% names(ClusterSpecificResults)){
-        cluster_data <- ClusterSpecificResults["AllGenes"][[1]]
-        j <- "AllGenes"
-
-      } else {
-        cluster_data <- ClusterSpecificResults[paste0("Cluster ",j)][[1]]
-      }
-      cluster_derivate <- c(cluster_data$Derivative$zero_points_first_deriv,cluster_data$Derivative$zero_points_second_deriv)
-      cluster_bmd <- cluster_data$BMD
-      cluster_trend <- aggregate(as.formula(paste0("predictions ~ ",dose_col)), data = as.data.frame(mean_data[mean_data$Cluster == j,]), FUN = mean)
-
-      #Plot Cluster trend
-      #Plot TCD
-      cluster_trend <- adjust_trend_visuals(cluster_trend, dose_col, cluster_derivate)
-      p <- p + geom_line(data = cluster_trend, aes(x = Dose, y = predictions, linewidth = line_thickness))
-
-
-      #F8766D
-      #Plot BMD
-      if (draw_bmd){
-        if (sum(!is.na(cluster_bmd))>0){
-          for (bmd_dose in cluster_bmd) {
-
-            p <- p + geom_vline(xintercept = bmd_dose, color="#F57C00",linetype="dashed",linewidth=v_size)
-
-          }
-        }
-      }
-    }
-    p <- p + scale_linewidth(range = c(0.7, 1.6))
-    # Create the base plot with mean trend
-    #p <- p +
-    #  geom_line(data = mean_trend, aes(x = Dose, y = predictions,linewidth = line_thickness))
-
-    # Finalize the plot settings
-    # Finalize the plot settings and add custom legend labels
-    p <- p + labs(x = "Dose", y = "Expression", title = str_wrap(gsub("_", " ", gene_set_name), width = 35))
-    if (model_metrics){
-      p <- p + labs(caption = paste(legend_labels))
-    }
-
-    if (annotate_gene){
-      sampled_mean_data <- mean_data %>%
-        group_by(gene) %>%
-        slice_sample(n = 1) %>%
-        ungroup()
-
-      p <- p + geom_text_repel(data = sampled_mean_data, aes(x = Dose, y = predictions, label = gene), size = annotation_text_size,
-                               nudge_y = 0.2, # Adjust as needed to position the labels
-                               direction = "y", # Position text vertically
-                               segment.color = 'grey50', # Line connecting text to the point
-                               show.legend = FALSE) # Exclude text from the legend
-    }
-    #Add custom theme
-    p <- p + theme_dose_rider(legend_position = legend_position, text_size=text_size, margin_space = margin_space)
-
-    return(p)
-  } else {
-    stop("No valid smooth pathway predictions found for the specified gene set.")
+  # Add annotations if specified
+  if (annotate_gene) {
+    p <- add_gene_annotations(p, mean_data, dose_col, annotation_text_size)
   }
+
+  # Customize the plot theme
+  p <- p + theme_dose_rider(legend_position = legend_position, text_size = text_size, margin_space = margin_space)
+
+  return(p)
 }
 
 
@@ -271,7 +150,12 @@ plot_pathway_response <- function(dose_rider_results, gene_set_name, dose_col = 
 #' @return A combined ggplot object with top significant pathway response plots.
 #' @importFrom cowplot plot_grid
 #' @export
-plot_top_pathway_responses <- function(dose_rider_results, top=6, ncol = 3, order_column = "best_model_pvalue", decreasing = F,legend_position = "none", text_size=4, margin_space = 0) {
+plot_top_pathway_responses <- function(dose_rider_results, top=6, ncol = 3, order_column = "best_model_pvalue", decreasing = F,  dose_col = "Dose",
+                                       center_values = TRUE, legend_position = "none", text_size = 4,
+                                       margin_space = 0, model_metrics = FALSE, v_size = 0.5,
+                                       annotate_gene = FALSE, annotation_text_size = 5, draw_bmd = TRUE,
+                                       plot_original_data = F) {
+
   # Extract and order gene sets by adjusted cubic p-value
   dose_rider_df <- as.data.frame.DoseRider(dose_rider_results)
   dose_rider_df <- dose_rider_df[order(dose_rider_df[[order_column]], decreasing = decreasing), ]
@@ -288,7 +172,11 @@ plot_top_pathway_responses <- function(dose_rider_results, top=6, ncol = 3, orde
     best_model <- res_path$best_model
 
     if (!is.na(best_model) && best_model != "null") {
-      plot_list[[gene_set_name]] <- plot_pathway_response(dose_rider_results, gene_set_name,legend_position = legend_position, text_size=text_size, margin_space = margin_space)
+      plot_list[[gene_set_name]] <- plot_pathway_response(dose_rider_results,
+                                                          gene_set_name = gene_set_name, dose_col = dose_col,
+                                                          legend_position = legend_position, text_size=text_size, margin_space = margin_space,
+                                                          model_metrics = model_metrics, v_size = v_size,annotate_gene = annotate_gene, annotation_text_size,
+                                                          draw_bmd = draw_bmd, plot_original_data = plot_original_data, center_values = center_values)
     }
   }
 

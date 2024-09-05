@@ -7,23 +7,25 @@
 select_best_model(model_list, p_value_list, alpha = 0.05)
 }
 \arguments{
-\item{model_list}{A list of lme4 model objects.}
+\item{model_list}{A named list of model objects. Names should include 'null', 'linear',
+'non_linear_fixed', and 'non_linear_mixed'.}
 
-\item{p_value_list}{A named list of p-values for model comparisons.}
+\item{p_value_list}{A named list of p-values for model comparisons against the null model.}
 
 \item{alpha}{Significance level for p-value comparison (default is 0.05).}
 }
 \value{
-The name of the best fitting model ('null', 'linear', or 'non_linear').
+The name of the best fitting model ('null', 'linear', 'non_linear_fixed', or 'non_linear_mixed').
 }
 \description{
-Compares null, linear, and non-linear models sequentially using AICc and p-values.
-Starts with null vs. linear; if linear is significantly better, compares linear to non-linear.
-The best model has the lowest AICc and significant p-value improvement over predecessors.
+This function selects the best model from a list of models (null, linear,
+non-linear fixed, and non-linear mixed) by comparing their AICc values and
+significance of p-values against the null model. The best model is the one with
+the lowest AICc and a significant p-value.
 }
 \examples{
 \dontrun{
-# Assuming you have a list of lme4 models called 'model_list'
+# Assuming you have a list of models called 'model_list'
 # and a list of p-values called 'p_value_list':
 best_model <- select_best_model(model_list, p_value_list)
 }

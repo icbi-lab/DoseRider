@@ -86,7 +86,7 @@ fit_lmm <- function(formula, data, omic = "base") {
 #'                                      model_type = "cubic",
 #'                                      omic = "rnaseq")
 #' }
-create_lmm_formula <- function(response, fixed_effects, random_effects, covariates = c(), model_type = "base", omic = NULL) {
+create_lmm_formula <- function(response, fixed_effects, random_effects, covariates = c(), model_type = "base", omic = NULL, spline_knots = 3) {
 
   # Start with the response variable
   formula <- paste(response, "~")
@@ -94,7 +94,7 @@ create_lmm_formula <- function(response, fixed_effects, random_effects, covariat
   # Include random effects with appropriate spline
   if (model_type == "non_linear_mixed") {
     #"Random Spline Non-linear Model"
-    random_effect_term <- paste0(" ",fixed_effects," + ","(bs(", fixed_effects,  ") | ", random_effects, ")")
+    random_effect_term <- paste0(" ",fixed_effects," + ","bs(", fixed_effects,  ")", "+","(bs(", fixed_effects,  ") | ", random_effects, ")")
   } else if (model_type == "non_linear_fixed") {
     #"Random Intercept and Slope Non-linear Model"
     random_effect_term <- paste0(" ",fixed_effects," + ","bs(", fixed_effects,  ")"," + (",fixed_effects,"|",random_effects,")")
@@ -119,6 +119,7 @@ create_lmm_formula <- function(response, fixed_effects, random_effects, covariat
 
   return(formula)
 }
+
 
 
 

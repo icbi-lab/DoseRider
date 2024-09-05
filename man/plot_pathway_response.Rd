@@ -8,10 +8,16 @@ plot_pathway_response(
   dose_rider_results,
   gene_set_name,
   dose_col = "Dose",
-  center_values = T,
+  center_values = TRUE,
   legend_position = "none",
   text_size = 4,
-  margin_space = 0
+  margin_space = 0,
+  model_metrics = FALSE,
+  v_size = 0.5,
+  annotate_gene = FALSE,
+  annotation_text_size = 5,
+  draw_bmd = TRUE,
+  plot_original_data = FALSE
 )
 }
 \arguments{
@@ -19,20 +25,34 @@ plot_pathway_response(
 
 \item{gene_set_name}{The name of the gene set for which to plot the response.}
 
-\item{dose_col}{The name of the column representing dose information.}
+\item{dose_col}{The name of the column representing dose information. Default is "Dose".}
 
-\item{center_values}{Logical, indicating whether to center the prediction values.}
+\item{center_values}{Logical, indicating whether to center the prediction values. Default is TRUE.}
 
-\item{legend_position}{The position of the legend in the plot.}
+\item{legend_position}{The position of the legend in the plot. Default is "none".}
 
-\item{text_size}{The size of the text in the plot.}
+\item{text_size}{Numeric, specifying the size of the text in the plot. Default is 4.}
 
-\item{margin_space}{The margin space around the plot.}
+\item{margin_space}{Numeric, specifying the margin space around the plot. Default is 0.}
+
+\item{model_metrics}{Logical, indicating whether to include model metrics in the plot. Default is FALSE.}
+
+\item{v_size}{Numeric, specifying the size of the points where derivatives are zero. Default is 0.5.}
+
+\item{annotate_gene}{Logical, indicating whether to annotate the gene in the plot. Default is FALSE.}
+
+\item{annotation_text_size}{Numeric, specifying the size of the annotation text. Default is 5.}
+
+\item{draw_bmd}{Logical, indicating whether to draw the benchmark dose (BMD) on the plot. Default is TRUE.}
+
+\item{plot_original_data}{Logical, indicating whether to draw original data, or predict the whole range of doses. Default is FALSE.}
 }
 \value{
 A ggplot object representing the pathway response plot.
 }
 \description{
 This function creates a plot showing the pathway response with enhanced line thickness
-at specific zero points of first and second derivatives.
+at specific zero points of first and second derivatives. The plot can be customized
+with various options, including centering prediction values, adjusting text size,
+adding annotations, and more.
 }

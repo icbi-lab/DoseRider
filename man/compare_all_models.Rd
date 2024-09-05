@@ -2,31 +2,39 @@
 % Please edit documentation in R/compare_models.R
 \name{compare_all_models}
 \alias{compare_all_models}
-\title{Compare Models with ANOVA}
+\title{Compare Models Individually Against the Null Model with ANOVA}
 \usage{
 compare_all_models(
   null_results,
-  linear_results,
-  non_linear_fixed_results,
-  non_linear_mixed_results,
+  linear_results = NULL,
+  non_linear_fixed_results = NULL,
+  non_linear_mixed_results = NULL,
   modelType
 )
 }
 \arguments{
-\item{linear_results}{A fitted model representing the linear model.}
+\item{null_results}{A fitted model representing the null or base model.}
 
-\item{base_results}{A fitted model representing the base model.}
+\item{linear_results}{A fitted model representing the linear model (optional).}
 
-\item{cubic_results}{A fitted model representing the cubic model.}
+\item{non_linear_fixed_results}{A fitted model representing the non-linear fixed effects model (optional).}
+
+\item{non_linear_mixed_results}{A fitted model representing the non-linear mixed effects model (optional).}
+
+\item{modelType}{A string indicating the type of model comparison: "LMM" for linear mixed models or "GAMM" for generalized additive mixed models.}
 }
 \value{
-A named vector of p-values for the comparisons: base vs. linear and linear vs. cubic.
+A named list of p-values for the comparisons of each model against the base model (null_results).
+If a model is not provided, its p-value is returned as NA.
 }
 \description{
-This function compares the goodness of fit of three models (base, linear, and cubic)
-using an ANOVA test and returns the p-values associated with the model comparisons.
+This function compares the goodness of fit of individual models (linear,
+non-linear fixed effects, and non-linear mixed effects) against a null/base model
+using ANOVA. P-values are calculated for each model comparison individually.
 }
 \examples{
-# Assuming lm_base, lm_linear, and lm_cubic are fitted linear models:
-# compare_models_pvalues <- compare_three_models(lm_base, lm_linear, lm_cubic)
+# Assuming lmm_null, lmm_linear, lmm_non_linear_fixed, and lmm_non_linear_mixed
+# are fitted models:
+# compare_models_pvalues <- compare_all_models(lmm_null, lmm_linear, lmm_non_linear_fixed,
+# lmm_non_linear_mixed, modelType = "LMM")
 }

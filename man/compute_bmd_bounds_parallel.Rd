@@ -2,7 +2,7 @@
 % Please edit documentation in R/bmd.R
 \name{compute_bmd_bounds_parallel}
 \alias{compute_bmd_bounds_parallel}
-\title{Compute BMD Bounds using Bootstrapping with Parallel Bootstrap Sampling}
+\title{Compute BMD Bounds using Bootstrapping with Parallel Gene Set Processing}
 \usage{
 compute_bmd_bounds_parallel(
   dose_rider_results,
@@ -30,15 +30,15 @@ compute_bmd_bounds_parallel(
 
 \item{n_bootstrap}{The number of bootstrap samples to generate. Default is 1000.}
 
-\item{num_cores}{The number of cores to use for parallel processing of bootstrap samples. Default is 5.}
+\item{num_cores}{The number of cores to use for parallel processing of gene sets. Default is 5.}
 }
 \value{
 A data frame containing the lower and upper BMD bounds for each significant gene set.
 }
 \description{
 This function calculates the lower and upper bounds of the Benchmark Dose (BMD)
-using bootstrapping on the raw data for significant gene sets, with the bootstrap
-sampling process parallelized across multiple cores.
+using bootstrapping on the raw data for significant gene sets, with the gene set
+processing parallelized across multiple cores.
 }
 \examples{
 \dontrun{

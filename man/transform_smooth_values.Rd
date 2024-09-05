@@ -7,7 +7,9 @@
 transform_smooth_values(
   smooth_values,
   dose_col = "Dose",
-  expression_col = "predictions"
+  expression_col = "predictions",
+  center_values = TRUE,
+  scale_values = TRUE
 )
 }
 \arguments{
@@ -16,13 +18,17 @@ transform_smooth_values(
 \item{dose_col}{Character string specifying the name of the dose column in `smooth_values`.}
 
 \item{expression_col}{Character string specifying the name of the expression column in `smooth_values`.}
+
+\item{center_values}{Logical, whether to center the gene values (default is TRUE).}
+
+\item{scale_values}{Logical, whether to scale the gene values (default is TRUE).}
 }
 \value{
-A transformed dataframe with genes as rows, doses as columns, and each row centered to 0.
+A transformed dataframe with genes as rows, doses as columns, and each row centered and scaled.
 }
 \description{
 This function transforms smooth values into a dataframe with genes as rows and doses as columns.
-Each row (gene) is centered to 0 to normalize the data.
+Each row (gene) is centered and scaled (standardized) to normalize the data.
 }
 \examples{
 \dontrun{

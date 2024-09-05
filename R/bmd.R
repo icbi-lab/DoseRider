@@ -29,7 +29,7 @@ compute_derivatives <- function(smooth_pathway, dose_var) {
   second_deriv <- diff(first_deriv) / diff(mean_trend[[dose_var]][-length(mean_trend[[dose_var]])])
 
   # Identify zero points
-  tolerance <- 0.001 * max(preds)  # Adjust tolerance as needed
+  tolerance <- 0.0001 * max(preds)  # Adjust tolerance as needed
   zero_points_first_deriv <- mean_trend[[dose_var]][which(abs(first_deriv) < tolerance)]
   zero_points_second_deriv <- mean_trend[[dose_var]][-length(mean_trend[[dose_var]])][which(abs(second_deriv) < tolerance)]
 

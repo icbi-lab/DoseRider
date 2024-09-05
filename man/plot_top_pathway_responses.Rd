@@ -10,9 +10,17 @@ plot_top_pathway_responses(
   ncol = 3,
   order_column = "best_model_pvalue",
   decreasing = F,
+  dose_col = "Dose",
+  center_values = TRUE,
   legend_position = "none",
   text_size = 4,
-  margin_space = 0
+  margin_space = 0,
+  model_metrics = FALSE,
+  v_size = 0.5,
+  annotate_gene = FALSE,
+  annotation_text_size = 5,
+  draw_bmd = TRUE,
+  plot_original_data = F
 )
 }
 \arguments{

@@ -1,12 +1,14 @@
 #' Transform Smooth Values to Gene vs. Dose Dataframe
 #'
 #' This function transforms smooth values into a dataframe with genes as rows and doses as columns.
-#' Each row (gene) is centered to 0 to normalize the data.
+#' Each row (gene) is centered and scaled (standardized) to normalize the data.
 #'
 #' @param smooth_values Dataframe containing smooth values from doseRider results.
 #' @param dose_col Character string specifying the name of the dose column in `smooth_values`.
 #' @param expression_col Character string specifying the name of the expression column in `smooth_values`.
-#' @return A transformed dataframe with genes as rows, doses as columns, and each row centered to 0.
+#' @param center_values Logical, whether to center the gene values (default is TRUE).
+#' @param scale_values Logical, whether to scale the gene values (default is TRUE).
+#' @return A transformed dataframe with genes as rows, doses as columns, and each row centered and scaled.
 #' @importFrom tidyr spread
 #' @import dplyr
 #' @examples
@@ -14,19 +16,32 @@
 #'   # Assuming 'smooth_values' is available
 #'   transformed_data <- transform_smooth_values(smooth_values, dose_col = "Dose")
 #' }
-transform_smooth_values <- function(smooth_values, dose_col = "Dose", expression_col = "predictions") {
-  mean_data <- aggregate(as.formula(paste0(expression_col," ~ ",dose_col," + gene")), data = smooth_values, FUN = mean)
+transform_smooth_values <- function(smooth_values, dose_col = "Dose", expression_col = "predictions",
+                                    center_values = TRUE, scale_values = TRUE) {
 
-  # Transforming the data
+  # Step 1: Aggregate the data by dose and gene, applying mean function
+  mean_data <- aggregate(as.formula(paste0(expression_col," ~ ",dose_col," + gene")),
+                         data = smooth_values,
+                         FUN = mean)
+
+  # Step 2: Spread the data to make it wide (genes as rows, doses as columns)
   transformed_data <- mean_data %>%
-    #select(sym(dose_col), gene, predictions) %>%
-    spread(key = dose_col, value = expression_col)
+    spread(key = !!sym(dose_col), value = !!sym(expression_col))
 
+  # Set the rownames to gene names
   rownames(transformed_data) <- transformed_data$gene
-  transformed_data$gene <- NULL
+  transformed_data$gene <- NULL  # Remove the gene column as it's now rownames
 
-  # Center each row (gene) to 0
-  transformed_data <- transformed_data - rowMeans(transformed_data, na.rm = TRUE)
+  # Step 3: Centering and scaling the gene rows if specified
+  if (center_values) {
+    # Center each row (gene) by subtracting the row mean
+    transformed_data <- transformed_data - rowMeans(transformed_data, na.rm = TRUE)
+  }
+
+  if (scale_values) {
+    # Scale each row (gene) by dividing by the row's standard deviation
+    transformed_data <- transformed_data / apply(transformed_data, 1, sd, na.rm = TRUE)
+  }
 
   return(transformed_data)
 }

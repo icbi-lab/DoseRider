@@ -16,9 +16,11 @@ DoseRiderParallel(
   method = "fdr",
   num_cores = 5,
   modelType = "LMM",
-  clusterResults = TRUE,
   FilterPathway = FALSE,
-  pca_threshold = 0.6
+  pca_threshold = 0.6,
+  spline_knots = 3,
+  log_transform = F,
+  models = c("linear", "non_linear_fixed", "non_linear_mixed")
 )
 }
 \arguments{
@@ -45,12 +47,13 @@ DoseRiderParallel(
 \item{modelType}{Type of model to be used for analysis, "LMM" for Linear Mixed Models or "GAMM"
 for Generalized Additive Mixed Models. Defaults to "LMM".}
 
-\item{clusterResults}{Boolean, if TRUE the genes within a gene set will be clustered
-to find similar expression patterns. Defaults to TRUE.}
-
 \item{FilterPathway}{Boolean, if TRUE the function will apply PCA filtering to detect antagonist patterns. Defaults to FALSE.}
 
 \item{pca_threshold}{Numeric value specifying the variance threshold for PC1 to filter pathways. Default is 0.6.}
+
+\item{spline_knots}{Number of internal knots to use for splines on dose. Default is 3.}
+
+\item{log_transform}{Logical, whether to log10 transform the dose values. Default is FALSE.}
 }
 \value{
 A list containing the results of the DoseRider analysis for each gene set.

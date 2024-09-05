@@ -4,7 +4,15 @@
 \alias{prepare_data}
 \title{Prepare data for use with glmmTMB from a SummarizedExperiment object}
 \usage{
-prepare_data(se, geneset, dose_col, sample_col, omic = "rnaseq")
+prepare_data(
+  se,
+  geneset,
+  dose_col,
+  sample_col,
+  omic = "rnaseq",
+  log_transform = FALSE,
+  spline_knots = 3
+)
 }
 \arguments{
 \item{se}{A SummarizedExperiment object containing both assay and metadata.}
@@ -16,6 +24,10 @@ prepare_data(se, geneset, dose_col, sample_col, omic = "rnaseq")
 \item{sample_col}{The name of the sample column in the metadata of the SummarizedExperiment object.}
 
 \item{omic}{A character string specifying the type of omics data. Default is "rnaseq".}
+
+\item{log_transform}{Logical, whether to log10 transform the dose values. Default is FALSE.}
+
+\item{spline_knots}{Number of internal knots to use for splines on dose. Default is 3.}
 }
 \value{
 A data frame in a format suitable for glmmTMB function.
@@ -23,7 +35,8 @@ A data frame in a format suitable for glmmTMB function.
 \description{
 This function prepares the data from a SummarizedExperiment object into a format
 suitable for the glmmTMB function. This includes transforming the data to long format,
-adding size factors and dispersions (if applicable), and merging with sample metadata.
+adding size factors and dispersions (if applicable), applying log10 transformation to doses,
+creating splines for dose, and merging with sample metadata.
 }
 \examples{
 geneset <- rownames(assay_df)
