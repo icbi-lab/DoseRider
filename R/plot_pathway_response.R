@@ -107,7 +107,7 @@ smooth_pathway_trend <- function(model, long_df, dose_col = "dose", sample_col =
 #' @return A ggplot object representing the pathway response plot.
 #' @export
 plot_pathway_response <- function(dose_rider_results, gene_set_name, dose_col = "Dose",
-                                  center_values = TRUE, legend_position = "none", text_size = 4,
+                                  center_values = TRUE, scale_values = TRUE, legend_position = "none", text_size = 4,
                                   margin_space = 0, model_metrics = FALSE, v_size = 0.5,
                                   annotate_gene = FALSE, annotation_text_size = 5, draw_bmd = TRUE,
                                   plot_original_data = FALSE, clusterResults = TRUE) {
@@ -116,7 +116,7 @@ plot_pathway_response <- function(dose_rider_results, gene_set_name, dose_col = 
   gene_set_results <- extract_gene_set_results(dose_rider_results, gene_set_name, plot_original_data)
 
   # Process smooth pathway data
-  mean_data <- prepare_mean_data(gene_set_results, dose_col, center_values, clusterResults)
+  mean_data <- prepare_mean_data(gene_set_results, dose_col = dose_col, center_values = center_values, scale_values = scale_values, clusterResults = clusterResults)
 
   # Initialize plot with gene-specific trends
   p <- initialize_plot(mean_data, dose_col, model_metrics, gene_set_name)
@@ -151,10 +151,10 @@ plot_pathway_response <- function(dose_rider_results, gene_set_name, dose_col = 
 #' @importFrom cowplot plot_grid
 #' @export
 plot_top_pathway_responses <- function(dose_rider_results, top=6, ncol = 3, order_column = "best_model_pvalue", decreasing = F,  dose_col = "Dose",
-                                       center_values = TRUE, legend_position = "none", text_size = 4,
+                                       center_values = TRUE, scale_values = TRUE, legend_position = "none", text_size = 4,
                                        margin_space = 0, model_metrics = FALSE, v_size = 0.5,
                                        annotate_gene = FALSE, annotation_text_size = 5, draw_bmd = TRUE,
-                                       plot_original_data = F) {
+                                       plot_original_data = F, clusterResults = F) {
 
   # Extract and order gene sets by adjusted cubic p-value
   dose_rider_df <- as.data.frame.DoseRider(dose_rider_results)
@@ -176,7 +176,8 @@ plot_top_pathway_responses <- function(dose_rider_results, top=6, ncol = 3, orde
                                                           gene_set_name = gene_set_name, dose_col = dose_col,
                                                           legend_position = legend_position, text_size=text_size, margin_space = margin_space,
                                                           model_metrics = model_metrics, v_size = v_size,annotate_gene = annotate_gene, annotation_text_size,
-                                                          draw_bmd = draw_bmd, plot_original_data = plot_original_data, center_values = center_values)
+                                                          draw_bmd = draw_bmd, plot_original_data = plot_original_data, center_values = center_values, scale_values = scale_values,
+                                                          clusterResults = clusterResults)
     }
   }
 

@@ -15,7 +15,7 @@ extract_gene_set_results <- function(dose_rider_results, gene_set_name, plot_ori
 #########################################################################
 
 #' Prepare mean data and perform centering/standardization if required
-prepare_mean_data <- function(gene_set_results, dose_col, center_values, clusterResults) {
+prepare_mean_data <- function(gene_set_results, dose_col, center_values, scale_values, clusterResults) {
   # Cluster Assignments
   ClusterAssignments <- data.frame(Cluster = gene_set_results$ClusterAssignments)
   ClusterAssignments$gene <- rownames(ClusterAssignments)
@@ -29,9 +29,18 @@ prepare_mean_data <- function(gene_set_results, dose_col, center_values, cluster
 
   # Standardize predictions
   if (center_values) {
+    # Center the predictions by subtracting the mean
     smooth_pathway <- smooth_pathway %>%
       group_by(gene) %>%
-      mutate(predictions = (predictions - mean(predictions, na.rm = TRUE)) / sd(predictions, na.rm = TRUE)) %>%
+      mutate(predictions = predictions - mean(predictions, na.rm = TRUE)) %>%
+      ungroup()
+  }
+
+  if (scale_values) {
+    # Scale the predictions by dividing by the standard deviation
+    smooth_pathway <- smooth_pathway %>%
+      group_by(gene) %>%
+      mutate(predictions = predictions / sd(predictions, na.rm = TRUE)) %>%
       ungroup()
   }
 

@@ -90,7 +90,7 @@ dose_rider_results <- DoseRiderParallel(
   num_cores = 30,
   FilterPathway = T,
   log_transform = T,
-  models = c("linear","non_linear_mixed"),
+  models = c("linear","non_linear_mixed")
 )
 
 # Convert results to data frame
@@ -100,22 +100,22 @@ table(res_df$best_model)
 # Filter doseRider results based on FDR
 dose_rider_results_filter <- filter_DoseRider(
   dose_rider_results,
-  model_type = "all",
+  model_type = "non_linear",
   filter_type = filter_type,
   threshold = threshold
 )
 res_df <- as.data.frame.DoseRider(dose_rider_results_filter)
 
 # Compute BMD bounds
-bmd_bounds_df <- doseRider::compute_bmd_bounds_parallel(
-  dose_rider_results = dose_rider_results_filter,
-  dose_col = "log_Dose",
-  sample_col = "sample",
-  covariates = c(),
-  omic = "rnaseq",
-  n_bootstrap = 1000,
-  num_cores = 30
-)
+# bmd_bounds_df <- doseRider::compute_bmd_bounds_parallel(
+#   dose_rider_results = dose_rider_results_filter,
+#   dose_col = "log_Dose",
+#   sample_col = "sample",
+#   covariates = c(),
+#   omic = "rnaseq",
+#   n_bootstrap = 1000,
+#   num_cores = 30
+# )
 
 
 
@@ -124,10 +124,10 @@ dose_rider_results_filename <- paste0("doseRider_results_", geneset_name, "_size
 dose_rider_results_filter_filename <- paste0("doseRider_results_filter_", geneset_name,"_",filter_type, "_thresh", threshold, "_logs10_10um.rda")
 bmd_bounds_filename <- paste0("logs_bmd_bounds_1000_", geneset_name, "_size", geneset_size, ".rda")
 
-# Save results with metadata in filenames
-save(dose_rider_results, file = dose_rider_results_filename)
-save(dose_rider_results_filter, file = dose_rider_results_filter_filename)
-save(bmd_bounds_df, file = bmd_bounds_filename)
+# # Save results with metadata in filenames
+# save(dose_rider_results, file = dose_rider_results_filename)
+# save(dose_rider_results_filter, file = dose_rider_results_filter_filename)
+# save(bmd_bounds_df, file = bmd_bounds_filename)
 
 # Define plotting parameters
 top <- 20
@@ -145,7 +145,7 @@ dev.off()
 p2 <- plot_gene_set_random_effects(dose_rider_results_filter, dose_col = "Dose", order_column = "best_model_pvalue", top = top) + theme_dose_rider(fix_ratio = F)
 ggsave(paste0(save_path,"plot2.jpeg"), plot = p2, width = PLOT_WIDTH, height = PLOT_HEIGHT, units = "px", dpi = 600)
 
-p3 <- plot_top_pathway_responses(dose_rider_results_filter, dose_col = "log_Dose", top = 6, ncol = 2, order_column = "best_model_pvalue", text_size = 5, plot_original_data = F, center_values = F)
+p3 <- plot_top_pathway_responses(dose_rider_results_filter, dose_col = "log_Dose", top = 12, ncol = 4, order_column = "best_model_pvalue", text_size = 5, plot_original_data = F, center_values = T)
 ggsave(paste0(save_path,"plot3.jpeg"), plot = p3, width = PLOT_WIDTH, height = PLOT_HEIGHT + 1000, units = "px", dpi = 600)
 
 
