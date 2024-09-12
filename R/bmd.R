@@ -29,7 +29,7 @@ compute_derivatives <- function(smooth_pathway, dose_var) {
   second_deriv <- diff(first_deriv) / diff(mean_trend[[dose_var]][-length(mean_trend[[dose_var]])])
 
   # Identify zero points
-  tolerance <- 0.0001 * max(preds)  # Adjust tolerance as needed
+  tolerance <- 0.01 * max(preds)  # Adjust tolerance as needed
   zero_points_first_deriv <- mean_trend[[dose_var]][which(abs(first_deriv) < tolerance)]
   zero_points_second_deriv <- mean_trend[[dose_var]][-length(mean_trend[[dose_var]])][which(abs(second_deriv) < tolerance)]
 
@@ -59,12 +59,21 @@ compute_derivatives <- function(smooth_pathway, dose_var) {
 #' }
 #'
 #' @export
-compute_bmd_from_main_trend <- function(smooth_pathway, dose_var, z = 1, center_values = TRUE) {
+compute_bmd_from_main_trend <- function(smooth_pathway, dose_var, z = 1, center_values = TRUE, scale_values = F) {
   # Center the predictions if specified
   if (center_values) {
+    # Center the predictions by subtracting the mean
     smooth_pathway <- smooth_pathway %>%
       group_by(gene) %>%
       mutate(predictions = predictions - mean(predictions, na.rm = TRUE)) %>%
+      ungroup()
+  }
+
+  if (scale_values) {
+    # Scale the predictions by dividing by the standard deviation
+    smooth_pathway <- smooth_pathway %>%
+      group_by(gene) %>%
+      mutate(predictions = predictions / sd(predictions, na.rm = TRUE)) %>%
       ungroup()
   }
 
@@ -84,8 +93,12 @@ compute_bmd_from_main_trend <- function(smooth_pathway, dose_var, z = 1, center_
   threshold_down <- mean_control - z * mean_SD
 
   # Print the calculated thresholds for debugging purposes
+  print(paste("Mean response:", mean_control))
   print(paste("Threshold Up:", threshold_up))
   print(paste("Threshold Down:", threshold_down))
+  print(paste("Max value:", max(mean_trend$predictions)))
+  print(paste("Min value:", min(mean_trend$predictions)))
+
 
   # Vectorized identification of crossing points
   crossing_up <- which(diff(sign(mean_trend$predictions - threshold_up)) != 0)
@@ -146,7 +159,7 @@ compute_bmd_from_main_trend <- function(smooth_pathway, dose_var, z = 1, center_
 #'
 #' @export
 compute_bmd_bounds_parallel <- function(dose_rider_results, dose_col = "dose", sample_col = "sample", ci_level = 0.95,
-                                        covariates = c(), omic = "rnaseq", n_bootstrap = 1000, num_cores = 5) {
+                                        covariates = c(), omic = "rnaseq", n_bootstrap = 1000, num_cores = 5, clusterResults = F) {
 
   # Register the parallel backend for gene set processing
   cl <- makeCluster(num_cores)
@@ -161,16 +174,29 @@ compute_bmd_bounds_parallel <- function(dose_rider_results, dose_col = "dose", s
     geneset <- dose_rider_results[[geneset_name]]
     long_df <- geneset$Raw_Values[[1]]
     best_model <- geneset$best_model
+    cluster <- geneset$ClusterAssignments
+    cluster_counts <- table(cluster)
+    max_cluster <- names(which.max(cluster_counts))
+
     formula <- doseRider:::create_lmm_formula("counts", dose_col, "gene", covariates, best_model, omic)
     bmd <- extract_bmd_for_pathway(dose_rider_results, geneset_name)
+    if (clusterResults) {
+      # Subset the cluster to get the genes belonging to the max_cluster
+      genes_in_max_cluster <- names(cluster[cluster == max_cluster])
+
+      # Filter long_df to include only the genes in the max_cluster
+      long_df <- long_df[long_df$gene %in% genes_in_max_cluster, ]
+    } else{
+      max_cluster = NA
+    }
 
     # Perform bootstrap sampling
     bmd_values <- replicate(n_bootstrap, {
-      bootstrap_indices <- sample.int(n = nrow(long_df), size = nrow(long_df)*0.5, replace = TRUE)
+      bootstrap_indices <- sample.int(n = nrow(long_df), size = nrow(long_df)*0.6, replace = TRUE)
       long_df_bootstrap <- long_df[bootstrap_indices, , drop = FALSE]
-      bootstrap_results <- suppressMessages(doseRider:::fit_model_compute_bmd(long_df_bootstrap, formula, omic = omic, clusterResults = FALSE, dose_col = dose_col))
-      if (!is.na(bootstrap_results)) {
-        return(unlist(bootstrap_results$AllGenes)[1])
+      bootstrap_results <- suppressMessages(doseRider:::fit_model_compute_bmd(long_df = long_df_bootstrap, formula = formula, omic = omic, clusterResults = F, dose_col = dose_col))
+      if (length(bootstrap_results) > 0) {
+        return(min(unlist(bootstrap_results)))
       }
       return(NA)
     })
@@ -193,6 +219,7 @@ compute_bmd_bounds_parallel <- function(dose_rider_results, dose_col = "dose", s
         Mean_BMD = mean_bmd,
         Median_BMD = median_bmd,
         Best_Model = best_model,
+        cluster = max_cluster,
         stringsAsFactors = FALSE
       )
     } else {
@@ -404,13 +431,13 @@ fit_model_compute_bmd <- function(long_df, formula, omic = "rnaseq", clusterResu
     clusters <- optimal_clusters$Cluster
     n_cluster <- optimal_clusters$OptimalClusters
 
-    bmd_cluster_results <- list()
+    bmd_cluster_results <- c()
 
     for (j in seq_len(n_cluster)) {
       cluster_genes <- names(clusters[clusters == j])
       smooth_cluster <- smooth_values[smooth_values$gene %in% cluster_genes, ]
       bmd_cluster <- compute_bmd_from_main_trend(smooth_cluster, dose_col, z = 1)
-      bmd_cluster_results[[paste("Cluster", j)]] <- bmd_cluster
+      bmd_cluster_results <- c(bmd_cluster,bmd_cluster_results)
     }
 
     return(bmd_cluster_results)
@@ -420,7 +447,7 @@ fit_model_compute_bmd <- function(long_df, formula, omic = "rnaseq", clusterResu
     long_df$predictions <- predict(model, newdata = long_df)
     smooth_values <- smooth_pathway_trend(model, long_df, dose_col, "sample", omic, TRUE, dose_points = 50)
     bmd_all_genes <- compute_bmd_from_main_trend(smooth_values, dose_col, z = 1)
-    return(list(AllGenes = bmd_all_genes))
+    return(c(bmd_all_genes))
   }
 }
 

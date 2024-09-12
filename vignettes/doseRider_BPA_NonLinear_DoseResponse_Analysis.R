@@ -84,7 +84,7 @@ dose_rider_results <- DoseRiderParallel(
   omic = "rnaseq",
   minGSsize = minGSsize,
   maxGSsize = maxGSsize,
-  method = "bonferroni",
+  method = "fdr",
   covariates = c(),
   modelType = "LMM",
   num_cores = 30,
@@ -106,28 +106,30 @@ dose_rider_results_filter <- filter_DoseRider(
 )
 res_df <- as.data.frame.DoseRider(dose_rider_results_filter)
 
-# Compute BMD bounds
-# bmd_bounds_df <- doseRider::compute_bmd_bounds_parallel(
-#   dose_rider_results = dose_rider_results_filter,
-#   dose_col = "log_Dose",
-#   sample_col = "sample",
-#   covariates = c(),
-#   omic = "rnaseq",
-#   n_bootstrap = 1000,
-#   num_cores = 30
-# )
+load("../DoseRider_Paper/data/doseRider_results_C2_CGP_size20_200_logs10_10um.rda")
+#Compute BMD bounds
+bmd_bounds_df <- doseRider::compute_bmd_bounds_parallel(
+  dose_rider_results = dose_rider_results_filter,
+  dose_col = "log_Dose",
+  sample_col = "sample",
+  covariates = c(),
+  omic = "rnaseq",
+  n_bootstrap = 1000,
+  num_cores = 30,
+  clusterResults = T
+)
 
 
 
 # Define filenames with metadata
-dose_rider_results_filename <- paste0("doseRider_results_", geneset_name, "_size", geneset_size, "_logs10_10um.rda")
+dose_rider_results_filename <- paste0("doseRider_results_", geneset_name, "_size", geneset_size, "_10um.rda")
 dose_rider_results_filter_filename <- paste0("doseRider_results_filter_", geneset_name,"_",filter_type, "_thresh", threshold, "_logs10_10um.rda")
 bmd_bounds_filename <- paste0("logs_bmd_bounds_1000_", geneset_name, "_size", geneset_size, ".rda")
 
 # # Save results with metadata in filenames
-# save(dose_rider_results, file = dose_rider_results_filename)
+save(dose_rider_results, file = dose_rider_results_filename)
 # save(dose_rider_results_filter, file = dose_rider_results_filter_filename)
-# save(bmd_bounds_df, file = bmd_bounds_filename)
+save(bmd_bounds_df, file = "../DoseRider_Paper/data/logs_bmd_bounds_1000_C2_CGP_size20_200_cluster.rda")
 
 # Define plotting parameters
 top <- 20
@@ -178,5 +180,5 @@ for (gs in res_df$Geneset[1:50]) {
 }
 
 
-p11 <- plot_pathway_response(dose_rider_results, gene_set_name = "GLASS_IGF2BP1_CLIP_TARGETS_KNOCKDOWN_DN", dose_col = "log_Dose", center_values = T, clusterResults = F)
+p11 <- plot_pathway_response(dose_rider_results, gene_set_name = "DAIRKEE_CANCER_PRONE_RESPONSE_BPA_E2", dose_col = "Dose", center_values = T,scale_values = F, clusterResults = F)
 p11
