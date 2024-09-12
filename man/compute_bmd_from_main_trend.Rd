@@ -8,7 +8,8 @@ compute_bmd_from_main_trend(
   smooth_pathway,
   dose_var,
   z = 1,
-  center_values = TRUE
+  center_values = TRUE,
+  scale_values = F
 )
 }
 \arguments{

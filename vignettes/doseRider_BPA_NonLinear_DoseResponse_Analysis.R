@@ -132,7 +132,7 @@ save(dose_rider_results, file = dose_rider_results_filename)
 save(bmd_bounds_df, file = "../DoseRider_Paper/data/logs_bmd_bounds_1000_C2_CGP_size20_200_cluster.rda")
 
 # Define plotting parameters
-top <- 20
+top <- 10
 save_path <- "plots/"
 dir.create(save_path, showWarnings = FALSE)
 PLOT_WIDTH <- 2500
@@ -147,18 +147,19 @@ dev.off()
 p2 <- plot_gene_set_random_effects(dose_rider_results_filter, dose_col = "Dose", order_column = "best_model_pvalue", top = top) + theme_dose_rider(fix_ratio = F)
 ggsave(paste0(save_path,"plot2.jpeg"), plot = p2, width = PLOT_WIDTH, height = PLOT_HEIGHT, units = "px", dpi = 600)
 
-p3 <- plot_top_pathway_responses(dose_rider_results_filter, dose_col = "log_Dose", top = 12, ncol = 4, order_column = "best_model_pvalue", text_size = 5, plot_original_data = F, center_values = T)
+p3 <- plot_top_pathway_responses(dose_rider_results_filter, dose_col = "log_Dose", top = 6, ncol = 3, order_column = "best_model_pvalue", text_size = 5, plot_original_data = F, center_values = T, clusterResults = T)
 ggsave(paste0(save_path,"plot3.jpeg"), plot = p3, width = PLOT_WIDTH, height = PLOT_HEIGHT + 1000, units = "px", dpi = 600)
+
+p4 <- plot_gene_random_effect_relationship(dose_rider_results_filter, "LIEN_BREAST_CARCINOMA_METAPLASTIC_VS_DUCTAL_DN")
+ggsave(paste0(save_path,"plot4.jpeg"), plot = p4, width = PLOT_WIDTH + 1800, height = PLOT_HEIGHT + 600, units = "px", dpi = 600)
 
 
 p5 <- plot_dotplot_top_pathways(dose_rider_results_filter, top = top, order_column = "NegLogPValue",pvalue_column = "best_model_adj_pvalue", decreasing = TRUE)
 ggsave(paste0(save_path,"plot5.jpeg"), plot = p5, width = PLOT_WIDTH + 500, height = PLOT_HEIGHT + 500, units = "px", dpi = 600)
 
-p4 <- plot_gene_random_effect_relationship(dose_rider_results_filter, "DAUER_STAT3_TARGETS_DN")
-ggsave(paste0(save_path,"plot4.jpeg"), plot = p4, width = PLOT_WIDTH + 1800, height = PLOT_HEIGHT + 600, units = "px", dpi = 600)
 
 
-p6 <- create_gene_heatmap(dose_rider_results_filter, dose_col = "Dose", gene_set_name = "MENSE_HYPOXIA_UP")
+p6 <- create_gene_heatmap(dose_rider_results_filter, dose_col = "Dose", gene_set_name = "LIEN_BREAST_CARCINOMA_METAPLASTIC_VS_DUCTAL_DN")
 jpeg(file=paste0(save_path,"plot6.jpeg"), width = PLOT_WIDTH - 1500, height = PLOT_HEIGHT - 1500, units = "px")
 plot(p6, heatmap_legend_side = "bottom", annotation_legend_side = "bottom", padding = unit(c(1, 1, 1, 1), "cm"))
 dev.off()
@@ -167,18 +168,9 @@ data_bmd <- get_bmd_range(dose_rider_results = dose_rider_results_filter)
 p7 <- plot_bmd_density_and_peaks(data_bmd)
 ggsave(paste0(save_path,"plot7.jpeg"), plot = p7, width = PLOT_WIDTH, height = PLOT_HEIGHT, units = "px", dpi = 600)
 
-# p10 <- plot_bmd_confidence_intervals(head(bmd_bounds_df, 20))
-# ggsave(paste0(save_path,"plot10.jpeg"), plot = p10, width = PLOT_WIDTH, height = PLOT_HEIGHT + 500, units = "px", dpi = 600)
+p10 <- plot_bmd_confidence_intervals(head(bmd_bounds_df, 10))
+ggsave(paste0(save_path,"plot10.jpeg"), plot = p10, width = PLOT_WIDTH, height = PLOT_HEIGHT + 500, units = "px", dpi = 600)
 
-res_df = doseRider::as.data.frame.DoseRider(dose_rider_results_filter)
-res_df$NegPval <- -log10(res_df$best_model_adj_pvalue)
-res_df <- res_df[order(-res_df$NegLogPValue), ]
+p11 <- plot_pathway_response(dose_rider_results, gene_set_name = "LIEN_BREAST_CARCINOMA_METAPLASTIC_VS_DUCTAL_DN", dose_col = "log_Dose", center_values = T,scale_values = F, clusterResults = F)
+ggsave(paste0(save_path,"plot11.jpeg"), plot = p10, width = PLOT_WIDTH, height = PLOT_HEIGHT + 500, units = "px", dpi = 600)
 
-for (gs in res_df$Geneset[1:50]) {
-  p11 <- plot_pathway_response(dose_rider_results_filter, gene_set_name = gs, dose_col = "log_Dose", center_values = T, plot_original_data = F, clusterResults = F)
-  ggsave(paste0("../doseRiderPlots/",gs,"predicted.jpeg"), plot = p11, width = PLOT_WIDTH, height = PLOT_HEIGHT, units = "px", dpi = 600)
-}
-
-
-p11 <- plot_pathway_response(dose_rider_results, gene_set_name = "DAIRKEE_CANCER_PRONE_RESPONSE_BPA_E2", dose_col = "Dose", center_values = T,scale_values = F, clusterResults = F)
-p11

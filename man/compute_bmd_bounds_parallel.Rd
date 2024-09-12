@@ -12,7 +12,8 @@ compute_bmd_bounds_parallel(
   covariates = c(),
   omic = "rnaseq",
   n_bootstrap = 1000,
-  num_cores = 5
+  num_cores = 5,
+  clusterResults = F
 )
 }
 \arguments{

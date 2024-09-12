@@ -19,7 +19,6 @@
 #' @param FilterPathway Boolean, if TRUE the function will apply PCA filtering to detect antagonist patterns. Defaults to FALSE.
 #' @param pca_threshold Numeric value specifying the variance threshold for PC1 to filter pathways. Default is 0.6.
 #' @param log_transform Logical, whether to log10 transform the dose values. Default is FALSE.
-#' @param spline_knots Number of internal knots to use for splines on dose. Default is 3.
 #'
 #' @return A list containing results for each gene set including various metrics, p-values,
 #'         and adjusted p-values. The structure of results will depend on the model type used.
@@ -38,7 +37,7 @@ process_gene_set <- function(se, dose_col, sample_col, omic, gmt, i, minGSsize =
                              maxGSsize = 300, covariates = c(), modelType = "LMM",
                              FilterPathway = FALSE, pca_threshold = 0.6,
                              models = c("linear", "non_linear_fixed","non_linear_mixed"),
-                             spline_knots = 3, log_transform = F) {
+                             log_transform = F) {
   # Helper function to summarize a model
   is_fitted_model <- function(model) {
     if(inherits(model, c("lmerMod", "glmerMod"))) {
@@ -85,13 +84,13 @@ process_gene_set <- function(se, dose_col, sample_col, omic, gmt, i, minGSsize =
     # Fit the models specified by the user
     for (model in models) {
       if (model == "linear") {
-        linear_formula <- create_lmm_formula("counts", dose_col, "gene", covariates, "linear", omic, spline_knots)
+        linear_formula <- create_lmm_formula("counts", dose_col, "gene", covariates, "linear", omic, 3)
         fitted_models$linear <- suppressWarnings(fit_lmm(linear_formula, long_df, omic))
       } else if (model == "non_linear_fixed") {
-        non_linear_fixed_formula <- create_lmm_formula("counts", dose_col, "gene", covariates, "non_linear_fixed", omic, spline_knots)
+        non_linear_fixed_formula <- create_lmm_formula("counts", dose_col, "gene", covariates, "non_linear_fixed", omic, 3)
         fitted_models$non_linear_fixed <- suppressWarnings(fit_lmm(non_linear_fixed_formula, long_df, omic))
       } else if (model == "non_linear_mixed") {
-        non_linear_mixed_formula <- create_lmm_formula("counts", dose_col, "gene", covariates, "non_linear_mixed", omic, spline_knots)
+        non_linear_mixed_formula <- create_lmm_formula("counts", dose_col, "gene", covariates, "non_linear_mixed", omic, 3)
         fitted_models$non_linear_mixed <- suppressWarnings(fit_lmm(non_linear_mixed_formula, long_df, omic))
       }
     }
@@ -283,7 +282,6 @@ process_gene_set <- function(se, dose_col, sample_col, omic, gmt, i, minGSsize =
 #' @param FilterPathway Boolean, if TRUE the function will apply PCA filtering to detect antagonist patterns. Defaults to FALSE.
 #' @param pca_threshold Numeric value specifying the variance threshold for PC1 to filter pathways. Default is 0.6.
 #' @param log_transform Logical, whether to log10 transform the dose values. Default is FALSE.
-#' @param spline_knots Number of internal knots to use for splines on dose. Default is 3.
 #'
 #' @return A list containing results for each gene set including various metrics, p-values,
 #' and adjusted p-values.
@@ -304,7 +302,7 @@ DoseRider <- function(se, gmt, dose_col = "dose", sample_col = "sample",
                       covariates = c(), omic = "rnaseq", minGSsize = 5,
                       maxGSsize = 300, method = "fdr", modelType = "LMM",
                       FilterPathway = FALSE,
-                      pca_threshold = 0.6, spline_knots = 3, log_transform = F,
+                      pca_threshold = 0.6, log_transform = F,
                       models = c("linear", "non_linear_fixed","non_linear_mixed")) {
 
   # Validate input data
@@ -322,7 +320,8 @@ DoseRider <- function(se, gmt, dose_col = "dose", sample_col = "sample",
       se = se, dose_col = dose_col, sample_col = sample_col, omic = omic, gmt = gmt,
       i = i, minGSsize = minGSsize, maxGSsize = maxGSsize, covariates = covariates,
       modelType = modelType, FilterPathway =FilterPathway,
-      pca_threshold = pca_threshold, spline_knots = spline_knots, log_transform = log_transform,
+      pca_threshold = pca_threshold,
+      log_transform = log_transform,
       models = models
     )))
     if (!is.null(geneset_results)) {
@@ -361,7 +360,6 @@ DoseRider <- function(se, gmt, dose_col = "dose", sample_col = "sample",
 #' @param FilterPathway Boolean, if TRUE the function will apply PCA filtering to detect antagonist patterns. Defaults to FALSE.
 #' @param pca_threshold Numeric value specifying the variance threshold for PC1 to filter pathways. Default is 0.6.
 #' @param log_transform Logical, whether to log10 transform the dose values. Default is FALSE.
-#' @param spline_knots Number of internal knots to use for splines on dose. Default is 3.
 #'
 #' @return A list containing the results of the DoseRider analysis for each gene set.
 #' @import SummarizedExperiment
@@ -386,7 +384,7 @@ DoseRiderParallel <- function(se, gmt, dose_col = "dose", sample_col = "sample",
                               maxGSsize = 300, method = "fdr", num_cores = 5,
                               modelType = "LMM",
                               FilterPathway = FALSE, pca_threshold = 0.6,
-                              spline_knots = 3, log_transform = F,
+                              log_transform = F,
                               models = c("linear", "non_linear_fixed","non_linear_mixed")) {
   # Register the parallel backend
   cl <- makeCluster(num_cores)
@@ -408,7 +406,7 @@ DoseRiderParallel <- function(se, gmt, dose_col = "dose", sample_col = "sample",
                          i = i, minGSsize = minGSsize, maxGSsize = maxGSsize, covariates = covariates,
                          modelType = modelType,
                          FilterPathway = FilterPathway, pca_threshold = pca_threshold,
-                         spline_knots = spline_knots, log_transform = log_transform, models = models
+                         log_transform = log_transform, models = models
                        ))
                        if (!is.null(geneset_results)) {
                          setNames(list(geneset_results), gmt[[i]]$pathway)

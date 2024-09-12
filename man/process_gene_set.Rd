@@ -18,7 +18,6 @@ process_gene_set(
   FilterPathway = FALSE,
   pca_threshold = 0.6,
   models = c("linear", "non_linear_fixed", "non_linear_mixed"),
-  spline_knots = 3,
   log_transform = F
 )
 }
@@ -45,8 +44,6 @@ and "GAMM" for Generalized Additive Mixed Models. Defaults to "LMM".}
 \item{FilterPathway}{Boolean, if TRUE the function will apply PCA filtering to detect antagonist patterns. Defaults to FALSE.}
 
 \item{pca_threshold}{Numeric value specifying the variance threshold for PC1 to filter pathways. Default is 0.6.}
-
-\item{spline_knots}{Number of internal knots to use for splines on dose. Default is 3.}
 
 \item{log_transform}{Logical, whether to log10 transform the dose values. Default is FALSE.}
 
