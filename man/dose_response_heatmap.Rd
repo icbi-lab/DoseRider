@@ -9,7 +9,8 @@ dose_response_heatmap(
   dose_col = "Dose",
   top = 15,
   order_column = "best_model_pvalue",
-  decreasing = FALSE
+  decreasing = FALSE,
+  fontsize = 6
 )
 }
 \arguments{
@@ -21,6 +22,8 @@ Each element of the list is a sublist with various metrics and the raw values (e
 \item{top}{An integer specifying the number of top gene sets to include in the heatmap. Default is 15.}
 
 \item{order_column}{A character string specifying the column to use for ordering gene sets in the heatmap.}
+
+\item{fontsize}{Integer for fontsize. Default 6}
 }
 \value{
 An object of class `Heatmap` representing the constructed heatmap.

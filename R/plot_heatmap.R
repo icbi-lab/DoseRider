@@ -8,6 +8,7 @@
 #' @param dose_col A character string specifying the name of the dose column in the raw expression data.
 #' @param top An integer specifying the number of top gene sets to include in the heatmap. Default is 15.
 #' @param order_column A character string specifying the column to use for ordering gene sets in the heatmap.
+#' @param fontsize Integer for fontsize. Default 6
 #'
 #' @return An object of class `Heatmap` representing the constructed heatmap.
 #'
@@ -24,7 +25,7 @@
 #' }
 #'
 #' @export
-dose_response_heatmap <- function(dose_rider_results, dose_col = "Dose", top = 15, order_column = "best_model_pvalue", decreasing = FALSE) {
+dose_response_heatmap <- function(dose_rider_results, dose_col = "Dose", top = 15, order_column = "best_model_pvalue", decreasing = FALSE, fontsize = 6) {
   # Initialize an empty matrix to store the average expressions
   heatmap_data <- list()
 
@@ -70,15 +71,15 @@ dose_response_heatmap <- function(dose_rider_results, dose_col = "Dose", top = 1
                 column_gap = unit(2, "mm"),
                 border_gp = grid::gpar(col = "black", lty = 1),
                 rect_gp = grid::gpar(col = "black", lwd = 1),
-                row_names_gp = gpar(fontsize = 12),  # Matches axis.text size in theme
-                column_names_gp = gpar(fontsize = 12, just = "center"),  # Matches axis.text size in theme
+                row_names_gp = gpar(fontsize = fontsize),  # Matches axis.text size in theme
+                column_names_gp = gpar(fontsize = fontsize, just = "center"),  # Matches axis.text size in theme
                 column_names_rot = 0,
                 cluster_columns = FALSE,
                 show_row_dend = FALSE,
                 col = col_fun,
                 heatmap_legend_param = list(
-                  title_gp = gpar(fontsize = 14),  # Matches legend.title size in theme
-                  labels_gp = gpar(fontsize = 12),  # Matches legend.text size in theme
+                  title_gp = gpar(fontsize = fontsize -2),  # Matches legend.title size in theme
+                  labels_gp = gpar(fontsize = fontsize-2),  # Matches legend.text size in theme
                   legend_direction = "horizontal",
                   legend_position = "bottom"
                 ))
@@ -94,6 +95,7 @@ dose_response_heatmap <- function(dose_rider_results, dose_col = "Dose", top = 1
 #' @param dose_rider_results A list containing the results of the DoseRider analysis for each gene set.
 #' @param gene_set_name A character string specifying the name of the gene set to be visualized.
 #' @param dose_col A character string specifying the name of the dose column in the raw expression data.
+#' @param fontsize Integer for fontsize. Default 6
 #'
 #' @return An object of class `Heatmap` representing the constructed heatmap for the specified gene set.
 #'
@@ -110,7 +112,7 @@ dose_response_heatmap <- function(dose_rider_results, dose_col = "Dose", top = 1
 #' }
 #'
 #' @export
-create_gene_heatmap <- function(dose_rider_results, gene_set_name, dose_col) {
+create_gene_heatmap <- function(dose_rider_results, gene_set_name, dose_col, fontsize = 6) {
   if (!gene_set_name %in% names(dose_rider_results)) {
     stop("Specified gene set name not found in the results.")
   }
@@ -163,16 +165,16 @@ create_gene_heatmap <- function(dose_rider_results, gene_set_name, dose_col) {
                 column_gap = unit(2, "mm"),
                 border_gp = grid::gpar(col = "black", lty = 1),
                 rect_gp = grid::gpar(col = "black", lwd = 1),
-                row_names_gp = gpar(fontsize = 12),  # Matches axis.text size in theme
-                column_names_gp = gpar(fontsize = 12, just = "center"),  # Matches axis.text size in theme
+                row_names_gp = gpar(fontsize = fontsize),  # Matches axis.text size in theme
+                column_names_gp = gpar(fontsize = fontsize, just = "center"),  # Matches axis.text size in theme
                 column_names_rot = 0,
                 right_annotation = row_ha,
                 cluster_columns = FALSE,
                 show_row_dend = FALSE,
                 col = col_fun,
                 heatmap_legend_param = list(
-                  title_gp = gpar(fontsize = 14),  # Matches legend.title size in theme
-                  labels_gp = gpar(fontsize = 12),  # Matches legend.text size in theme
+                  title_gp = gpar(fontsize = fontsize),  # Matches legend.title size in theme
+                  labels_gp = gpar(fontsize = fontsize),  # Matches legend.text size in theme
                   legend_direction = "horizontal",
                   legend_position = "bottom"
                 ))
