@@ -10,8 +10,7 @@ prepare_data(
   dose_col,
   sample_col,
   omic = "rnaseq",
-  log_transform = FALSE,
-  spline_knots = 3
+  log_transform = FALSE
 )
 }
 \arguments{
@@ -26,8 +25,6 @@ prepare_data(
 \item{omic}{A character string specifying the type of omics data. Default is "rnaseq".}
 
 \item{log_transform}{Logical, whether to log10 transform the dose values. Default is FALSE.}
-
-\item{spline_knots}{Number of internal knots to use for splines on dose. Default is 3.}
 }
 \value{
 A data frame in a format suitable for glmmTMB function.

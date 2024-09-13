@@ -38,7 +38,6 @@ create_summarized_experiment <- function(assay_df, metadata_df) {
 #' @param sample_col The name of the sample column in the metadata of the SummarizedExperiment object.
 #' @param omic A character string specifying the type of omics data. Default is "rnaseq".
 #' @param log_transform Logical, whether to log10 transform the dose values. Default is FALSE.
-#' @param spline_knots Number of internal knots to use for splines on dose. Default is 3.
 #'
 #' @return A data frame in a format suitable for glmmTMB function.
 #' @importFrom reshape melt
@@ -50,7 +49,7 @@ create_summarized_experiment <- function(assay_df, metadata_df) {
 #' sample_col <- "sample"
 #' long_df <- prepare_data(se, geneset, dose_col, sample_col)
 #' @export
-prepare_data <- function(se, geneset, dose_col, sample_col, omic = "rnaseq", log_transform = FALSE, spline_knots = 3) {
+prepare_data <- function(se, geneset, dose_col, sample_col, omic = "rnaseq", log_transform = FALSE) {
 
   # Prepare data for glmmTMB, including size factors and dispersions
   common_genes <- intersect(geneset, rownames(se))
@@ -81,23 +80,6 @@ prepare_data <- function(se, geneset, dose_col, sample_col, omic = "rnaseq", log
       long_df[[paste0("log_", dose_col)]] <- log10(long_df[[dose_col]])
     }
 
-    # Add natural splines for dose
-    dose_splines <- bs(long_df[[dose_col]], knots = spline_knots,
-                                              Boundary.knots = range(long_df[[dose_col]]), intercept = FALSE)
-
-    # Store the spline attributes (knots, boundary knots) for later use
-    spline_info <- list(knots = attr(dose_splines, "knots"), Boundary.knots = attr(dose_splines, "Boundary.knots"))
-
-
-    dose_splines_df <- as.data.frame(dose_splines)
-    # Multiply spline values by 10, as in the other tool
-    dose_splines_df <- dose_splines_df * 10
-
-    # Rename spline columns
-    colnames(dose_splines) <- paste("spline_dose_", seq_len(ncol(dose_splines)), sep="")
-
-    # Add splines to the data frame
-    long_df <- cbind(long_df, dose_splines)
 
     long_df <- as.data.frame(long_df, warning = FALSE)
   } else {
@@ -105,7 +87,7 @@ prepare_data <- function(se, geneset, dose_col, sample_col, omic = "rnaseq", log
     spline_info <- NULL
   }
 
-  return(list(long_df = long_df, spline_info = spline_info))
+  return(list(long_df = long_df, spline_info = list()))
 }
 
 

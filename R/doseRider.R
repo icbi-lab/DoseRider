@@ -84,13 +84,13 @@ process_gene_set <- function(se, dose_col, sample_col, omic, gmt, i, minGSsize =
     # Fit the models specified by the user
     for (model in models) {
       if (model == "linear") {
-        linear_formula <- create_lmm_formula("counts", dose_col, "gene", covariates, "linear", omic, 3)
+        linear_formula <- create_lmm_formula("counts", dose_col, "gene", covariates, "linear", omic)
         fitted_models$linear <- suppressWarnings(fit_lmm(linear_formula, long_df, omic))
       } else if (model == "non_linear_fixed") {
-        non_linear_fixed_formula <- create_lmm_formula("counts", dose_col, "gene", covariates, "non_linear_fixed", omic, 3)
+        non_linear_fixed_formula <- create_lmm_formula("counts", dose_col, "gene", covariates, "non_linear_fixed", omic)
         fitted_models$non_linear_fixed <- suppressWarnings(fit_lmm(non_linear_fixed_formula, long_df, omic))
       } else if (model == "non_linear_mixed") {
-        non_linear_mixed_formula <- create_lmm_formula("counts", dose_col, "gene", covariates, "non_linear_mixed", omic, 3)
+        non_linear_mixed_formula <- create_lmm_formula("counts", dose_col, "gene", covariates, "non_linear_mixed", omic)
         fitted_models$non_linear_mixed <- suppressWarnings(fit_lmm(non_linear_mixed_formula, long_df, omic))
       }
     }
