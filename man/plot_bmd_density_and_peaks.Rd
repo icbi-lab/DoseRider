@@ -4,11 +4,13 @@
 \alias{plot_bmd_density_and_peaks}
 \title{Plot Benchmark Dose (BMD) Density and Peaks}
 \usage{
-plot_bmd_density_and_peaks(bmd_range_output)
+plot_bmd_density_and_peaks(bmd_range_output, log_bmd = T)
 }
 \arguments{
 \item{bmd_range_output}{A list containing the output from `get_bmd_range` function,
 which includes x (BMD values), y (density), and bmd (peaks).}
+
+\item{log_bmd}{Bool. If true compute the BMD text as 10 exponential}
 }
 \value{
 A ggplot object visualizing the density of BMD values with peaks marked.

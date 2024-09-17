@@ -132,6 +132,7 @@ plot_pathway_response <- function(dose_rider_results, gene_set_name, dose_col = 
 
   # Customize the plot theme
   p <- p + theme_dose_rider(legend_position = legend_position, text_size = text_size, margin_space = margin_space)
+  p <- ggtitle(gene_set_name)
 
   return(p)
 }
@@ -356,7 +357,7 @@ plot_dotplot_top_pathways <- function(dose_rider_results, top = 10, order_column
 #'
 #' @param bmd_range_output A list containing the output from `get_bmd_range` function,
 #' which includes x (BMD values), y (density), and bmd (peaks).
-#'
+#' @param  log_bmd Bool. If true compute the BMD text as 10 exponential
 #' @return A ggplot object visualizing the density of BMD values with peaks marked.
 #' @import ggplot2
 #' @examples
@@ -365,7 +366,7 @@ plot_dotplot_top_pathways <- function(dose_rider_results, top = 10, order_column
 #'
 #' @export
 
-plot_bmd_density_and_peaks <- function(bmd_range_output) {
+plot_bmd_density_and_peaks <- function(bmd_range_output, log_bmd = T) {
   # Convert the list to a dataframe for plotting
   data_to_plot <- data.frame(x = bmd_range_output$x, y = bmd_range_output$y)
 
@@ -373,9 +374,19 @@ plot_bmd_density_and_peaks <- function(bmd_range_output) {
   p <- ggplot(data_to_plot, aes(x = x, y = y)) +
     geom_line() +
     geom_vline(xintercept = bmd_range_output$bmd, color = "red", linetype = "dashed") +
-    labs(x = "BMD", y = "Density", title = "BMD Density and Peaks") +
+    labs(x = "", y = "Density", title = "BMD Density and Peaks") +
     theme_bw() +
     theme(axis.text.x = element_text(angle = 45, hjust = 1)) + theme_dose_rider()
+
+  if(log_bmd){
+    p <- p + annotate("text", x = bmd_range_output$bmd, y = max(density_result$y) * 0.7,
+             label = paste0("BMD: ", round(10**(bmd_range_output$bmd), 2)),
+             color = "red", angle = 90, vjust = -0.5) + xlab("log(BMD)")
+  } else {
+    p <- p + annotate("text", x = bmd_range_output$bmd, y = max(density_result$y) * 0.7,
+                      label = paste0("BMD: ", round(bmd_range_output$bmd, 2)),
+                      color = "red", angle = 90, vjust = -0.5) + xlab("BMD")
+  }
 
   return(p)
 }
