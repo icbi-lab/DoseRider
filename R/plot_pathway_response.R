@@ -373,18 +373,18 @@ plot_bmd_density_and_peaks <- function(bmd_range_output, log_bmd = T) {
   # Create the plot
   p <- ggplot(data_to_plot, aes(x = x, y = y)) +
     geom_line() +
-    geom_vline(xintercept = data_to_plot$bmd, color = "red", linetype = "dashed") +
+    geom_vline(xintercept = bmd_range_output$bmd, color = "red", linetype = "dashed") +
     labs(x = "", y = "Density", title = "BMD Density and Peaks") +
     theme_bw() +
     theme(axis.text.x = element_text(angle = 45, hjust = 1)) + theme_dose_rider()
 
   if(log_bmd){
-    p <- p + annotate("text", x = data_to_plot$bmd, y = max(data_to_plot$y) * 0.7,
-             label = paste0("BMD: ", round(10**(data_to_plot$bmd), 2)),
+    p <- p + annotate("text", x = bmd_range_output$bmd, y = max(data_to_plot$y) * 0.7,
+             label = paste0("BMD: ", round(10**(bmd_range_output$bmd), 2)),
              color = "red", angle = 90, vjust = -0.5) + xlab("log(BMD)")
   } else {
-    p <- p + annotate("text", x = data_to_plot$bmd, y = max(data_to_plot$y) * 0.7,
-                      label = paste0("BMD: ", round(data_to_plot$bmd, 2)),
+    p <- p + annotate("text", x = bmd_range_output$bmd, y = max(data_to_plot$y) * 0.7,
+                      label = paste0("BMD: ", round(bmd_range_output$bmd, 2)),
                       color = "red", angle = 90, vjust = -0.5) + xlab("BMD")
   }
 
