@@ -132,7 +132,7 @@ plot_pathway_response <- function(dose_rider_results, gene_set_name, dose_col = 
 
   # Customize the plot theme
   p <- p + theme_dose_rider(legend_position = legend_position, text_size = text_size, margin_space = margin_space)
-  p <- ggtitle(gene_set_name)
+  p <- p + ggtitle(gene_set_name)
 
   return(p)
 }
@@ -380,11 +380,11 @@ plot_bmd_density_and_peaks <- function(bmd_range_output, log_bmd = T) {
 
   if(log_bmd){
     p <- p + annotate("text", x = bmd_range_output$bmd, y = max(data_to_plot$y) * 0.7,
-             label = paste0("BMD: ", round(10**(bmd_range_output$bmd), 2)),
+             label = paste0("BMD: ", round(10**(bmd_range_output$bmd), 3)),
              color = "red", angle = 90, vjust = -0.5) + xlab("log(BMD)")
   } else {
     p <- p + annotate("text", x = bmd_range_output$bmd, y = max(data_to_plot$y) * 0.7,
-                      label = paste0("BMD: ", round(bmd_range_output$bmd, 2)),
+                      label = paste0("BMD: ", round(bmd_range_output$bmd, 3)),
                       color = "red", angle = 90, vjust = -0.5) + xlab("BMD")
   }
 
