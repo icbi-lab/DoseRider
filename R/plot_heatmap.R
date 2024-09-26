@@ -30,13 +30,13 @@ dose_response_heatmap <- function(dose_rider_results, dose_col = "Dose", top = 1
   heatmap_data <- list()
 
   #Top pathways in function of P-Value
-  dose_rider_df <- as.data.frame.DoseRider(dose_rider_results)
-  dose_rider_df <- dose_rider_df[with(dose_rider_df, order(order_column, decreasing=decreasing))]
+  # Select top gene sets
+  top_gene_sets <- get_top_genesets(dose_rider_results = dose_rider_results,
+                                    top = top,
+                                    decreasing = decreasing,
+                                    order_column = order_column )
 
-  # Gene set names
-  gene_set_names <- dose_rider_df$Geneset[1:top]
-  gene_set_names <- gene_set_names[!is.na(gene_set_names)]
-  for (gene_set_name in gene_set_names) {
+  for (gene_set_name in top_gene_sets) {
     res_geneset <- dose_rider_results[[gene_set_name]]
     gene_set_name <- str_replace(gene_set_name, " - Homo sapiens \\(human\\)", "")
     # Extract the raw values

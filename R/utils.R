@@ -71,3 +71,39 @@ add_best_model_adj_pvalue <- function(doseRiderObj) {
   return(doseRiderObj)
 }
 
+#' Function to obtain the top k gene sets sorted by a specified column
+#'
+#' @param dose_rider_results Data frame containing gene set information
+#' @param pvalue_column Column name for p-values (default: "best_model_adj_pvalue")
+#' @param order_column Column name for ordering (default: "NegLogPValue")
+#' @param top Number of top gene sets to retrieve (default: 10)
+#' @param decreasing Logical indicating sort order (default: TRUE)
+#' @return Vector of gene set names of the top k gene sets
+
+get_top_genesets <- function(dose_rider_results,
+                             pvalue_column = "best_model_adj_pvalue",
+                             order_column = "NegLogPValue",
+                             top = 10,
+                             decreasing = TRUE) {
+  # Convert to data frame if needed
+  dose_rider_df <- as.data.frame.DoseRider(dose_rider_results)
+
+  # Add -log10(p-value) column
+  dose_rider_df[["NegLogPValue"]] <- -log10(dose_rider_df[[pvalue_column]])
+
+  # Sort by the specified column in the desired order
+  dose_rider_df <- dose_rider_df[order(dose_rider_df[[order_column]], decreasing = decreasing), ]
+
+  # Filter out rows with NA values in the ordering column
+  dose_rider_df <- dose_rider_df[!is.na(dose_rider_df[[order_column]]), ]
+
+  # Retrieve the top pathways
+  top_pathways_df <- head(dose_rider_df, top)
+
+  # Extract gene set names
+  gene_set_names <- top_pathways_df$Geneset
+
+  return(gene_set_names)
+}
+
+

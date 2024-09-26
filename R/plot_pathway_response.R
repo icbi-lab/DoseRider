@@ -153,18 +153,17 @@ plot_pathway_response <- function(dose_rider_results, gene_set_name, dose_col = 
 #' @return A combined ggplot object with top significant pathway response plots.
 #' @importFrom cowplot plot_grid
 #' @export
-plot_top_pathway_responses <- function(dose_rider_results, top=6, ncol = 3, order_column = "best_model_pvalue", decreasing = F,  dose_col = "Dose",
+plot_top_pathway_responses <- function(dose_rider_results, top=6, ncol = 3, order_column = "NegLogPValue", decreasing = F,  dose_col = "Dose",
                                        center_values = TRUE, scale_values = TRUE, legend_position = "none", text_size = 4,
                                        margin_space = 0, model_metrics = FALSE, v_size = 0.5,
                                        annotate_gene = FALSE, annotation_text_size = 5, draw_bmd = TRUE,
                                        plot_original_data = F, clusterResults = F) {
 
-  # Extract and order gene sets by adjusted cubic p-value
-  dose_rider_df <- as.data.frame.DoseRider(dose_rider_results)
-  dose_rider_df <- dose_rider_df[order(dose_rider_df[[order_column]], decreasing = decreasing), ]
-
   # Select top gene sets
-  top_gene_sets <- head(dose_rider_df$Geneset, top)
+  top_gene_sets <- get_top_genesets(dose_rider_results = dose_rider_results,
+                                    top = top,
+                                    decreasing = decreasing,
+                                    order_column = order_column )
 
   # List to store individual plots
   plot_list <- list()
@@ -226,13 +225,13 @@ plot_gene_set_random_effects <- function(dose_rider_results, dose_col = "Dose", 
                                    RandomEffect1 = numeric(),
                                    stringsAsFactors = FALSE)
   #Top pathways in function of P-Value
-  dose_rider_df <- as.data.frame.DoseRider(dose_rider_results)
-  dose_rider_df <- dose_rider_df[order(dose_rider_df[[order_column]], decreasing = decreasing), ]
+  # Select top gene sets
+  top_gene_sets <- get_top_genesets(dose_rider_results = dose_rider_results,
+                                    top = top,
+                                    decreasing = decreasing,
+                                    order_column = order_column )
 
-  # Extract the top gene set names
-  gene_set_names <- dose_rider_df$Geneset[1:top]
-
-  for (gene_set_name in gene_set_names) {
+  for (gene_set_name in top_gene_sets) {
     random_effects <- dose_rider_results[[gene_set_name]]$random_effect
 
     if (length(random_effects$RandomIntercept) > 1) {
@@ -335,9 +334,12 @@ plot_dotplot_top_pathways <- function(dose_rider_results, top = 10, order_column
 
   # Add -log10(p-value) and sort by it
   dose_rider_df$NegLogPValue <- -log10(dose_rider_df[[pvalue_column]])
-  dose_rider_df <- dose_rider_df[order(dose_rider_df[[order_column]], decreasing = decreasing), ]
-  dose_rider_df <- dose_rider_df[!is.na(dose_rider_df$NegLogPValue),]
-  top_pathways_df <- head(dose_rider_df, top)
+  # Select top gene sets
+  top_gene_sets <- get_top_genesets(dose_rider_results = dose_rider_results,
+                                    top = top,
+                                    decreasing = decreasing,
+                                    order_column = order_column )
+  top_pathways_df <- dose_rider_df[dose_rider_df$Geneset %in% top_gene_sets,]
   top_pathways_df$Geneset <- unlist(lapply(top_pathways_df$Geneset, function(x){str_wrap(gsub("_", " ", x),35)}))
   # Create Dot Plot
   dot_plot <- ggplot(top_pathways_df, aes(x = NegLogPValue, y = reorder(Geneset, NegLogPValue), size = Genes, fill = best_model)) +

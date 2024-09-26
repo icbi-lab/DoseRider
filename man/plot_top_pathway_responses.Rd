@@ -8,7 +8,7 @@ plot_top_pathway_responses(
   dose_rider_results,
   top = 6,
   ncol = 3,
-  order_column = "best_model_pvalue",
+  order_column = "NegLogPValue",
   decreasing = F,
   dose_col = "Dose",
   center_values = TRUE,
