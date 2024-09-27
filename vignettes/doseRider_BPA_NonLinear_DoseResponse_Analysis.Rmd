@@ -38,23 +38,26 @@ load("../data/PRJNA869442.rda")
 Doses were selected based on criteria such as precipitation, stress response biomarkers, and cell proliferation.
 
 ```{r}
-# Define the doses for BPAF compound
-compound_doses <- list("BPAF" = c(0.0005, 0.001, 0.01, 0.1, 0.5, 1, 5))
-doses <- c(0, compound_doses["BPAF"][[1]])
-
 # Filter data for BPAF
-bpaf_data <- PRJNA869442[
-  (colData(PRJNA869442)$Chemical %in% c("Cells, no treatment", "BPAF")) &
-  (colData(PRJNA869442)$Dose %in% doses)
-]
+compound_doses <- list(
+  "BPAF" = c(0.0005, 0.001, 0.01, 0.1, 0.5, 1, 5, 10)
+)
+doses <- c(0,compound_doses["BPAF"][[1]])
+
+# Example filtering for BPA
+bpaf_data <- PRJNA869442[,(colData(PRJNA869442)$Chemical %in% c("Cells, no treatment","BPAF")) &
+                           (colData(PRJNA869442)$Dose %in% doses)]
 bpaf_data$sample <- colnames(bpaf_data)
+
+# Prepare the data for DESeq2 analysis
+colData(bpaf_data)$Dose <- unlist(colData(bpaf_data)$Dose)
 ```
 
 ### 3. Differential Expression Analysis
 
 ```{r}
 # Prepare the data for DESeq2 analysis
-colData(bpaf_data)$Dose <- unlist(colData(bpaf_data)$Dose)
+#colData(bpaf_data)$Dose <- unlist(colData(bpaf_data)$Dose)
 
 # Create DESeq2 dataset
 dds <- DESeqDataSetFromMatrix(
@@ -77,9 +80,6 @@ filter_bpaf_data <- bpaf_data[rownames(bpaf_data) %in% rownames(filter_res),]
 # Save filtered metadata and expression data
 metadata <- colData(filter_bpaf_data)
 expression_data <- assay(filter_bpaf_data)
-
-write.table(metadata, "metadata.tsv", sep="\t", quote=FALSE)
-write.table(expression_data, "expression_data.tsv", sep="\t", quote=FALSE)
 ```
 
 ### 4. Load Gene Sets
@@ -90,7 +90,7 @@ gmt_h_path <- "../external/h.all.v2023.2.Hs.symbols.gmt"
 gmt_perturbation_path <- "../external/c2.cgp.v2023.2.Hs.symbols.gmt"
 
 # Read and filter GMT files
-gmt <- filter_gmt_by_size(read_gmt(gmt_perturbation_path), 20, 1000)
+gmt <- filter_gmt_by_size(read_gmt(gmt_perturbation_path), 20, 100)
 ```
 
 ### 5. Dose-Response Model with doseRider
@@ -108,8 +108,8 @@ dose_rider_results <- DoseRiderParallel(
   covariates = c(),
   modelType = "LMM", 
   num_cores = 10,
-  clusterResults = TRUE, 
-  FilterPathway = FALSE
+  FilterPathway = FALSE,
+  log_transform = TRUE
 )
 
 # Convert results to data frame
@@ -119,21 +119,21 @@ table(res_df$best_model)
 # Filter doseRider results based on FDR
 dose_rider_results_filter <- filter_DoseRider(
   dose_rider_results, 
-  model_type = "all", 
+  model_type = "non_linear_mixed", 
   filter_type = "fdr", 
   threshold = 0.1
 )
 
 # Compute BMD bounds
-bmd_bounds_df <- doseRider::compute_bmd_bounds_parallel(
-  dose_rider_results = dose_rider_results_filter, 
-  dose_col = "Dose", 
-  sample_col = "sample", 
-  covariates = c(), 
-  omic = "rnaseq", 
-  n_bootstrap = 100, 
-  num_cores = 10
-)
+# bmd_bounds_df <- doseRider::compute_bmd_bounds_parallel(
+#   dose_rider_results = dose_rider_results_filter, 
+#   dose_col = "Dose", 
+#   sample_col = "sample", 
+#   covariates = c(), 
+#   omic = "rnaseq", 
+#   n_bootstrap = 10, 
+#   num_cores = 100
+# )
 
 # Save doseRider results and BMD bounds
 save(dose_rider_results, file = "doseRider_results.rda")
@@ -154,15 +154,15 @@ PLOT_WIDTH <- 2500
 PLOT_HEIGHT <- 2500
 
 # Generate and save plots
-p1 <- dose_response_heatmap(dose_rider_results, dose_col = "Dose", top = top, order_column = "best_model_pvalue", decreasing = FALSE)
+p1 <- dose_response_heatmap(dose_rider_results, dose_col = "Dose", top = top, decreasing = FALSE)
 jpeg(file=paste0(save_path,"plot1.jpeg"), width = PLOT_WIDTH - 1500, height = PLOT_HEIGHT - 1500, units = "px")
 plot(p1, heatmap_legend_side = "bottom", annotation_legend_side = "bottom", padding = unit(c(1, 1, 1, 1), "cm"))
 dev.off()
 
-p2 <- plot_gene_set_random_effects(dose_rider_results, dose_col = "Dose", order_column = "best_model_pvalue", top = top)
+p2 <- plot_gene_set_random_effects(dose_rider_results, dose_col = "log_Dose",  top = top)
 ggsave(paste0(save_path,"plot2.jpeg"), plot = p2, width = PLOT_WIDTH, height = PLOT_HEIGHT, units = "px", dpi = 600)
 
-p3 <- plot_top_pathway_responses(dose_rider_results, top = 6, ncol = 2, order_column = "best_model_pvalue", text_size = 5)
+p3 <- plot_top_pathway_responses(dose_rider_results, top = 6, ncol = 2,  text_size = 5, dose_col = "log_Dose", clusterResults = T)
 ggsave(paste0(save_path,"plot3.jpeg"), plot = p3, width = PLOT_WIDTH, height = PLOT_HEIGHT + 1000, units = "px", dpi = 600)
 
 p4 <- plot_gene_random_effect_relationship(dose_rider_results, "BENPORATH_ES_CORE_NINE_CORRELATED")

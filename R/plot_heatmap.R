@@ -6,6 +6,7 @@
 #' @param dose_rider_results A list containing the results of the DoseRider analysis for each gene set.
 #' Each element of the list is a sublist with various metrics and the raw values (expression data) for a gene set.
 #' @param dose_col A character string specifying the name of the dose column in the raw expression data.
+#' @param dose_unit A character string specifying the dose units to plot in the column title..
 #' @param top An integer specifying the number of top gene sets to include in the heatmap. Default is 15.
 #' @param order_column A character string specifying the column to use for ordering gene sets in the heatmap.
 #' @param fontsize Integer for fontsize. Default 6
@@ -25,7 +26,7 @@
 #' }
 #'
 #' @export
-dose_response_heatmap <- function(dose_rider_results, dose_col = "Dose", top = 15, order_column = "best_model_pvalue", decreasing = FALSE, fontsize = 6) {
+dose_response_heatmap <- function(dose_rider_results, dose_col = "Dose", dose_unit = "μM", top = 15, order_column = "NegLogPValue", decreasing = FALSE, fontsize = 6) {
   # Initialize an empty matrix to store the average expressions
   heatmap_data <- list()
 
@@ -65,15 +66,15 @@ dose_response_heatmap <- function(dose_rider_results, dose_col = "Dose", top = 1
 
   ha <- Heatmap(z_score_matrix,
                 name = "Z-Score",
-                column_title = "Dose",
+                column_title = paste0(dose_col, " (",dose_unit,")"),
                 column_title_side = "bottom",
-                row_title = "Gene Set",
                 column_gap = unit(2, "mm"),
                 border_gp = grid::gpar(col = "black", lty = 1),
                 rect_gp = grid::gpar(col = "black", lwd = 1),
                 row_names_gp = gpar(fontsize = fontsize),  # Matches axis.text size in theme
                 column_names_gp = gpar(fontsize = fontsize, just = "center"),  # Matches axis.text size in theme
-                column_names_rot = 0,
+                column_title_gp = gpar(fontsize = fontsize + 2, just = "center"),
+                column_names_rot = 45,
                 cluster_columns = FALSE,
                 show_row_dend = FALSE,
                 col = col_fun,
@@ -95,6 +96,7 @@ dose_response_heatmap <- function(dose_rider_results, dose_col = "Dose", top = 1
 #' @param dose_rider_results A list containing the results of the DoseRider analysis for each gene set.
 #' @param gene_set_name A character string specifying the name of the gene set to be visualized.
 #' @param dose_col A character string specifying the name of the dose column in the raw expression data.
+#' @param dose_unit A character string specifying the dose units to plot in the column title..
 #' @param fontsize Integer for fontsize. Default 6
 #'
 #' @return An object of class `Heatmap` representing the constructed heatmap for the specified gene set.
@@ -112,7 +114,7 @@ dose_response_heatmap <- function(dose_rider_results, dose_col = "Dose", top = 1
 #' }
 #'
 #' @export
-create_gene_heatmap <- function(dose_rider_results, gene_set_name, dose_col, fontsize = 6) {
+create_gene_heatmap <- function(dose_rider_results, gene_set_name, dose_col,  dose_unit = "μM", fontsize = 6) {
   if (!gene_set_name %in% names(dose_rider_results)) {
     stop("Specified gene set name not found in the results.")
   }
@@ -159,15 +161,15 @@ create_gene_heatmap <- function(dose_rider_results, gene_set_name, dose_col, fon
   # Create the heatmap
   ha <- Heatmap(z_score_matrix,
                 name = "Z-Score",
-                column_title = "Dose",
+                column_title = paste0(dose_col, " (",dose_unit,")"),
                 column_title_side = "bottom",
-                row_title = "Gene",
                 column_gap = unit(2, "mm"),
                 border_gp = grid::gpar(col = "black", lty = 1),
                 rect_gp = grid::gpar(col = "black", lwd = 1),
                 row_names_gp = gpar(fontsize = fontsize),  # Matches axis.text size in theme
                 column_names_gp = gpar(fontsize = fontsize, just = "center"),  # Matches axis.text size in theme
-                column_names_rot = 0,
+                column_title_gp = gpar(fontsize = fontsize + 2, just = "center"),
+                column_names_rot = 45,
                 right_annotation = row_ha,
                 cluster_columns = FALSE,
                 show_row_dend = FALSE,

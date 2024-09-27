@@ -7,8 +7,9 @@
 dose_response_heatmap(
   dose_rider_results,
   dose_col = "Dose",
+  dose_unit = "μM",
   top = 15,
-  order_column = "best_model_pvalue",
+  order_column = "NegLogPValue",
   decreasing = FALSE,
   fontsize = 6
 )
@@ -18,6 +19,8 @@ dose_response_heatmap(
 Each element of the list is a sublist with various metrics and the raw values (expression data) for a gene set.}
 
 \item{dose_col}{A character string specifying the name of the dose column in the raw expression data.}
+
+\item{dose_unit}{A character string specifying the dose units to plot in the column title..}
 
 \item{top}{An integer specifying the number of top gene sets to include in the heatmap. Default is 15.}
 

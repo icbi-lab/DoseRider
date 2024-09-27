@@ -76,9 +76,12 @@ initialize_plot <- function(mean_data, dose_col, model_metrics, gene_set_name) {
 
 ########################################################################################
 #' Add cluster trends and BMD lines to the plot
-add_cluster_trends_and_bmd <- function(p, gene_set_results, mean_data, dose_col, draw_bmd, v_size, clusterResults) {
+add_cluster_trends_and_bmd <- function(p, gene_set_results, mean_data, dose_col, draw_bmd, v_size, clusterResults, amount) {
   ClusterSpecificResults <- gene_set_results$ClusterSpecificResults
   n_cluster <- gene_set_results$OptimalClusters
+  best_model <- gene_set_results$best_model
+  custom_palette <- c(custom_palette, c("#F8766D"))
+  names(custom_palette) <- c(as.character(1:(length(custom_palette) - 1)), "AllGenes")
 
   for (j in seq_len(n_cluster)) {
     if (!clusterResults) {
@@ -98,10 +101,26 @@ add_cluster_trends_and_bmd <- function(p, gene_set_results, mean_data, dose_col,
                                FUN = mean)
     p <- p + geom_line(data = cluster_trend, aes(x = .data[[dose_col]], y = predictions), linewidth = 1)
 
+    if (best_model!= "linear") {
+
+
+      # Define delta for zero point range calculation
+      t <- 0.0000001
+
+      # Adjust trend visuals (line thickness and color) around derivative points
+      cluster_trend <- adjust_trend_visuals(cluster_trend, dose_col, cluster_derivate, t, new_line_thickness = 1.2)
+
+      # Plot the adjusted cluster trend
+      p <- p + geom_line(data = cluster_trend, aes(x = .data[[dose_col]], y = predictions, linewidth = line_thickness),color = "black", show.legend = FALSE)
+    }
+
     # Plot BMD lines
     if (draw_bmd && sum(!is.na(cluster_bmd)) > 0) {
       for (bmd_dose in cluster_bmd) {
-        p <- p + geom_vline(xintercept = bmd_dose, color = "#F57C00", linetype = "dashed", linewidth = v_size)
+        cluster_color <- unlist(custom_palette[as.character(j)])
+        bmd_color <- adjust_color(cluster_color, amount = amount)  # Adjust color brightness
+
+        p <- p + geom_vline(xintercept = bmd_dose, color = bmd_color, linetype = "dashed", linewidth = v_size)
       }
     }
   }
@@ -124,32 +143,60 @@ add_gene_annotations <- function(p, mean_data, dose_col, annotation_text_size) {
   return(p)
 }
 ######################################################################################
+# Helper function to adjust the cluster trend visuals (thickness and color) around zero points
+adjust_trend_visuals <- function(cluster_trend, dose_col, zero_points, delta, new_line_thickness, new_color) {
+  # Initialize new columns for line thickness and color
+  cluster_trend$line_thickness <- 1  # Default line thickness
+  cluster_trend$color <- "black"     # Default line color
 
-#Function to clos the TCD trend
-##############################
-adjust_trend_visuals <- function(cluster_trend, dose_col, zero_points, t = 0.0001, line_thickness = 0.3, new_line_thickness = 0.4) {
-  # Initialize columns if they don't exist
-  if (!"line_thickness" %in% names(cluster_trend)) {
-    cluster_trend$line_thickness <- line_thickness # Default line thickness
-  }
-  if (!"color" %in% names(cluster_trend)) {
-    cluster_trend$color <- "#D32F2F" # Default color
-  }
-
-  # Define the delta for zero point range calculation
-  delta <- max(cluster_trend[[dose_col]]) * t
-
+  # Loop through each zero point and adjust line visuals within the delta range
   for (z in unique(zero_points)) {
     range_around_zero <- c(z - delta, z + delta)
 
-    # Find the closest values within the range
+    # Find the closest lower and upper values within the range
     closest_lower <- cluster_trend[[dose_col]][which.min(abs(cluster_trend[[dose_col]] - range_around_zero[1]))]
     closest_upper <- cluster_trend[[dose_col]][which.min(abs(cluster_trend[[dose_col]] - range_around_zero[2]))]
 
     # Adjust line thickness and color for doses within the zero point range
     within_range <- cluster_trend[[dose_col]] >= closest_lower & cluster_trend[[dose_col]] <= closest_upper
     cluster_trend$line_thickness[within_range] <- new_line_thickness
-    cluster_trend$color[within_range] <- "#7B1FA2"
+    cluster_trend$color[within_range] <- new_color
+  }
+
+  return(cluster_trend)
+}
+#####################################################################################
+
+# Function to adjust color brightness (darken or lighten)
+adjust_color <- function(color, amount = 0.5) {
+  if (amount < 1) {
+    return(colorspace::darken(color, amount))  # Darken the color
+  } else {
+    return(colorspace::lighten(color, amount - 1))  # Lighten the color
+  }
+}
+######################################################################################
+
+#Function to clos the TCD trend
+##############################
+# Helper function to adjust the cluster trend visuals (thickness and color) around zero points
+adjust_trend_visuals <- function(cluster_trend, dose_col, zero_points, t, new_line_thickness) {
+  # Initialize new columns for line thickness and color
+  cluster_trend$line_thickness <- 1  # Default line thickness
+  cluster_trend$color <- "black"     # Default line color
+  delta <- max(cluster_trend[[dose_col]]) * t
+
+  # Loop through each zero point and adjust line visuals within the delta range
+  for (z in unique(zero_points)) {
+    range_around_zero <- c(z - delta, z + delta)
+
+    # Find the closest lower and upper values within the range
+    closest_lower <- cluster_trend[[dose_col]][which.min(abs(cluster_trend[[dose_col]] - range_around_zero[1]))]
+    closest_upper <- cluster_trend[[dose_col]][which.min(abs(cluster_trend[[dose_col]] - range_around_zero[2]))]
+
+    # Adjust line thickness and color for doses within the zero point range
+    within_range <- cluster_trend[[dose_col]] >= closest_lower & cluster_trend[[dose_col]] <= closest_upper
+    cluster_trend$line_thickness[within_range] <- new_line_thickness
   }
 
   return(cluster_trend)

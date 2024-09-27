@@ -448,6 +448,7 @@ filter_DoseRider <- function(doseRiderObj, model_type = "all", filter_type = "pv
   valid_model_types <- c("all", "linear", "non_linear", "non_linear_fixed", "non_linear_mixed")
   valid_filter_types <- c("pvalue", "fdr")
 
+  # Check for valid model_type and filter_type
   if (!model_type %in% valid_model_types) {
     stop("Invalid model_type. Choose from 'all', 'linear', 'non_linear', 'non_linear_fixed', 'non_linear_mixed'.")
   }
@@ -458,15 +459,27 @@ filter_DoseRider <- function(doseRiderObj, model_type = "all", filter_type = "pv
 
   # Function to determine if a result meets the filter criteria
   meets_criteria <- function(result) {
-    if (model_type == "all" || result$best_model == model_type ||
-        (model_type == "non_linear" && (result$best_model == "non_linear_fixed" || result$best_model == "non_linear_mixed"))) {
-      pvalue_col <- switch(filter_type,
-                           "pvalue" = "best_model_pvalue",
-                           "fdr" = "best_model_adj_pvalue")
-      if (!is.null(result[[pvalue_col]]) && !is.na(result[[pvalue_col]]) && result[[pvalue_col]] <= threshold) {
+    # Select the p-value column based on filter_type
+    pvalue_col <- switch(filter_type,
+                         "pvalue" = "best_model_pvalue",
+                         "fdr" = "best_model_adj_pvalue")
+
+    # Check if the result meets the p-value threshold
+    if (!is.null(result[[pvalue_col]]) && !is.na(result[[pvalue_col]]) && result[[pvalue_col]] <= threshold) {
+
+      # Filtering logic based on model_type
+      if (model_type == "all") {
+        return(TRUE)
+      } else if (model_type == "linear" && result$best_model == "linear") {
+        return(TRUE)
+      } else if (model_type == "non_linear" &&
+                 (result$best_model == "non_linear_fixed" || result$best_model == "non_linear_mixed")) {
+        return(TRUE)
+      } else if (model_type == result$best_model) {  # for specific models like "non_linear_fixed" or "non_linear_mixed"
         return(TRUE)
       }
     }
+
     return(FALSE)
   }
 
@@ -482,9 +495,11 @@ filter_DoseRider <- function(doseRiderObj, model_type = "all", filter_type = "pv
   # Remove NULL entries
   filtered_results <- Filter(Negate(is.null), filtered_results)
 
+  # Return as a DoseRider object
   class(filtered_results) <- "DoseRider"
   return(filtered_results)
 }
+
 
 
 

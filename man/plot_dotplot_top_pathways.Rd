@@ -7,7 +7,7 @@
 plot_dotplot_top_pathways(
   dose_rider_results,
   top = 10,
-  order_column = "best_model_pvalue",
+  order_column = "NegLogPValue",
   pvalue_column = "best_model_pvalue",
   decreasing = F
 )

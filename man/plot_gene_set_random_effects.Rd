@@ -8,7 +8,7 @@ plot_gene_set_random_effects(
   dose_rider_results,
   dose_col = "Dose",
   top = 10,
-  order_column = "best_model_pvalue",
+  order_column = "NegLogPValue",
   decreasing = F
 )
 }

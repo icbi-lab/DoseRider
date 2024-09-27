@@ -11,7 +11,8 @@ add_cluster_trends_and_bmd(
   dose_col,
   draw_bmd,
   v_size,
-  clusterResults
+  clusterResults,
+  amount
 )
 }
 \description{

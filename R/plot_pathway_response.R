@@ -123,7 +123,7 @@ plot_pathway_response <- function(dose_rider_results, gene_set_name, dose_col = 
   p <- initialize_plot(mean_data, dose_col, model_metrics, gene_set_name)
 
   # Add cluster-specific trends and BMD lines
-  p <- add_cluster_trends_and_bmd(p, gene_set_results, mean_data, dose_col, draw_bmd, v_size, clusterResults)
+  p <- add_cluster_trends_and_bmd(p, gene_set_results, mean_data, dose_col, draw_bmd, v_size, clusterResults, amount = 0.3)
 
   # Add annotations if specified
   if (annotate_gene) {
@@ -218,7 +218,7 @@ plot_top_pathway_responses <- function(dose_rider_results, top=6, ncol = 3, orde
 #' }
 #'
 #' @export
-plot_gene_set_random_effects <- function(dose_rider_results, dose_col = "Dose", top = 10, order_column = "best_model_pvalue", decreasing = F) {
+plot_gene_set_random_effects <- function(dose_rider_results, dose_col = "Dose", top = 10, order_column = "NegLogPValue", decreasing = F) {
   all_random_effects <- data.frame(gene = character(),
                                    gene_set = character(),
                                    RandomIntercept = numeric(),
@@ -252,7 +252,7 @@ plot_gene_set_random_effects <- function(dose_rider_results, dose_col = "Dose", 
     geom_density_ridges() +
     geom_vline(xintercept = 0, color = "red", linetype = "dashed") +
     scale_fill_manual(values = custom_palette) +
-    labs(x = "Gene-Specific Difference in Dose Effect (b₁)", y = "") +
+    labs(x = expression("Gene-Specific Difference in Dose Effect" ~ (b[1])), y = "") +
     theme_ridges() +
     theme(legend.position = "none") + theme_dose_rider()
 
@@ -300,7 +300,11 @@ plot_gene_random_effect_relationship <- function(dose_rider_results, gene_set_na
       geom_point(color = "black", fill = "white", shape = 21, size = 3, stroke = 2) +
       geom_label_repel(aes(label = gene), box.padding = 0.35, point.padding = 0.3,
                        size = 3, force = 1) +
-      labs(x = "Gene-Specific Difference in Dose Effect (b₁)", y = "Gene-Specific Difference in Baseline Expression (b₀)", title = str_wrap(gene_set_name, 35)) +
+      labs(
+        x = expression("Gene-Specific Difference in Dose Effect" ~ (b[1])),
+        y = expression("Gene-Specific Difference in Baseline Expression" ~ (b[0])),
+        title = str_wrap(gene_set_name, 35)
+      ) +
       theme_minimal()
 
     return(p)
@@ -328,7 +332,7 @@ plot_gene_random_effect_relationship <- function(dose_rider_results, gene_set_na
 #' }
 #'
 #' @export
-plot_dotplot_top_pathways <- function(dose_rider_results, top = 10, order_column = "best_model_pvalue", pvalue_column = "best_model_pvalue", decreasing = F) {
+plot_dotplot_top_pathways <- function(dose_rider_results, top = 10, order_column = "NegLogPValue", pvalue_column = "best_model_pvalue", decreasing = F) {
   # Convert dose_rider_results to dataframe
   dose_rider_df <- as.data.frame.DoseRider(dose_rider_results)
 
@@ -343,11 +347,31 @@ plot_dotplot_top_pathways <- function(dose_rider_results, top = 10, order_column
   top_pathways_df$Geneset <- unlist(lapply(top_pathways_df$Geneset, function(x){str_wrap(gsub("_", " ", x),35)}))
   # Create Dot Plot
   dot_plot <- ggplot(top_pathways_df, aes(x = NegLogPValue, y = reorder(Geneset, NegLogPValue), size = Genes, fill = best_model)) +
-    geom_point(shape = 21) +
-    scale_size_continuous(name = "Gene Set Size") +
-    labs(x = "-log10(Adjusted non-linear P-Value)", y = "") +
-    scale_fill_manual(values = c("non_linear_mixed" = "orange","non_linear_fixed" = "blue", "linear" = "green", "null" = "red"), name = "Best Model") +
-    theme_dose_rider(legend_position="right", fix_ratio=F) +    theme(axis.text.x = element_text(angle = 45, hjust = 1))
+    geom_point(shape = 21) +  # Add stroke for better visibility
+    labs(x = expression("-log"[10] * "(Adjusted non-linear P-Value)"), y = "",
+         title = "Top Pathways by NegLogPValue") +  # Title example (adjust as needed)
+    scale_fill_manual(
+      values = c("non_linear_mixed" = "orange", "non_linear_fixed" = "blue",
+                 "linear" = "green", "null" = "red"),
+      name = "Best Model"
+    ) +
+    scale_size_continuous(
+      name = "Gene Set Size",
+      range = c(3, 8),  # Adjust size range for better visual impact
+      breaks = c(5, 50, 100),  # Adjust to more reasonable values based on data
+      limits = c(0, 100)  # Set reasonable limits if needed
+    ) +
+    theme_dose_rider(legend_position = "bottom", fix_ratio = F) +
+    theme(
+      axis.text.x = element_text(angle = 45, hjust = 1),
+      legend.box = "vertical",  # Ensure legends are stacked vertically
+      legend.spacing.y = unit(0.5, 'lines'),  # Add space between legend rows
+      plot.title = element_text(hjust = 0.5)  # Center the title
+    ) +
+    guides(
+      size = guide_legend(nrow = 1, order = 1),  # Size legend in first row
+      fill = guide_legend(nrow = 1, order = 2)   # Model legend in second row
+    )
 
   return(dot_plot)
 }

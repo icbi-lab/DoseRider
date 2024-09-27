@@ -4,7 +4,13 @@
 \alias{create_gene_heatmap}
 \title{Create Heatmap for Individual Genes within a Gene Set}
 \usage{
-create_gene_heatmap(dose_rider_results, gene_set_name, dose_col, fontsize = 6)
+create_gene_heatmap(
+  dose_rider_results,
+  gene_set_name,
+  dose_col,
+  dose_unit = "μM",
+  fontsize = 6
+)
 }
 \arguments{
 \item{dose_rider_results}{A list containing the results of the DoseRider analysis for each gene set.}
@@ -12,6 +18,8 @@ create_gene_heatmap(dose_rider_results, gene_set_name, dose_col, fontsize = 6)
 \item{gene_set_name}{A character string specifying the name of the gene set to be visualized.}
 
 \item{dose_col}{A character string specifying the name of the dose column in the raw expression data.}
+
+\item{dose_unit}{A character string specifying the dose units to plot in the column title..}
 
 \item{fontsize}{Integer for fontsize. Default 6}
 }
