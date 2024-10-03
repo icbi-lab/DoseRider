@@ -22,6 +22,7 @@ Imports:
     performance,
     stats,
     reshape2,
+    drc,
     tidyr,
     utils,
     factoextra,

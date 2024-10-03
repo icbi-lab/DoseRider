@@ -5,7 +5,7 @@
 #' The function takes the name of the dose column and the viability column (response)
 #' from the `colData` and returns a vector of IC50 values.
 #'
-#' @param se_object A `SummarizedExperiment` object containing the dose-response data.
+#' @param se A `SummarizedExperiment` object containing the dose-response data.
 #' @param dose_col A string representing the name of the column in `colData` that contains the dose information.
 #' @param viability_col A string representing the name of the column in `colData` that contains the viability or response data.
 #'
@@ -18,11 +18,11 @@
 #' @import SummarizedExperiment
 #' @import drc
 #' @export
-compute_IC50 <- function(se_object, dose_col, viability_col) {
+compute_IC50 <- function(se, dose_col, viability_col) {
 
   # Extract expression matrix and metadata from the SummarizedExperiment object
-  expression_data <- assay(se_object)
-  metadata <- colData(se_object)
+  expression_data <- assay(se)
+  metadata <- colData(se)
 
   # Check if dose and viability columns are present in metadata
   if (!(dose_col %in% colnames(metadata))) {

@@ -4,7 +4,7 @@
 \alias{compute_derivatives}
 \title{Compute Derivatives and Identify Zero Points}
 \usage{
-compute_derivatives(smooth_pathway, dose_var)
+compute_derivatives(smooth_pathway, dose_var, tolerance = 0.001)
 }
 \arguments{
 \item{smooth_pathway}{Data frame containing smoothed trend predictions, typically from a dose-response model.}
