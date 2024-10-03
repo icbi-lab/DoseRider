@@ -179,7 +179,9 @@ dev.off()
 data_bmd <- get_bmd_range(dose_rider_results = dose_rider_results)
 p7 <- plot_bmd_density_and_peaks(data_bmd)
 ggsave(paste0(save_path,"plot7.jpeg"), plot = p7, width = PLOT_WIDTH, height = PLOT_HEIGHT, units = "px", dpi = 600)
-
+data_bmd <- get_tcd_range(dose_rider_results = dose_rider_results)
+p7 <- plot_tcd_density(data_bmd)
+ggsave(paste0(save_path,"plot7.jpeg"), plot = p7, width = PLOT_WIDTH, height = PLOT_HEIGHT, units = "px", dpi = 600)
 p10 <- plot_bmd_confidence_intervals(head(bmd_bounds_df, 20))
 ggsave(paste0(save_path,"plot10.jpeg"), plot = p10, width = PLOT_WIDTH, height = PLOT_HEIGHT + 500, units = "px", dpi = 600)
 ```
