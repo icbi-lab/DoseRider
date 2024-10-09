@@ -152,7 +152,3 @@ Contributions are welcome! If you find any bugs or have suggestions for new feat
 ## License
 
 DoseRider is licensed under the MIT License. See the [LICENSE](LICENSE) file for more details.
-
----
-
-This updated `README.md` includes explanations before each plot, links to the corresponding images in the `plots/` folder, and integrates content from both the original README and the provided document. Let me know if you need further adjustments!
