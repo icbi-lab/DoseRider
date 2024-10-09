@@ -26,7 +26,7 @@
 #' }
 #'
 #' @export
-dose_response_heatmap <- function(dose_rider_results, dose_col = "Dose", dose_unit = "μM", top = 15, order_column = "NegLogPValue", decreasing = FALSE, fontsize = 6) {
+dose_response_heatmap <- function(dose_rider_results, dose_col = "Dose", dose_unit = "M", top = 15, order_column = "NegLogPValue", decreasing = FALSE, fontsize = 6) {
   # Initialize an empty matrix to store the average expressions
   heatmap_data <- list()
 
@@ -114,7 +114,7 @@ dose_response_heatmap <- function(dose_rider_results, dose_col = "Dose", dose_un
 #' }
 #'
 #' @export
-create_gene_heatmap <- function(dose_rider_results, gene_set_name, dose_col,  dose_unit = "μM", fontsize = 6) {
+create_gene_heatmap <- function(dose_rider_results, gene_set_name, dose_col,  dose_unit = "M", fontsize = 6) {
   if (!gene_set_name %in% names(dose_rider_results)) {
     stop("Specified gene set name not found in the results.")
   }

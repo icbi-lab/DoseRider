@@ -8,7 +8,7 @@ create_gene_heatmap(
   dose_rider_results,
   gene_set_name,
   dose_col,
-  dose_unit = "μM",
+  dose_unit = "M",
   fontsize = 6
 )
 }

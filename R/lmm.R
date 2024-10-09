@@ -178,6 +178,7 @@ extract_random_effects_lmm <- function(model, dose_col) {
 compute_metrics_lmm <- function(model) {
   if (inherits(model, "merMod")) { # Checking if the model is either a lmer or glmer
     df_model <- df.residual(model) # degrees of freedom for the model
+    #as.data.frame(model_performance(model))
     return(list(
       AIC = AIC(model),
       AICc = AICc(model),

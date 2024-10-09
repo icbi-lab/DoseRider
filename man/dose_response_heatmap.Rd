@@ -7,7 +7,7 @@
 dose_response_heatmap(
   dose_rider_results,
   dose_col = "Dose",
-  dose_unit = "μM",
+  dose_unit = "M",
   top = 15,
   order_column = "NegLogPValue",
   decreasing = FALSE,
