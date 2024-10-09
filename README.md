@@ -5,130 +5,135 @@
 
 ## Overview
 
-DoseRider enhances toxicogenomics by employing mixed models with cubic splines for the analysis of nonlinear dose-response relationships at the pathway level. This methodology is suitable for multi-omics research and accessible both as an R package and [web application](https://doserider.i-med.ac.at/). It can determine pathway trends and calculate the trend change doses (TCD) and benchmark doses (BMD). DoseRider uncovers essential dose-response pathways and molecular patterns, improving insights into the effects of compounds or drugs at varying doses.
+DoseRider enhances toxicogenomics by employing mixed models with cubic splines to study dose-response relationships at the pathway level. This approach is ideal for multi-omics research, supporting both RNA-seq and metabolomics data, and is available as an R package and [web application](https://doserider.i-med.ac.at/). DoseRider identifies pathway trends, calculates Trend Change Doses (TCD), and estimates Benchmark Doses (BMD). This enables a deeper understanding of the molecular responses to compounds or drugs across various concentrations.
 
 ## Key Features
 
-- **Versatile Modeling Capability:** Implements Linear Mixed Models with cubic splines and Generalized Mixed Models to accommodate non-linear dose-response relationships.
-- **Breakpoint Identification:** Determines significant breakpoints in dose-response curves to identify critical dose levels impacting gene expression.
-- **Multi-Omic Approach:** Adapts to various omics data, including RNA-Seq and microarray, ensuring robust analysis across different technologies.
-- **Automatic Model Selection:** Dynamically selects the most appropriate model between null, linear, and non-linear models.
-- **Omics-Specific Distribution Selection:** Automatically chooses Gaussian or negative binomial distributions based on the omic technology used, enhancing analysis accuracy.
-- **Parallel Processing:** Utilizes parallel computing for efficient processing of large-scale datasets.
-- **Curated Gene Sets:** Provides preprocessed and customizable gene sets and pathway databases, facilitating streamlined dose-response analyses.
+- **Non-linear and Linear Modeling:** Supports linear mixed models with cubic splines and generalized mixed models to handle complex dose-response relationships.
+- **Pathway-Level Dose-Response Modeling:** Models dose-response at the pathway or gene-set level, calculating TCDs and BMDs.
+- **Multi-Omics:** Compatible with various omics data, including RNA-Seq and metabolomics.
+- **Parallel Computing:** Utilizes parallel processing to efficiently handle large datasets.
+- **Visualization Tools:** Multiple built-in plotting functions to visualize dose-response trends and model outputs.
+- **Customizable Gene Sets:** Filter and analyze custom or preprocessed gene sets.
 
 ## Installation
 
-To install the latest development version from GitHub, use the following commands:
+To install the latest development version from GitHub, use the following:
 
-```R
+```r
 # install.packages("devtools")
 devtools::install_github("icbi-lab/doseRider")
 ```
 
 ## Usage Example
 
-Below is an example workflow demonstrating the use of DoseRider:
+Here is an example of using DoseRider to analyze RNA-Seq data:
 
-```R
-# Load the doseRider package
+```r
+# Load DoseRider
 library(doseRider)
 
-# Example: Reading gene expression data as a SummarizedExperiment object
-data <- readRDS("gene_expression_data.rds")
+# Load your gene expression data
+data("bpaf_data")
 
-# Load gene set collections
-gmt <- loadCPDB("Symbol")
-
-# Filter gene sets by size
-gmt_filtered <- filter_gmt_by_size(gmt, minGenesetSize = 10, maxGenesetSize = 50)
+# Load gene sets
+gmt_path <- system.file("extdata", "High-Response-Toxicogenomics.gmt", package = "doseRider")
+gmt <- read_gmt(gmt_path)
 
 # Perform dose-response analysis
-dose_rider_results <- DoseRiderParallel(se = data, gmt = gmt_filtered, dose_col = "dose", 
-                            sample_col = "sample", omic = "rnaseq", minGSsize = 10, 
-                            maxGSsize = 200, num_cores = 4, modelType = "LMM")
+# Run doseRider analysis
+dose_rider_results <- DoseRiderParallel(
+  se = bpaf_data, 
+  gmt = gmt, 
+  dose_col = "Dose", 
+  omic = "rnaseq", 
+  minGSsize = 20, 
+  maxGSsize = 200, 
+  method = "fdr", 
+  covariates = c(),
+  modelType = "LMM", 
+  num_cores = 10,
+  FilterPathway = TRUE,
+  log_transform = TRUE,
+  models = c("linear", "non_linear_mixed")
+)
 ```
 
 ### Visualization
 
-Visualizations in DoseRider provide insightful representations of the dose-response data. The package offers various plotting functions to explore and interpret the results effectively. Here’s an overview of some key visualizations:
+DoseRider provides various functions to visualize dose-response data. Below are some key visualizations:
 
-1. **Dose Response Heatmap:**
+1. **Dose-Response Heatmap:**
 
-```{r}
-p1 <- dose_response_heatmap(dose_rider_results, dose_col = "Dose", top = 15, order_column = "Adjusted_non_linear_P_Value", decreasing = F)
+```r
+p1 <- dose_response_heatmap(dose_rider_results_filter, dose_col = "Dose", top = 15)
+jpeg(file=paste0(save_path, "plot1.jpeg"), width = 10, height = 10, units = "cm", res = 600)
+plot(p1, heatmap_legend_side = "bottom", annotation_legend_side = "bottom")
+dev.off()
 ```
 
-This heatmap illustrates the average gene expression across doses for the top 15 gene sets, with color intensity representing the expression magnitude. It aids in visualizing gene set responses to dose variations.
+2. **Gene Set Random Effects Plot:**
 
-![Dose Response Heatmap](./plots/plot1.jpeg)
-
-2. **Gene Set Random Effects Visualization:**
-
-```{r}
-p2 <- plot_gene_set_random_effects(dose_rider_results, dose_col = "Dose", top = 15)
+```r
+p2 <- plot_gene_set_random_effects(dose_rider_results_filter, dose_col = "log_Dose", top = 15)
+ggsave(paste0(save_path, "plot2.jpeg"), plot = p2, width = 10, height = 10, units = "cm", dpi = 600)
 ```
 
-This plot visualizes the random effects distribution within the top 15 gene sets, highlighting expression variability within each set.
+3. **Top Pathway Responses:**
 
-![Gene Set Random Effects Visualization](./plots/plot2.jpeg)
-
-3. **Top Pathway Response Visualization:**
-
-```{r}
-p3 <- plot_top_pathway_responses(dose_rider_results, top = 9, ncol = 3)
+```r
+p3 <- plot_top_pathway_responses(dose_rider_results_filter, top = 2, ncol = 2, text_size = 5, dose_col = "log_Dose", clusterResults = TRUE)
+ggsave(paste0(save_path, "plot3.jpeg"), plot = p3, width = 10, height = 10, units = "cm", dpi = 600)
 ```
-
-These plots present the dose-response relationship for the top 9 pathways, showcasing significant dose-dependent expression trends.
-
-![Top Pathway Response Visualization](./plots/plot3.jpeg)
 
 4. **Gene Random Effect Relationship Plot:**
 
-```{r}
-p4 <- plot_gene_random_effect_relationship(dose_rider_results, "Androgen receptor signaling pathway")
+```r
+p4 <- plot_gene_random_effect_relationship(dose_rider_results_filter, "Estrogen signaling pathway - Homo sapiens (human)")
+ggsave(paste0(save_path, "plot4.jpeg"), plot = p4, width = 10, height = 10, units = "cm", dpi = 600)
 ```
 
-This visualization displays the relationship between gene random effects and their expression in the "Androgen receptor signaling pathway".
+5. **Dot Plot of Top Pathways:**
 
-![Gene Random Effect Relationship Plot](./plots/plot4.jpeg)
-
-5. **Top Pathways Dot Plot:**
-
-```{r}
-p5 <- plot_dotplot_top_pathways(dose_rider_results, top = 15, order_column = "Genes", decreasing = T)
+```r
+p5 <- plot_dotplot_top_pathways(dose_rider_results_filter, top = 15)
+ggsave(paste0(save_path, "plot5.jpeg"), plot = p5, width = 10, height = 10, units = "cm", dpi = 600)
 ```
 
-A dot plot showing the top 15 pathways sorted by gene count, facilitating a quick comparison of pathway significance and gene involvement.
+6. **Gene Heatmap for a Specific Pathway:**
 
-![Top Pathways Dot Plot](./plots/plot5.jpeg)
-
-6. **Gene Heatmap for Specific Pathway:**
-
-```{r}
-p6 <- create_gene_heatmap(dose_rider_results, dose_col = "Dose", gene_set_name = "Androgen receptor signaling pathway")
+```r
+p6 <- create_gene_heatmap(dose_rider_results_filter, dose_col = "Dose", gene_set_name = "Estrogen signaling pathway - Homo sapiens (human)")
+jpeg(file=paste0(save_path,"plot6.jpeg"), width = 10, height = 10, units = "cm", res = 600)
+plot(p6, heatmap_legend_side = "bottom", annotation_legend_side = "bottom")
+dev.off()
 ```
 
-A heatmap providing an in-depth look at gene expression within the "Androgen receptor signaling pathway" across different doses.
+### BMD and TCD Calculations
 
-![Gene Heatmap for Specific Pathway](./plots/plot6.jpeg)
+DoseRider allows the calculation of BMD and TCD values:
 
-### Toxicogenomics Gene Set
+```r
+# Calculate BMD range and plot the density and peaks
+data_bmd <- get_bmd_range(dose_rider_results = dose_rider_results_filter)
+p7 <- plot_bmd_density_and_peaks(data_bmd)
+ggsave(paste0(save_path, "plot7.jpeg"), plot = p7, width = 10, height = 10, units = "cm", dpi = 600)
 
-The **Toxicogenomics Gene Set** within DoseRider focuses on genes identified from the Consensus Path Database (CPDB) that exhibit significant changes across all compounds present in the TG-GATES database. This curated gene set emphasizes the most responsive genes involved in toxicological responses, facilitating a targeted approach in dose-response analysis.
+# Plot BMD confidence intervals
+p10 <- plot_bmd_confidence_intervals(head(bmd_bounds_df, 20))
+ggsave(paste0(save_path, "plot10.jpeg"), plot = p10, width = 10, height = 10, units = "cm", dpi = 600)
+```
 
-Scores were calculated by multiplying NES by the negative logarithm of the p-value for each compound and dose level, emphasizing gene sets with significant and robust expression changes. These scores were then averaged across dose levels per compound, and a final normalization step across all compounds produced Z-score normalized weights. This process prioritizes gene sets by their responsiveness to toxicological exposure across the dataset.
+## Toxicogenomics Gene Set
+
+The **Toxicogenomics Gene Set** focuses on pathways with significant changes across compounds in the TG-GATES database. The score is calculated by multiplying NES with the negative logarithm of the p-value per dose level, and then averaged across doses.
 
 ![Gene Heatmap for Specific Pathway](./plots/HeatmapHighResponsive.jpeg)
 
-## Upcoming Features
-
-- Cumulative Distribution Function plots for a detailed analysis of the distribution of random effects, aiding in the identification of outlier genes or unusual patterns.
-
 ## Contributing
 
-We welcome contributions to DoseRider! If you find bugs, have feature requests, or want to contribute to the development, please open an issue or submit a pull request on our [GitHub repository](https://github.com/icbi-lab/doseRider).
+We welcome contributions! Open an issue or submit a pull request on our [GitHub repository](https://github.com/icbi-lab/doserider).
 
 ## License
 
-DoseRider is licensed under the MIT License. For more details, see the [LICENSE](LICENSE) file.
+DoseRider is licensed under the MIT License. For more information, see the [LICENSE](LICENSE) file.
