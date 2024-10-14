@@ -1,7 +1,3 @@
-Here’s an updated version of the `README.md` incorporating links to the plot images and adding brief explanatory paragraphs for each plot, based on the original README format and content from the provided document.
-
----
-
 # DoseRider: A multi-omics approach to study dose-response relationships at the pathway level using mixed models
 
 [![CRAN_Status_Badge](https://www.r-pkg.org/badges/version/doseRider)](https://cran.r-project.org/package=doseRider)
