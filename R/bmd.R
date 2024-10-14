@@ -159,7 +159,7 @@ compute_bmd_from_main_trend <- function(smooth_pathway, dose_var, z = 1, center_
 #'
 #' @export
 compute_bmd_bounds_parallel <- function(dose_rider_results, dose_col = "dose", sample_col = "sample", ci_level = 0.95,
-                                        covariates = c(), omic = "rnaseq", n_bootstrap = 1000, num_cores = 5, clusterResults = F) {
+                                        covariates = c(), omic = "rnaseq", n_bootstrap = 1000, num_cores = 5, clusterResults = F, z = 1) {
 
   # Register the parallel backend for gene set processing
   cl <- makeCluster(num_cores)
@@ -194,7 +194,7 @@ compute_bmd_bounds_parallel <- function(dose_rider_results, dose_col = "dose", s
     bmd_values <- replicate(n_bootstrap, {
       bootstrap_indices <- sample.int(n = nrow(long_df), size = nrow(long_df)*0.6, replace = TRUE)
       long_df_bootstrap <- long_df[bootstrap_indices, , drop = FALSE]
-      bootstrap_results <- suppressMessages(doseRider:::fit_model_compute_bmd(long_df = long_df_bootstrap, formula = formula, omic = omic, clusterResults = F, dose_col = dose_col))
+      bootstrap_results <- suppressMessages(doseRider:::fit_model_compute_bmd(long_df = long_df_bootstrap, formula = formula, omic = omic, clusterResults = clusterResults, dose_col = dose_col, z = z))
       if (length(bootstrap_results) > 0) {
         return(min(unlist(bootstrap_results)))
       }
@@ -417,7 +417,7 @@ compute_bmd_bounds <- function(dose_rider_results, dose_col = "dose", sample_col
 #' bootstrap_results <- fit_model_compute_bmd(long_df_bootstrap, formula, "rnaseq", clusterResults = FALSE, dose_col = "dose")
 #' print(bootstrap_results)
 #' }
-fit_model_compute_bmd <- function(long_df, formula, omic = "rnaseq", clusterResults = FALSE, dose_col) {
+fit_model_compute_bmd <- function(long_df, formula, omic = "rnaseq", clusterResults = FALSE, dose_col, z = 1) {
 
   # Fit the model to the bootstrapped data
   model <- suppressWarnings(fit_lmm(formula, long_df, omic))
@@ -436,7 +436,7 @@ fit_model_compute_bmd <- function(long_df, formula, omic = "rnaseq", clusterResu
     for (j in seq_len(n_cluster)) {
       cluster_genes <- names(clusters[clusters == j])
       smooth_cluster <- smooth_values[smooth_values$gene %in% cluster_genes, ]
-      bmd_cluster <- compute_bmd_from_main_trend(smooth_cluster, dose_col, z = 1)
+      bmd_cluster <- compute_bmd_from_main_trend(smooth_cluster, dose_col, z = z)
       bmd_cluster_results <- c(bmd_cluster,bmd_cluster_results)
     }
 
