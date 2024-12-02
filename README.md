@@ -166,7 +166,7 @@ p9 <- plot_bmd_confidence_intervals(head(bmd_bounds_df, 20))
 ggsave(paste0(save_path, "plot9.jpeg"), plot = p9, width = PLOT_WIDTH, height = PLOT_HEIGHT, units = units, dpi = 600)
 ```
 
-![BMD Confidence Intervals](./plots/plot9.jpeg)
+![BMD Confidence Intervals](./plots/plot10.jpeg)
 
 #### 10. TCD1 Confidence Intervals
 
@@ -177,7 +177,7 @@ p10 <- plot_tcd1_confidence_intervals(bmd_bounds_df)
 ggsave(paste0(save_path, "plot10.jpeg"), plot = p10, width = PLOT_WIDTH, height = PLOT_HEIGHT, units = units, dpi = 600)
 ```
 
-![TCD1 Confidence Intervals](./plots/plot11.jpeg)
+![TCD1 Confidence Intervals](./plots/plot11.png)
 
 ### Toxicogenomics Gene Set
 
