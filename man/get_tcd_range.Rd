@@ -2,7 +2,7 @@
 % Please edit documentation in R/bmd.R
 \name{get_tcd_range}
 \alias{get_tcd_range}
-\title{Compute TCD Range and Find Zero Points}
+\title{Compute Minimum TCD1 Values and Find Zero Points in Density}
 \usage{
 get_tcd_range(dose_rider_results)
 }
@@ -10,10 +10,12 @@ get_tcd_range(dose_rider_results)
 \item{dose_rider_results}{A list containing the results of DoseRider analysis.}
 }
 \value{
-A list containing the TCD values (`x`), their density (`y`), and the identified zero points (`tcd`).
+A list containing the TCD density (`x`, `y`) and the identified zero points (`tcd`).
 }
 \description{
-This function computes the range of TCD (Threshold Concentration Dose) values from the DoseRider results and identifies zero points in the density of TCD values.
+This function computes the density of minimum TCD1 (Threshold Concentration Dose,
+second derivative zero points) values from the DoseRider results and identifies
+zero points in the density.
 }
 \examples{
 \dontrun{

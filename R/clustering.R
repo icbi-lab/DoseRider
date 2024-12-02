@@ -156,3 +156,137 @@ filter_pathway_by_pca <- function(long_df, dose_col = "Dose", pca_threshold = 0.
 
 
 
+#' Cluster Original TCD Values
+#'
+#' This function clusters the original TCD values and determines the number of clusters to use for bootstrap data.
+#' If the number of unique TCD values is less than 3, it assigns the number of clusters as the length of unique TCDs
+#' and returns a named vector for clustering.
+#'
+#' @param original_tcds A numeric vector of original TCD values.
+#' @param method Clustering method. Options are "kmeans" (default) or "gmm" (Gaussian Mixture Models).
+#' @return A list containing the number of clusters (`k`) and the clustering results.
+cluster_original_tcds <- function(original_tcds, method = "kmeans") {
+  unique_tcds <- unique(original_tcds)  # Ensure no duplicate points
+
+  # Handle cases where the number of unique TCDs is less than 3
+  if (length(unique_tcds) < 4) {
+    k <- length(unique_tcds)  # Number of clusters equals the number of unique TCDs
+    clustering <- setNames(seq_along(unique_tcds), unique_tcds)  # Create a named vector with cluster IDs
+    return(list(
+      k = k,
+      clustering = clustering
+    ))
+  }
+
+  # Perform clustering if the number of unique TCDs is 3 or more
+  if (method == "kmeans") {
+    k <- min(length(unique_tcds), 3)  # Use up to 3 clusters
+    clustering <- kmeans(unique_tcds, centers = k, nstart = 25)
+
+  } else if (method == "gmm") {
+    clustering <- Mclust(unique_tcds)
+    k <- clustering$G  # Number of clusters in GMM
+
+  } else {
+    stop("Unsupported clustering method. Use 'kmeans' or 'gmm'.")
+  }
+
+  return(list(
+    k = k,
+    clustering = clustering
+  ))
+}
+
+
+
+#' Cluster Bootstrap TCD Values and Return Data Frame
+#'
+#' This function clusters bootstrap-derived TCD values using the number of clusters determined from the original TCDs,
+#' and computes cluster-level statistics (means, standard deviations, sizes, and confidence intervals).
+#'
+#' @param tcd_values A numeric vector of bootstrap-derived TCD values.
+#' @param k The number of clusters to use, determined from the original TCDs.
+#' @param method Clustering method. Options are "kmeans" (default) or "gmm" (Gaussian Mixture Models).
+#' @param ci_level Confidence interval level (default is 0.95).
+#' @return A data frame summarizing cluster-level statistics.
+cluster_bootstrap_tcds <- function(tcd_values, k, method = "kmeans", ci_level = 0.95) {
+  unique_tcds <- unique(tcd_values)  # Ensure no duplicate points
+
+  # Adjust k if it exceeds the number of unique values
+  if (k > length(unique_tcds)) {
+    warning(paste("The number of clusters (k =", k,
+                  ") exceeds the number of unique TCD values (", length(unique_tcds),
+                  "). Adjusting k to", length(unique_tcds), "."))
+    k <- length(unique_tcds)
+  }
+
+  if (method == "kmeans") {
+    clustering <- kmeans(unique_tcds, centers = k, nstart = 25)
+    cluster_assignments <- clustering$cluster
+  } else if (method == "gmm") {
+    clustering <- Mclust(unique_tcds, G = k)
+    cluster_assignments <- clustering$classification
+  } else {
+    stop("Unsupported clustering method. Use 'kmeans' or 'gmm'.")
+  }
+
+  # Summarize clusters
+  cluster_means <- tapply(unique_tcds, cluster_assignments, mean)
+  cluster_sds <- tapply(unique_tcds, cluster_assignments, sd, na.rm = TRUE)
+  cluster_sizes <- table(cluster_assignments)
+
+  # Compute confidence intervals for each cluster
+  cluster_ci <- lapply(seq_along(cluster_means), function(cluster_id) {
+    cluster_values <- unique_tcds[cluster_assignments == cluster_id]
+    lower_bound <- quantile(cluster_values, probs = (1 - ci_level) / 2, na.rm = TRUE)
+    upper_bound <- quantile(cluster_values, probs = 1 - (1 - ci_level) / 2, na.rm = TRUE)
+    return(c(Lower = lower_bound, Upper = upper_bound))
+  })
+
+  # Combine CI results into a matrix
+  cluster_ci_matrix <- do.call(rbind, cluster_ci)
+  colnames(cluster_ci_matrix) <- c("Lower", "Upper")
+
+  # Create a data frame with cluster-level statistics
+  cluster_summary_df <- data.frame(
+    Cluster_ID = seq_along(cluster_means),
+    Cluster_Mean = as.numeric(cluster_means),
+    Cluster_SD = as.numeric(cluster_sds),
+    Cluster_Size = as.numeric(cluster_sizes),
+    CI_Lower = cluster_ci_matrix[, "Lower"],
+    CI_Upper = cluster_ci_matrix[, "Upper"],
+    stringsAsFactors = FALSE
+  )
+
+  return(cluster_summary_df)
+}
+
+#' Compute BMD Statistics
+#'
+#' This function calculates key statistics for BMD values, including lower and upper bounds,
+#' mean, and median, based on a given confidence interval level.
+#'
+#' @param bmd_values A numeric vector of BMD values.
+#' @param ci_level Confidence interval level (default is 0.95).
+#' @return A named list containing `lower_bound`, `upper_bound`, `mean_bmd`, and `median_bmd`.
+compute_bmd_statistics <- function(bmd_values, ci_level = 0.95) {
+  if (length(bmd_values) > 0) {
+    lower_bound <- quantile(bmd_values, probs = (1 - ci_level) / 2, na.rm = TRUE)
+    upper_bound <- quantile(bmd_values, probs = 1 - (1 - ci_level) / 2, na.rm = TRUE)
+    mean_bmd <- mean(bmd_values, na.rm = TRUE)
+    median_bmd <- median(bmd_values, na.rm = TRUE)
+  } else {
+    lower_bound <- NA
+    upper_bound <- NA
+    mean_bmd <- NA
+    median_bmd <- NA
+  }
+
+  return(list(
+    lower_bound = lower_bound,
+    upper_bound = upper_bound,
+    mean_bmd = mean_bmd,
+    median_bmd = median_bmd
+  ))
+}
+

@@ -34,7 +34,7 @@ smooth_pathway_trend <- function(model, long_df, dose_col = "dose", sample_col =
                                  dose_points = 25, sample_subset_size = 10) {
   # Ensure necessary columns are present
   required_cols <- c(dose_col, sample_col)
-  if (omic == "rnaseq") required_cols <- c(required_cols, "size_factor")
+  if (omic == "rnaseq") required_cols <- c(required_cols, "size_factors")
   if (!all(required_cols %in% names(long_df))) stop("Some required columns not found in data")
 
   # Prepare parameters for expand.grid
@@ -42,7 +42,7 @@ smooth_pathway_trend <- function(model, long_df, dose_col = "dose", sample_col =
 
   # Add size factor or sample subset
   if (omic == "rnaseq") {
-    size_factors <- unique(long_df[["size_factor"]])
+    size_factors <- unique(long_df[["size_factors"]])
     if (length(size_factors) > sample_subset_size) {
       size_factors <- sample(size_factors, sample_subset_size)
     }
@@ -69,7 +69,7 @@ smooth_pathway_trend <- function(model, long_df, dose_col = "dose", sample_col =
 
   # Create new data for prediction
   new_data <- expand.grid(expand_params)
-  colnames(new_data) <- c(dose_col, if (omic == "rnaseq") "size_factor" else sample_col, "gene", covariates_cols)
+  colnames(new_data) <- c(dose_col, if (omic == "rnaseq") "size_factors" else sample_col, "gene", covariates_cols)
 
   # Generate predictions
   if (random_effects){
@@ -455,34 +455,110 @@ plot_bmd_confidence_intervals <- function(bmd_bounds_df, top = 10) {
 
 
 
-#' Plot Trend Change Dose (TCD) Density
+#' Plot TCD1 Medians and Confidence Intervals by Pathway
 #'
-#' This function creates a plot visualizing the density of TCD values and highlights
-#' the zero points where the highest density of TCD values are found.
+#' This function creates a row-based plot for TCD1 results, where each pathway is a row,
+#' the x-axis represents the log dose, and the cluster with the lowest median TCD1
+#' and its confidence intervals are visualized.
+#'
+#' @param tcd_df A data frame containing TCD cluster results, including medians and confidence intervals for each cluster.
+#'               Columns must include `Geneset`, `Cluster1_Mean`, `Cluster1_CI_Lower`, `Cluster1_CI_Upper`, etc.
+#' @param fontsize Numeric. Font size for the plot text.
+#' @return A ggplot object visualizing the TCD1 medians and confidence intervals.
+#' @import ggplot2
+#' @examples
+#' \dontrun{
+#'   # Assuming tcd_df is available
+#'   tcd_plot <- plot_tcd1_confidence_intervals(tcd_df, fontsize = 12)
+#'   print(tcd_plot)
+#' }
+#' @export
+plot_tcd1_confidence_intervals <- function(tcd_df, fontsize = 12) {
+  # Extract cluster columns
+  cluster_cols <- grep("Cluster\\d+_Mean", names(tcd_df), value = TRUE)
+  ci_lower_cols <- grep("Cluster\\d+_CI_Lower", names(tcd_df), value = TRUE)
+  ci_upper_cols <- grep("Cluster\\d+_CI_Upper", names(tcd_df), value = TRUE)
+
+  # Reshape data to long format for ggplot
+  plot_data <- do.call(rbind, lapply(1:nrow(tcd_df), function(i) {
+    geneset <- tcd_df$Geneset[i]
+    clusters <- seq_along(cluster_cols)
+    data.frame(
+      Geneset = geneset,
+      Cluster = clusters,
+      Median = sapply(clusters, function(j) tcd_df[i, cluster_cols[j]]),
+      CI_Lower = sapply(clusters, function(j) tcd_df[i, ci_lower_cols[j]]),
+      CI_Upper = sapply(clusters, function(j) tcd_df[i, ci_upper_cols[j]])
+    )
+  }))
+
+  # Filter out rows with NA medians
+  plot_data <- plot_data[!is.na(plot_data$Median),]
+
+  # Select the cluster with the lowest median TCD1 for each pathway
+  plot_data <- do.call(rbind, lapply(split(plot_data, plot_data$Geneset), function(df) {
+    df[which.min(df$Median), ]
+  }))
+
+  # Plot the TCD1 medians and confidence intervals
+  tcd1_plot <- ggplot(plot_data, aes(x = Median, y = reorder(Geneset, Median))) +
+    geom_errorbarh(aes(xmin = CI_Lower, xmax = CI_Upper), height = 0.3, size = 0.8, color = "black") +
+    geom_point(size = 3, shape = 21, fill = "orange", color = "black") +
+    labs(x = "Log Dose (TCD1)", y = "") +
+    theme_bw() +
+    theme(
+      axis.text.x = element_text(angle = 45, hjust = 1),
+      legend.position = "none"
+    ) +
+    theme_dose_rider(fix_ratio = FALSE, text_size = fontsize)
+
+  return(tcd1_plot)
+}
+
+
+#' Plot Trend Change Dose (TCD) Density with Zero Points Highlighted
+#'
+#' This function creates a plot visualizing the density of TCD values and marks
+#' the zero points with vertical dashed lines and annotations.
 #'
 #' @param tcd_range_output A list containing the output from `get_tcd_range` function,
-#' which includes x (TCD values), y (density), and tcd (zero points).
+#' which includes `x` (TCD values), `y` (density), and `tcd` (zero points).
+#' @param fontsize Numeric. Font size for the plot text.
 #'
 #' @return A ggplot object visualizing the density of TCD values with zero points marked.
 #' @import ggplot2
 #' @examples
 #' \dontrun{
 #' tcd_range_output <- get_tcd_range(dose_rider_results)
-#' plot_tcd_density_and_zero_points(tcd_range_output)
+#' plot_tcd_density(tcd_range_output, fontsize = 12)
 #' }
 #'
 #' @export
-plot_tcd_density <- function(tcd_range_output) {
+plot_tcd_density <- function(tcd_range_output, fontsize = 12) {
   # Convert the list to a dataframe for plotting
   data_to_plot <- data.frame(x = tcd_range_output$x, y = tcd_range_output$y)
+  zero_points <- tcd_range_output$tcd
 
   # Create the plot
   p <- ggplot(data_to_plot, aes(x = x, y = y)) +
     geom_line() +
-    geom_vline(xintercept = tcd_range_output$tcd, color = "blue", linetype = "dashed") +
+    geom_vline(xintercept = zero_points, color = "blue", linetype = "dashed") +
+    annotate(
+      "text",
+      x = zero_points,
+      y = max(data_to_plot$y) * 0.7,
+      label = paste0("TCD: ", round(10**(zero_points), 2)),
+      color = "blue",
+      angle = 90,
+      vjust = -0.5
+    ) +
     labs(x = "TCD", y = "Density", title = "TCD Density") +
     theme_bw() +
-    theme(axis.text.x = element_text(angle = 45, hjust = 1))
+    theme(
+      axis.text.x = element_text(angle = 45, hjust = 1),
+      legend.position = "none"
+    ) +
+    theme_dose_rider(text_size = fontsize, fix_ratio = FALSE)
 
   return(p)
 }

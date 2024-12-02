@@ -2,7 +2,7 @@
 % Please edit documentation in R/bmd.R
 \name{extract_tcd_for_pathway}
 \alias{extract_tcd_for_pathway}
-\title{Extract TCD (Compute Derivatives and Identify Zero Points) Values for a Pathway}
+\title{Extract Minimum TCD1 Value for a Pathway}
 \usage{
 extract_tcd_for_pathway(dose_rider_results, gene_set_name)
 }
@@ -12,16 +12,18 @@ extract_tcd_for_pathway(dose_rider_results, gene_set_name)
 \item{gene_set_name}{The name of the gene set/pathway.}
 }
 \value{
-A numeric vector containing the TCD values for the specified pathway. If no cluster-specific results are available, NA is returned.
+A numeric value representing the minimum TCD1 for the specified pathway.
+        If no cluster-specific results are available, NA is returned.
 }
 \description{
-This function extracts the TCD (Threshold Concentration Dose) values for all clusters within a specified pathway from the DoseRider results.
+This function extracts the minimum TCD1 (Threshold Concentration Dose, second derivative zero points)
+value for a specified pathway from the DoseRider results.
 }
 \examples{
 \dontrun{
 dose_rider_results <- DoseRider(se, gmt, "dose", "sample")
-tcd_values <- extract_tcd_for_pathway(dose_rider_results, "geneSet1")
-print(tcd_values)
+tcd1_value <- extract_tcd_for_pathway(dose_rider_results, "geneSet1")
+print(tcd1_value)
 }
 
 }

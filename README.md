@@ -139,6 +139,50 @@ dev.off()
 
 ![Gene Heatmap for Specific Pathway](./plots/plot6.jpeg)
 
+#### 7. BMD Density and Peaks
+
+This plot visualizes the density of Benchmark Dose (BMD) values and highlights the peaks, providing insights into dose ranges where the most significant effects occur.
+
+```r
+p7 <- plot_bmd_density_and_peaks(data_bmd)
+ggsave(paste0(save_path, "plot7.jpeg"), plot = p7, width = PLOT_WIDTH, height = PLOT_HEIGHT, units = units, dpi = 600)
+```
+
+![BMD Density and Peaks](./plots/plot7.jpeg)
+
+#### 8. TCD Density
+
+This plot visualizes the density of Threshold Concentration Dose (TCD) values and highlights the zero points, providing a clear representation of dose intervals with significant changes in response.
+
+```r
+p8 <- plot_tcd_density(data_tcd)
+ggsave(paste0(save_path, "plot8.jpeg"), plot = p8, width = PLOT_WIDTH, height = PLOT_HEIGHT, units = units, dpi = 600)
+```
+
+![TCD Density](./plots/plot8.jpeg)
+
+#### 9. BMD Confidence Intervals
+
+This plot shows the confidence intervals for the top pathways' Benchmark Dose (BMD) values, illustrating the range of dose-response effects across pathways.
+
+```r
+p9 <- plot_bmd_confidence_intervals(head(bmd_bounds_df, 20))
+ggsave(paste0(save_path, "plot9.jpeg"), plot = p9, width = PLOT_WIDTH, height = PLOT_HEIGHT, units = units, dpi = 600)
+```
+
+![BMD Confidence Intervals](./plots/plot9.jpeg)
+
+#### 10. TCD1 Confidence Intervals
+
+This plot focuses on the confidence intervals for the minimum Threshold Concentration Dose (TCD1) values for each pathway, highlighting dose-response thresholds at the most sensitive levels.
+
+```r
+p10 <- plot_tcd1_confidence_intervals(bmd_bounds_df)
+ggsave(paste0(save_path, "plot10.jpeg"), plot = p10, width = PLOT_WIDTH, height = PLOT_HEIGHT, units = units, dpi = 600)
+```
+
+![TCD1 Confidence Intervals](./plots/plot10.jpeg)
+
 ### Toxicogenomics Gene Set
 
 The **Toxicogenomics Gene Set** within DoseRider focuses on pathways that exhibit significant changes across compounds from the TG-GATES database. The score is calculated by multiplying NES by the negative logarithm of the p-value for each compound and dose level. The scores are then averaged across doses to generate Z-score normalized weights.

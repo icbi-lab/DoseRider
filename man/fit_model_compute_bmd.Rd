@@ -9,7 +9,8 @@ fit_model_compute_bmd(
   formula,
   omic = "rnaseq",
   clusterResults = FALSE,
-  dose_col
+  dose_col,
+  z = 1
 )
 }
 \arguments{

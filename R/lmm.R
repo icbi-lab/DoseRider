@@ -33,7 +33,7 @@ fit_lmm <- function(formula, data, omic = "base") {
   # Determine the family based on 'omic' parameter
   if (omic == "rnaseq") {
     #if (!"theta" %in% colnames(data)) stop("theta must be specified for omic = 'rnaseq'")
-    family <- negative.binomial(theta = unique(data$theta))
+    family <- negative.binomial(theta = unique(data$theta)[1])
     family_choice <- "negative_binomial"
   } else {
     family_choice <- "gaussian"
@@ -114,7 +114,7 @@ create_lmm_formula <- function(response, fixed_effects, random_effects, covariat
 
   # Add offset for RNA-Seq data
   if (!is.null(omic) && omic == "rnaseq") {
-    formula <- paste(formula, "+ offset(log(size_factor))")
+    formula <- paste(formula, "+ offset(log(size_factors))")
   }
 
   return(formula)

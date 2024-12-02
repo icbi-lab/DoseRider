@@ -110,7 +110,7 @@ estimate_model_parameters <- function(se) {
     dge <- estimateDisp(dge)
 
     # Add size factors to colData
-    sizeFactors <- dge$samples$norm.factors
+    sizeFactors <- dge$samples$norm.factors * dge$samples$lib.size
     se$size_factors <- sizeFactors
 
     # Add dispersions to rowData
@@ -118,6 +118,8 @@ estimate_model_parameters <- function(se) {
     theta <- 1 / dispersions
     rowData(se)$dispersion <- dispersions
     rowData(se)$theta <- theta
+    colData(se)$size_factors <- sizeFactors
+
 
   return(se)
 }

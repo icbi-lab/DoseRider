@@ -2,25 +2,27 @@
 % Please edit documentation in R/plot_pathway_response.R
 \name{plot_tcd_density}
 \alias{plot_tcd_density}
-\title{Plot Trend Change Dose (TCD) Density}
+\title{Plot Trend Change Dose (TCD) Density with Zero Points Highlighted}
 \usage{
-plot_tcd_density(tcd_range_output)
+plot_tcd_density(tcd_range_output, fontsize = 12)
 }
 \arguments{
 \item{tcd_range_output}{A list containing the output from `get_tcd_range` function,
-which includes x (TCD values), y (density), and tcd (zero points).}
+which includes `x` (TCD values), `y` (density), and `tcd` (zero points).}
+
+\item{fontsize}{Numeric. Font size for the plot text.}
 }
 \value{
 A ggplot object visualizing the density of TCD values with zero points marked.
 }
 \description{
-This function creates a plot visualizing the density of TCD values and highlights
-the zero points where the highest density of TCD values are found.
+This function creates a plot visualizing the density of TCD values and marks
+the zero points with vertical dashed lines and annotations.
 }
 \examples{
 \dontrun{
 tcd_range_output <- get_tcd_range(dose_rider_results)
-plot_tcd_density_and_zero_points(tcd_range_output)
+plot_tcd_density(tcd_range_output, fontsize = 12)
 }
 
 }
