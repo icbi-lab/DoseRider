@@ -212,6 +212,35 @@ cluster_original_tcds <- function(original_tcds, method = "kmeans") {
 cluster_bootstrap_tcds <- function(tcd_values, k, method = "kmeans", ci_level = 0.95) {
   unique_tcds <- unique(tcd_values)  # Ensure no duplicate points
 
+  # Handle case when unique_tcds is empty
+  if (length(unique_tcds) == 0) {
+    warning("No unique TCD values found. Returning an empty data frame.")
+    return(data.frame(
+      Cluster_ID = integer(0),
+      Cluster_Mean = numeric(0),
+      Cluster_SD = numeric(0),
+      Cluster_Size = integer(0),
+      CI_Lower = numeric(0),
+      CI_Upper = numeric(0),
+      stringsAsFactors = FALSE
+    ))
+  }
+
+  # Handle case when unique_tcds has fewer than 3 values
+  if (length(unique_tcds) < 3) {
+    warning("Fewer than 3 unique TCD values. Treating each value as its own cluster.")
+    cluster_summary_df <- data.frame(
+      Cluster_ID = seq_along(unique_tcds),
+      Cluster_Mean = unique_tcds,
+      Cluster_SD = rep(NA, length(unique_tcds)),
+      Cluster_Size = rep(1, length(unique_tcds)),
+      CI_Lower = unique_tcds,
+      CI_Upper = unique_tcds,
+      stringsAsFactors = FALSE
+    )
+    return(cluster_summary_df)
+  }
+
   # Adjust k if it exceeds the number of unique values or is less than 1
   if (k > length(unique_tcds) || k < 1) {
     warning(paste("The number of clusters (k =", k,
