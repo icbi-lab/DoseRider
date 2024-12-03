@@ -95,7 +95,7 @@ bmd_bounds_df <- doseRider::compute_bmd_bounds_parallel(
   sample_col = "sample",
   covariates = c(),
   omic = "rnaseq",
-  n_bootstrap = 20,
+  n_bootstrap = 25,
   num_cores = 10,
   clusterResults = T
 )

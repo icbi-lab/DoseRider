@@ -471,6 +471,8 @@ process_single_geneset <- function(geneset, geneset_name, dose_col, sample_col, 
 
   # Perform bootstrap sampling
   bootstrap_results <- replicate(n_bootstrap, {
+    set.seed(42 + seq_len(n_bootstrap))
+
     bootstrap_indices <- sample.int(n = nrow(long_df), size = nrow(long_df) * 0.6, replace = TRUE)
     long_df_bootstrap <- long_df[bootstrap_indices, , drop = FALSE]
 
@@ -532,7 +534,7 @@ process_single_geneset <- function(geneset, geneset_name, dose_col, sample_col, 
 #' @param num_cores The number of cores to use for parallel processing of gene sets.
 #' @return A data frame with BMD bounds and TCD cluster statistics for all gene sets.
 #' @export
-compute_bmd_bounds_parallel <- function(dose_rider_results, dose_col, sample_col, ci_level = 0.95,
+compute_bmd_bounds_parallel <- function(dose_rider_results, dose_col, sample_col="sample", ci_level = 0.95,
                                         covariates = c(), omic = "rnaseq", n_bootstrap = 1000,
                                         num_cores = 5, clusterResults = FALSE, z = 1) {
   # Register the parallel backend
@@ -567,7 +569,7 @@ compute_bmd_bounds_parallel <- function(dose_rider_results, dose_col, sample_col
 #' @param dose_rider_results A DoseRider object containing results of the analysis.
 #' @return A data frame with BMD bounds and TCD cluster statistics for all gene sets.
 #' @export
-compute_bmd_bounds_sequential <- function(dose_rider_results, dose_col, sample_col, ci_level = 0.95,
+compute_bmd_bounds_sequential <- function(dose_rider_results, dose_col, sample_col="sample", ci_level = 0.95,
                                           covariates = c(), omic = "rnaseq", n_bootstrap = 1000,
                                           clusterResults = FALSE, z = 1) {
   # Initialize progress bar
