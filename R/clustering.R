@@ -212,12 +212,11 @@ cluster_original_tcds <- function(original_tcds, method = "kmeans") {
 cluster_bootstrap_tcds <- function(tcd_values, k, method = "kmeans", ci_level = 0.95) {
   unique_tcds <- unique(tcd_values)  # Ensure no duplicate points
 
-  # Adjust k if it exceeds the number of unique values
-  if (k > length(unique_tcds)) {
+  # Adjust k if it exceeds the number of unique values or is less than 1
+  if (k > length(unique_tcds) || k < 1) {
     warning(paste("The number of clusters (k =", k,
-                  ") exceeds the number of unique TCD values (", length(unique_tcds),
-                  "). Adjusting k to", length(unique_tcds), "."))
-    k <- length(unique_tcds)
+                  ") is invalid. Adjusting k to", length(unique_tcds), "."))
+    k <- max(1, length(unique_tcds))  # Ensure k is at least 1
   }
 
   if (method == "kmeans") {
@@ -260,6 +259,7 @@ cluster_bootstrap_tcds <- function(tcd_values, k, method = "kmeans", ci_level = 
 
   return(cluster_summary_df)
 }
+
 
 #' Compute BMD Statistics
 #'
