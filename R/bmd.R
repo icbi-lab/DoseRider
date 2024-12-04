@@ -492,7 +492,17 @@ process_single_geneset <- function(geneset, geneset_name, dose_col, sample_col, 
 
   bmd_df <- compute_bmd_statistics(bmd_values, ci_level = ci_level)
   k <- if_else(k==0, 3, k)
-  tcd_df <- cluster_bootstrap_tcds(tcd_values = tcd_values, k = k, ci_level = ci_level)
+  tcd_df <- tryCatch(
+    {
+      # Attempt to run the function
+      cluster_bootstrap_tcds(tcd_values = tcd_values, k = k, ci_level = ci_level)
+    },
+    error = function(e) {
+      # Handle the error, e.g., print error message or take alternative action
+      message("Error in cluster_bootstrap_tcds: ", e$message)
+      return(NULL) # Return NULL or any default value to handle downstream analysis
+    }
+  )
 
   # Create a data frame with the results
   result <- data.frame(
@@ -505,9 +515,10 @@ process_single_geneset <- function(geneset, geneset_name, dose_col, sample_col, 
     stringsAsFactors = FALSE
   )
 
-  # Add TCD cluster statistics as separate columns, ensuring at least 4 clusters
+  # Loop through a fixed number of clusters (1 to 4)
   for (i in 1:4) {
-    if (i <= nrow(tcd_df)) {
+    if (!is.null(tcd_df) && i <= nrow(tcd_df)) {
+      # Extract data for existing clusters
       result[[paste0("Cluster", i, "_Mean")]] <- round(as.numeric(tcd_df[i, "Cluster_Mean"]), 3)
       result[[paste0("Cluster", i, "_SD")]] <- ifelse(!is.na(tcd_df[i, "Cluster_SD"]),
                                                       round(as.numeric(tcd_df[i, "Cluster_SD"]), 3), NA)
@@ -515,7 +526,7 @@ process_single_geneset <- function(geneset, geneset_name, dose_col, sample_col, 
       result[[paste0("Cluster", i, "_CI_Lower")]] <- round(as.numeric(tcd_df[i, "CI_Lower"]), 3)
       result[[paste0("Cluster", i, "_CI_Upper")]] <- round(as.numeric(tcd_df[i, "CI_Upper"]), 3)
     } else {
-      # Fill with NA for missing clusters
+      # Ensure columns exist with NA values for missing or non-existent clusters
       result[[paste0("Cluster", i, "_Mean")]] <- NA
       result[[paste0("Cluster", i, "_SD")]] <- NA
       result[[paste0("Cluster", i, "_Size")]] <- NA

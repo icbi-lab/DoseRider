@@ -73,7 +73,7 @@ In this example, the `doseRider` model allows filtering of results based on spec
 # Filter doseRider results based on FDR
 dose_rider_results_filter <- filter_DoseRider(
   dose_rider_results, 
-  model_type = "non_linear_mixed", 
+  model_type = "non_linear", 
   filter_type = "fdr", 
   threshold = 0.1
 )
@@ -95,7 +95,7 @@ bmd_bounds_df <- doseRider::compute_bmd_bounds_parallel(
   sample_col = "sample",
   covariates = c(),
   omic = "rnaseq",
-  n_bootstrap = 25,
+  n_bootstrap = 180,
   num_cores = 10,
   clusterResults = T
 )
