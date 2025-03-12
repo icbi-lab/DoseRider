@@ -185,7 +185,7 @@ compute_bmd_for_gene_in_geneset <- function(dose_rider_results, gene_set_name, g
 #' bootstrap_results <- fit_model_compute_bmd(long_df_bootstrap, formula, "rnaseq", clusterResults = FALSE, dose_col = "dose")
 #' print(bootstrap_results)
 #' }
-fit_model_compute_bmd <- function(long_df, formula, omic = "rnaseq", clusterResults = FALSE, dose_col, z = 1) {
+fit_model_compute_bmd <- function(long_df, formula, omic = "rnaseq", clusterResults = FALSE, dose_col, z = 1, keep_min_bmd = TRUE) {
 
   # Fit the model to the bootstrapped data
   model <- suppressWarnings(fit_lmm(formula, long_df, omic))
@@ -213,6 +213,10 @@ fit_model_compute_bmd <- function(long_df, formula, omic = "rnaseq", clusterResu
       derivatives <- compute_derivatives(smooth_cluster, dose_var = dose_col)
       tcd_cluster_results <- c(tcd_cluster_results, derivatives)
 
+      if (keep_min_bmd){
+        bmd_cluster_results <- min(bmd_cluster_results)
+      }
+
     }
 
     return(list("bmd"=bmd_cluster_results,"tcd"=tcd_cluster_results))
@@ -225,6 +229,10 @@ fit_model_compute_bmd <- function(long_df, formula, omic = "rnaseq", clusterResu
     # Compute derivatives and identify zero points
     derivatives <- compute_derivatives(smooth_values, dose_var = dose_col)
     derivatives <- c(derivatives$zero_points_first_deriv, derivatives$zero_points_second_deriv)
+
+    if (keep_min_bmd){
+      bmd_all_genes <- min(bmd_all_genes)
+    }
 
     return(list("bmd"=bmd_all_genes,"tcd"=derivatives))
     }
@@ -445,7 +453,7 @@ cluster_tcd_values <- function(tcd_values, original_tcds, k = NULL, method = "km
 #' @param z A parameter passed to the model fitting function.
 #' @return A data frame with BMD bounds and TCD cluster statistics for the gene set.
 process_single_geneset <- function(geneset, geneset_name, dose_col, sample_col, covariates, omic,
-                                   n_bootstrap, ci_level, clusterResults, z) {
+                                   n_bootstrap, ci_level, clusterResults, z, keep_min_bmd = T) {
   long_df <- geneset$Raw_Values[[1]]
   best_model <- geneset$best_model
   cluster <- geneset$ClusterAssignments
@@ -471,14 +479,14 @@ process_single_geneset <- function(geneset, geneset_name, dose_col, sample_col, 
 
   # Perform bootstrap sampling
   bootstrap_results <- replicate(n_bootstrap, {
-    set.seed(42 + seq_len(n_bootstrap))
+    #set.seed(42 + seq_len(n_bootstrap))
 
     bootstrap_indices <- sample.int(n = nrow(long_df), size = nrow(long_df) * 0.6, replace = TRUE)
     long_df_bootstrap <- long_df[bootstrap_indices, , drop = FALSE]
 
     # Call fit_model_compute_bmd and extract both bmd and tcd results
     result <- suppressMessages(doseRider:::fit_model_compute_bmd(long_df = long_df_bootstrap, formula = formula,
-                                                                 omic = omic, clusterResults = clusterResults, dose_col = dose_col, z = z))
+                                                                 omic = omic, clusterResults = clusterResults, dose_col = dose_col, z = z, keep_min_bmd = keep_min_bmd))
     return(result)
   })
 
@@ -547,7 +555,7 @@ process_single_geneset <- function(geneset, geneset_name, dose_col, sample_col, 
 #' @export
 compute_bmd_bounds_parallel <- function(dose_rider_results, dose_col, sample_col="sample", ci_level = 0.95,
                                         covariates = c(), omic = "rnaseq", n_bootstrap = 1000,
-                                        num_cores = 5, clusterResults = FALSE, z = 1) {
+                                        num_cores = 5, clusterResults = FALSE, z = 1, keep_min_bmd = TRUE) {
   # Register the parallel backend
   cl <- makeCluster(num_cores)
   registerDoParallel(cl)
@@ -559,7 +567,7 @@ compute_bmd_bounds_parallel <- function(dose_rider_results, dose_col, sample_col
   bmd_bounds_list <- foreach(geneset_idx = seq_along(dose_rider_results), .combine = rbind, .packages = c("lme4", "doseRider", "dplyr")) %dopar% {
     geneset_name <- names(dose_rider_results)[geneset_idx]
     geneset <- dose_rider_results[[geneset_name]]
-    result <- process_single_geneset(geneset, geneset_name, dose_col, sample_col, covariates, omic, n_bootstrap, ci_level, clusterResults, z)
+    result <- process_single_geneset(geneset, geneset_name, dose_col, sample_col, covariates, omic, n_bootstrap, ci_level, clusterResults, z, keep_min_bmd)
 
     # Update progress bar
     setTxtProgressBar(pb, geneset_idx)
@@ -582,7 +590,7 @@ compute_bmd_bounds_parallel <- function(dose_rider_results, dose_col, sample_col
 #' @export
 compute_bmd_bounds_sequential <- function(dose_rider_results, dose_col, sample_col="sample", ci_level = 0.95,
                                           covariates = c(), omic = "rnaseq", n_bootstrap = 1000,
-                                          clusterResults = FALSE, z = 1) {
+                                          clusterResults = FALSE, z = 1, keep_min_bmd = TRUE) {
   # Initialize progress bar
   pb <- txtProgressBar(min = 0, max = length(dose_rider_results), style = 3)
 
@@ -591,7 +599,7 @@ compute_bmd_bounds_sequential <- function(dose_rider_results, dose_col, sample_c
     print(geneset_idx)
     geneset_name <- names(dose_rider_results)[geneset_idx]
     geneset <- dose_rider_results[[geneset_name]]
-    result <- process_single_geneset(geneset, geneset_name, dose_col, sample_col, covariates, omic, n_bootstrap, ci_level, clusterResults, z)
+    result <- process_single_geneset(geneset, geneset_name, dose_col, sample_col, covariates, omic, n_bootstrap, ci_level, clusterResults, z, keep_min_bmd)
 
     # Update progress bar
     setTxtProgressBar(pb, geneset_idx)

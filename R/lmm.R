@@ -29,6 +29,8 @@
 fit_lmm <- function(formula, data, omic = "base") {
   # Adjust control parameters
   control_params <- glmerControl(optimizer = "bobyqa", optCtrl = list(maxfun = 1e10))
+  data <- as.data.frame(data)
+
 
   # Determine the family based on 'omic' parameter
   if (omic == "rnaseq") {
@@ -57,53 +59,82 @@ fit_lmm <- function(formula, data, omic = "base") {
 
 
 
-#' Create Generalized Linear Mixed Model (GLMM) Formula
+#' Create a Linear Mixed Model (LMM) Formula with Spline Support
 #'
-#' This function generates a formula for a GAMM, given response and effect variables.
-#' The main goal is to compare the 'cubic' model with the 'base' model.
+#' This function generates a formula for a Linear Mixed Model (LMM) that supports
+#' linear and non-linear relationships using B-splines. The function allows for different
+#' model structures, including random intercept, random slope, and spline-based models.
 #'
 #' @param response A string specifying the response variable in the model.
 #' @param fixed_effects A string or a vector of strings specifying the fixed effects in the model.
 #' @param random_effects A string or a vector of strings specifying the random effects in the model.
-#' @param covariates A string or a vector of strings specifying any covariates to be included in the model. Default is an empty vector.
-#' @param model_type A string specifying the type of the model. Can be 'base' or 'cubic'. Default is 'base'.
-#' @param omic A character string specifying the type of data. If 'rnaseq', an offset is included in the formula.
+#' @param covariates A string or a vector of strings specifying additional covariates to include in the model. Default is an empty vector.
+#' @param model_type A string specifying the type of the model. Options:
+#'   \itemize{
+#'     \item `"base"`: Random intercept model (`(1 | random_effects)`)
+#'     \item `"linear"`: Random intercept and slope model (`(fixed_effects | random_effects)`)
+#'     \item `"non_linear_fixed"`: Fixed-effect cubic spline (`bs(fixed_effects)`)
+#'     \item `"non_linear_mixed"`: Random spline effect (`(bs(fixed_effects) | random_effects)`)
+#'   }
+#' @param omic A character string specifying the type of data. If `"rnaseq"`, an offset is included in the formula to account for library size normalization.
+#' @param spline_knots Integer specifying the number of internal knots for the spline function when `model_type` includes splines (`"non_linear_fixed"` or `"non_linear_mixed"`). Default is `3`.
 #'
-#' @return A string representing the formula for the GAMM.
+#' @return A character string representing the model formula for use in `lmer` or `glmmTMB`.
 #'
 #' @examples
 #' \dontrun{
-#' # Create a base formula
-#' base_formula <- create_gamm_formula(response = "counts",
-#'                                     fixed_effects = "dose",
-#'                                     random_effects = "gene",
-#'                                     model_type = "base",
-#'                                     omic = "rnaseq")
-# # Create a cubic formula
-#' cubic_formula <- create_gamm_formula(response = "counts",
+#' # Create a base random intercept model
+#' base_formula <- create_lmm_formula(response = "counts",
+#'                                    fixed_effects = "dose",
+#'                                    random_effects = "gene",
+#'                                    model_type = "base",
+#'                                    omic = "rnaseq")
+#'
+#' # Create a linear random slope model
+#' linear_formula <- create_lmm_formula(response = "counts",
 #'                                      fixed_effects = "dose",
 #'                                      random_effects = "gene",
-#'                                      model_type = "cubic",
+#'                                      model_type = "linear",
 #'                                      omic = "rnaseq")
+#'
+#' # Create a non-linear fixed-effects spline model
+#' spline_fixed_formula <- create_lmm_formula(response = "counts",
+#'                                            fixed_effects = "dose",
+#'                                            random_effects = "gene",
+#'                                            model_type = "non_linear_fixed",
+#'                                            spline_knots = 4,
+#'                                            omic = "rnaseq")
+#'
+#' # Create a non-linear mixed-effects spline model
+#' spline_mixed_formula <- create_lmm_formula(response = "counts",
+#'                                            fixed_effects = "dose",
+#'                                            random_effects = "gene",
+#'                                            model_type = "non_linear_mixed",
+#'                                            spline_knots = 4,
+#'                                            omic = "rnaseq")
 #' }
+#'
+#' @export
 create_lmm_formula <- function(response, fixed_effects, random_effects, covariates = c(), model_type = "base", omic = NULL, spline_knots = 3) {
 
   # Start with the response variable
   formula <- paste(response, "~")
 
-  # Include random effects with appropriate spline
-  if (model_type == "non_linear_mixed") {
-    #"Random Spline Non-linear Model"
-    random_effect_term <- paste0(" ",fixed_effects," + ","bs(", fixed_effects,  ")", "+","(bs(", fixed_effects,  ") | ", random_effects, ")")
-  } else if (model_type == "non_linear_fixed") {
-    #"Random Intercept and Slope Non-linear Model"
-    random_effect_term <- paste0(" ",fixed_effects," + ","bs(", fixed_effects,  ")"," + (",fixed_effects,"|",random_effects,")")
-  } else if (model_type == "linear") {
-    random_effect_term <- paste0(" ",fixed_effects," + ","(",fixed_effects, " | ", random_effects, ")")
-  } else {
-    random_effect_term <- paste0("( 1 | ", random_effects, ")")
+  # Use precomputed spline columns instead of calling bs() again
+  spline_terms <- paste0("CubicSpline_", seq_len(spline_knots), collapse = " + ")
 
+  # Define model structure based on type
+  if (model_type == "non_linear_mixed") {
+    random_effect_term <- paste0(" ", spline_terms, " + (", spline_terms, " | ", random_effects, ")")
+  } else if (model_type == "non_linear_fixed") {
+    random_effect_term <- paste0(" ", spline_terms, " + (", fixed_effects, " | ", random_effects, ")")
+  } else if (model_type == "linear") {
+    random_effect_term <- paste0(" ", fixed_effects, " + (", fixed_effects, " | ", random_effects, ")")
+  } else {
+    random_effect_term <- paste0("(1 | ", random_effects, ")")
   }
+
+  # Assemble full formula
   formula <- paste(formula, random_effect_term)
 
   # Add covariates if any
@@ -119,6 +150,40 @@ create_lmm_formula <- function(response, fixed_effects, random_effects, covariat
 
   return(formula)
 }
+
+# create_lmm_formula <- function(response, fixed_effects, random_effects, covariates = c(), model_type = "base", omic = NULL, spline_knots = 3) {
+#
+#   # Start with the response variable
+#   formula <- paste(response, "~")
+#
+#   # Include random effects with appropriate spline
+#   if (model_type == "non_linear_mixed") {
+#     #"Random Spline Non-linear Model"
+#     random_effect_term <- paste0(" ",fixed_effects," + ","bs(", fixed_effects,  ")", "+","(bs(", fixed_effects,  ") | ", random_effects, ")")
+#   } else if (model_type == "non_linear_fixed") {
+#     #"Random Intercept and Slope Non-linear Model"
+#     random_effect_term <- paste0(" ",fixed_effects," + ","bs(", fixed_effects,  ")"," + (",fixed_effects,"|",random_effects,")")
+#   } else if (model_type == "linear") {
+#     random_effect_term <- paste0(" ",fixed_effects," + ","(",fixed_effects, " | ", random_effects, ")")
+#   } else {
+#     random_effect_term <- paste0("( 1 | ", random_effects, ")")
+#
+#   }
+#   formula <- paste(formula, random_effect_term)
+#
+#   # Add covariates if any
+#   if (length(covariates) > 0) {
+#     covariate_terms <- paste(covariates, collapse = " + ")
+#     formula <- paste(formula, "+", covariate_terms)
+#   }
+#
+#   # Add offset for RNA-Seq data
+#   if (!is.null(omic) && omic == "rnaseq") {
+#     formula <- paste(formula, "+ offset(log(size_factors))")
+#   }
+#
+#   return(formula)
+# }
 
 
 

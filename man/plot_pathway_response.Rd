@@ -9,7 +9,7 @@ plot_pathway_response(
   gene_set_name,
   dose_col = "Dose",
   center_values = TRUE,
-  scale_values = TRUE,
+  scale_values = F,
   legend_position = "none",
   text_size = 4,
   margin_space = 0,
@@ -18,7 +18,7 @@ plot_pathway_response(
   annotate_gene = FALSE,
   annotation_text_size = 5,
   draw_bmd = TRUE,
-  plot_original_data = FALSE,
+  plot_original_data = T,
   clusterResults = TRUE
 )
 }

@@ -101,7 +101,7 @@ add_cluster_trends_and_bmd <- function(p, gene_set_results, mean_data, dose_col,
                                FUN = mean)
     p <- p + geom_line(data = cluster_trend, aes(x = .data[[dose_col]], y = predictions), linewidth = 1)
 
-    if (best_model!= "linear") {
+    if (best_model!= "linear" & length(cluster_derivate) > 0) {
 
 
       # Define delta for zero point range calculation
@@ -180,27 +180,39 @@ adjust_color <- function(color, amount = 0.5) {
 #Function to clos the TCD trend
 ##############################
 # Helper function to adjust the cluster trend visuals (thickness and color) around zero points
+library(dplyr)
+
 adjust_trend_visuals <- function(cluster_trend, dose_col, zero_points, t, new_line_thickness) {
   # Initialize new columns for line thickness and color
-  cluster_trend$line_thickness <- 1  # Default line thickness
-  cluster_trend$color <- "black"     # Default line color
-  delta <- max(cluster_trend[[dose_col]]) * t
+  cluster_trend <- cluster_trend %>%
+    mutate(line_thickness = 1,  # Default thickness
+           color = "black")     # Default color
 
-  # Loop through each zero point and adjust line visuals within the delta range
-  for (z in unique(zero_points)) {
-    range_around_zero <- c(z - delta, z + delta)
+  delta <- max(cluster_trend[[dose_col]], na.rm = TRUE) * t
+
+  # Group zero points into three clusters
+  zero_clusters <- cut(zero_points, breaks = 3, labels = c("low", "medium", "high"))
+
+  # Calculate mean zero point for each cluster
+  cluster_means <- tapply(zero_points, zero_clusters, mean, na.rm = TRUE)
+
+  # Loop through each cluster and adjust line visuals
+  for (cluster_level in names(cluster_means)) {
+    z_mean <- cluster_means[[cluster_level]]
+    range_around_mean <- c(z_mean - delta, z_mean + delta)
 
     # Find the closest lower and upper values within the range
-    closest_lower <- cluster_trend[[dose_col]][which.min(abs(cluster_trend[[dose_col]] - range_around_zero[1]))]
-    closest_upper <- cluster_trend[[dose_col]][which.min(abs(cluster_trend[[dose_col]] - range_around_zero[2]))]
+    closest_lower <- cluster_trend[[dose_col]][which.min(abs(cluster_trend[[dose_col]] - range_around_mean[1]))]
+    closest_upper <- cluster_trend[[dose_col]][which.min(abs(cluster_trend[[dose_col]] - range_around_mean[2]))]
 
-    # Adjust line thickness and color for doses within the zero point range
+    # Adjust thickness within the range of the cluster mean
     within_range <- cluster_trend[[dose_col]] >= closest_lower & cluster_trend[[dose_col]] <= closest_upper
     cluster_trend$line_thickness[within_range] <- new_line_thickness
   }
 
   return(cluster_trend)
 }
+
 ##################################################################################
 ### Custom theme
 

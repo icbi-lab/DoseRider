@@ -2,7 +2,7 @@
 % Please edit documentation in R/lmm.R
 \name{create_lmm_formula}
 \alias{create_lmm_formula}
-\title{Create Generalized Linear Mixed Model (GLMM) Formula}
+\title{Create a Linear Mixed Model (LMM) Formula with Spline Support}
 \usage{
 create_lmm_formula(
   response,
@@ -21,31 +21,59 @@ create_lmm_formula(
 
 \item{random_effects}{A string or a vector of strings specifying the random effects in the model.}
 
-\item{covariates}{A string or a vector of strings specifying any covariates to be included in the model. Default is an empty vector.}
+\item{covariates}{A string or a vector of strings specifying additional covariates to include in the model. Default is an empty vector.}
 
-\item{model_type}{A string specifying the type of the model. Can be 'base' or 'cubic'. Default is 'base'.}
+\item{model_type}{A string specifying the type of the model. Options:
+\itemize{
+  \item `"base"`: Random intercept model (`(1 | random_effects)`)
+  \item `"linear"`: Random intercept and slope model (`(fixed_effects | random_effects)`)
+  \item `"non_linear_fixed"`: Fixed-effect cubic spline (`bs(fixed_effects)`)
+  \item `"non_linear_mixed"`: Random spline effect (`(bs(fixed_effects) | random_effects)`)
+}}
 
-\item{omic}{A character string specifying the type of data. If 'rnaseq', an offset is included in the formula.}
+\item{omic}{A character string specifying the type of data. If `"rnaseq"`, an offset is included in the formula to account for library size normalization.}
+
+\item{spline_knots}{Integer specifying the number of internal knots for the spline function when `model_type` includes splines (`"non_linear_fixed"` or `"non_linear_mixed"`). Default is `3`.}
 }
 \value{
-A string representing the formula for the GAMM.
+A character string representing the model formula for use in `lmer` or `glmmTMB`.
 }
 \description{
-This function generates a formula for a GAMM, given response and effect variables.
-The main goal is to compare the 'cubic' model with the 'base' model.
+This function generates a formula for a Linear Mixed Model (LMM) that supports
+linear and non-linear relationships using B-splines. The function allows for different
+model structures, including random intercept, random slope, and spline-based models.
 }
 \examples{
 \dontrun{
-# Create a base formula
-base_formula <- create_gamm_formula(response = "counts",
-                                    fixed_effects = "dose",
-                                    random_effects = "gene",
-                                    model_type = "base",
-                                    omic = "rnaseq")
-cubic_formula <- create_gamm_formula(response = "counts",
+# Create a base random intercept model
+base_formula <- create_lmm_formula(response = "counts",
+                                   fixed_effects = "dose",
+                                   random_effects = "gene",
+                                   model_type = "base",
+                                   omic = "rnaseq")
+
+# Create a linear random slope model
+linear_formula <- create_lmm_formula(response = "counts",
                                      fixed_effects = "dose",
                                      random_effects = "gene",
-                                     model_type = "cubic",
+                                     model_type = "linear",
                                      omic = "rnaseq")
+
+# Create a non-linear fixed-effects spline model
+spline_fixed_formula <- create_lmm_formula(response = "counts",
+                                           fixed_effects = "dose",
+                                           random_effects = "gene",
+                                           model_type = "non_linear_fixed",
+                                           spline_knots = 4,
+                                           omic = "rnaseq")
+
+# Create a non-linear mixed-effects spline model
+spline_mixed_formula <- create_lmm_formula(response = "counts",
+                                           fixed_effects = "dose",
+                                           random_effects = "gene",
+                                           model_type = "non_linear_mixed",
+                                           spline_knots = 4,
+                                           omic = "rnaseq")
 }
+
 }

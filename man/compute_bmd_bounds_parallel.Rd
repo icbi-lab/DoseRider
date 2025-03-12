@@ -7,14 +7,15 @@
 compute_bmd_bounds_parallel(
   dose_rider_results,
   dose_col,
-  sample_col,
+  sample_col = "sample",
   ci_level = 0.95,
   covariates = c(),
   omic = "rnaseq",
   n_bootstrap = 1000,
   num_cores = 5,
   clusterResults = FALSE,
-  z = 1
+  z = 1,
+  keep_min_bmd = TRUE
 )
 }
 \arguments{

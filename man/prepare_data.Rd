@@ -10,34 +10,57 @@ prepare_data(
   dose_col,
   sample_col,
   omic = "rnaseq",
-  log_transform = FALSE
+  log_transform = FALSE,
+  spline_knots = 2,
+  knot_method = "quantile",
+  manual_knots = NULL
 )
 }
 \arguments{
-\item{se}{A SummarizedExperiment object containing both assay and metadata.}
+\item{se}{A `SummarizedExperiment` object containing both assay and metadata.}
 
 \item{geneset}{A character vector of gene names to be considered.}
 
-\item{dose_col}{The name of the dose column in the metadata of the SummarizedExperiment object.}
+\item{dose_col}{The name of the dose column in the metadata of the `SummarizedExperiment` object.}
 
-\item{sample_col}{The name of the sample column in the metadata of the SummarizedExperiment object.}
+\item{sample_col}{The name of the sample column in the metadata of the `SummarizedExperiment` object.}
 
-\item{omic}{A character string specifying the type of omics data. Default is "rnaseq".}
+\item{omic}{A character string specifying the type of omics data. Default is `"rnaseq"`.}
 
-\item{log_transform}{Logical, whether to log10 transform the dose values. Default is FALSE.}
+\item{log_transform}{Logical, whether to log10 transform the dose values. Default is `FALSE`.}
+
+\item{spline_knots}{Integer, the number of internal knots for the spline function. Default is `2`.
+The number of knots should be lower than the number of unique dose values.}
+
+\item{knot_method}{Character, the method for selecting spline knots. Options are:
+- `"quantile"` (default): Selects knots based on percentiles of the dose distribution.
+- `"geometric"`: Places knots at logarithmically spaced intervals.
+- `"manual"`: Uses user-defined knots from the `manual_knots` parameter.}
+
+\item{manual_knots}{Numeric vector, custom knot positions (used only if `knot_method = "manual"`).
+If `NULL`, this option is ignored.}
 }
 \value{
-A data frame in a format suitable for glmmTMB function.
+A list containing:
+  - `long_df`: A data frame in long format with precomputed spline columns (`CubicSpline_1`, etc.).
+  - `spline_info`: A list with:
+      - `knots`: The selected knot positions.
+      - `boundary_knots`: The boundary knot positions.
 }
 \description{
 This function prepares the data from a SummarizedExperiment object into a format
-suitable for the glmmTMB function. This includes transforming the data to long format,
-adding size factors and dispersions (if applicable), applying log10 transformation to doses,
-creating splines for dose, and merging with sample metadata.
+suitable for the `glmmTMB` function. It transforms the data into long format,
+adds size factors and dispersions (if applicable), applies log10 transformation to doses,
+and creates splines for dose using different knot selection methods.
 }
 \examples{
-geneset <- rownames(assay_df)
-dose_col <- "condition"
-sample_col <- "sample"
-long_df <- prepare_data(se, geneset, dose_col, sample_col)
+# Example using quantile-based knots (default)
+data_prep <- prepare_data(se, geneset, dose_col, sample_col)
+
+# Example using geometric knots (log-spaced)
+data_prep <- prepare_data(se, geneset, dose_col, sample_col, knot_method = "geometric")
+
+# Example using manually selected knots
+manual_knot_positions <- c(1e-4, 1e-3, 1e-2, 1e-1, 1, 10)
+data_prep <- prepare_data(se, geneset, dose_col, sample_col, knot_method = "manual", manual_knots = manual_knot_positions)
 }

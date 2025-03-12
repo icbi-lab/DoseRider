@@ -39,6 +39,7 @@ Several GMT files are avalible int he DoseRider wbesite (https://doserider.i-med
 ```{r}
 # Specify the path to your GMT files
 gmt_path <- system.file("extdata", "High-Response-Toxicogenomics.gmt", package = "doseRider")
+gmt_path <- "/home/monfortl/gmt/Homo sapiens/MSigD_C2_CGP_genomics_symbols.gmt"
 gmt <- read_gmt(gmt_path)
 
 ```
@@ -48,24 +49,36 @@ gmt <- read_gmt(gmt_path)
 In this example, we utilize parallel computation across 10 cores for the doseRider model to enhance efficiency. Critical parameters include specifying the `dose_col`, which identifies the column containing the dose information essential for the analysis. Due to the wide range of dose values, a log10 transformation (`log_transform = TRUE`) is applied to reduce variability and stabilize the model for a more consistent dose-response relationship. The gene sets are filtered based on size, retaining only those between 20 and 500 genes, and the analysis is conducted using a linear mixed model (LMM). The false discovery rate (FDR) method is used for multiple testing correction, ensuring robust pathway selection through pathway filtering. This approach is applied to RNA-Seq data without additional covariates.
 
 ```{r}
+# Default filtering parameters
+default_params <- list(
+    pca = list(pca_threshold = 0.7, loading_threshold = 0.6, antagonist_threshold = 2),
+    variance = list(variance_threshold = 0.1),
+    correlation = list(correlation_threshold = 0.5)
+  )
+
 # Run doseRider analysis
 dose_rider_results <- DoseRiderParallel(
   se = bpaf_data, 
   gmt = gmt, 
   dose_col = "Dose", 
   omic = "rnaseq", 
-  minGSsize = 20, 
+  minGSsize = 10, 
   maxGSsize = 200, 
   method = "fdr", 
   covariates = c(),
   modelType = "LMM", 
   num_cores = 10,
-  FilterPathway = TRUE,
-  log_transform = TRUE,
-models = c("linear", "non_linear_mixed")
+  filters = c("pca","correlation"),
+  filter_params = default_params, # If empty took the default anyway
+  log_transform = T,
+  models = c("non_linear_mixed"),
+  spline_knots = 3,
+  knot_method = "geometric",
+  
 )
 
 ```
+
 
 In this example, the `doseRider` model allows filtering of results based on specified criteria. Here, we use the `filter_DoseRider()` function to filter the results based on the false discovery rate (FDR) with a threshold of 0.1. The `model_type` is set to `"non_linear_mixed"`, ensuring that only significant pathways or gene sets identified by the non-linear mixed model are retained. This filtering step is crucial for refining the output and focusing on the most statistically relevant results in the context of dose-response analysis.
 
@@ -79,7 +92,7 @@ dose_rider_results_filter <- filter_DoseRider(
 )
 
 # Convert results to data frame
-res_df <- as.data.frame(dose_rider_results)
+res_df <- as.data.frame.DoseRider(dose_rider_results)
 table(res_df$best_model)
 ```
 
@@ -126,7 +139,7 @@ dev.off()
 p2 <- plot_gene_set_random_effects(dose_rider_results_filter, dose_col = "log_Dose",  top = top)
 ggsave(paste0(save_path,"plot2.jpeg"), plot = p2, width = PLOT_WIDTH, height = PLOT_HEIGHT, units = units, dpi = 600)
 
-p3 <- plot_top_pathway_responses(dose_rider_results_filter, top = 2, ncol = 2,  text_size = 5, dose_col = "log_Dose", clusterResults = T)
+p3 <- plot_top_pathway_responses(dose_rider_results_filter, top = 4, ncol = 2,  text_size = 5, dose_col = "log_Dose", clusterResults = T, scale_values = F, center_values = T)
 ggsave(paste0(save_path,"plot3.jpeg"), plot = p3, width = PLOT_WIDTH, height = PLOT_HEIGHT, units = units, dpi = 600)
 
 p4 <- plot_gene_random_effect_relationship(dose_rider_results_filter,"Estrogen signaling pathway - Homo sapiens (human)")

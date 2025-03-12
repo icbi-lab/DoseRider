@@ -31,7 +31,7 @@
 #' @importFrom stats predict
 smooth_pathway_trend <- function(model, long_df, dose_col = "dose", sample_col = "sample", omic = "rnaseq",
                                  random_effects = TRUE, covariates_cols = NULL, gene_subset = NULL,
-                                 dose_points = 25, sample_subset_size = 10) {
+                                 dose_points = 25, sample_subset_size = 10, spline_info = NULL) {
   # Ensure necessary columns are present
   required_cols <- c(dose_col, sample_col)
   if (omic == "rnaseq") required_cols <- c(required_cols, "size_factors")
@@ -67,9 +67,30 @@ smooth_pathway_trend <- function(model, long_df, dose_col = "dose", sample_col =
     for (col in covariates_cols) expand_params[[col]] <- unique(long_df[[col]])
   } else if (!is.null(covariates_cols)) stop("Some covariates not found in data")
 
+  # Extract knot information from stored spline_info
+  interp_knots <- attr(spline_info, "knots")
+  bdd_knots <- attr(spline_info, "Boundary.knots")
+  spline_degree <- attr(spline_info, "degree")
+
   # Create new data for prediction
   new_data <- expand.grid(expand_params)
   colnames(new_data) <- c(dose_col, if (omic == "rnaseq") "size_factors" else sample_col, "gene", covariates_cols)
+
+  # Apply the same B-spline transformation to new doses
+  new_spline_matrix <- splines::bs(
+    new_data[[dose_col]],
+    knots = interp_knots,               # Correctly extract knots
+    Boundary.knots = bdd_knots,          # Correctly extract boundary knots
+    degree = spline_degree,              # Ensure same spline degree
+    intercept = FALSE
+  )
+
+  # Convert to a DataFrame with correctly named columns
+  new_spline_df <- as.data.frame(new_spline_matrix)
+  colnames(new_spline_df) <- paste0("CubicSpline_", seq_len(ncol(new_spline_df)))
+
+  # Merge new splines with new_data
+  new_data <- cbind(new_data, new_spline_df)
 
   # Generate predictions
   if (random_effects){
@@ -108,10 +129,10 @@ smooth_pathway_trend <- function(model, long_df, dose_col = "dose", sample_col =
 #' @return A ggplot object representing the pathway response plot.
 #' @export
 plot_pathway_response <- function(dose_rider_results, gene_set_name, dose_col = "Dose",
-                                  center_values = TRUE, scale_values = TRUE, legend_position = "none", text_size = 4,
+                                  center_values = TRUE, scale_values = F, legend_position = "none", text_size = 4,
                                   margin_space = 0, model_metrics = FALSE, v_size = 0.5,
                                   annotate_gene = FALSE, annotation_text_size = 5, draw_bmd = TRUE,
-                                  plot_original_data = FALSE, clusterResults = TRUE) {
+                                  plot_original_data = T, clusterResults = TRUE) {
 
   # Extract the gene set results
   gene_set_results <- extract_gene_set_results(dose_rider_results, gene_set_name, plot_original_data)

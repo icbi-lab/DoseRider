@@ -96,65 +96,6 @@ optimal_clusters_silhouette <- function(data, dose_col, max_clusters = 10) {
 
 
 
-#' Filter Pathways Based on PCA to Detect Antagonist Patterns
-#'
-#' This function filters pathways in transcriptomic data by performing Principal Component Analysis (PCA).
-#' It determines whether to keep or skip a pathway based on the variance explained by the first principal component (PC1),
-#' and by checking for antagonist patterns in the loadings of PC1.
-#'
-#' @param long_df Dataframe containing the long format transcriptomic data.
-#' @param dose_col Character string specifying the name of the dose column in `long_df`. Default is "Dose".
-#' @param pca_threshold Numeric value specifying the variance threshold for PC1 to filter pathways. Default is 0.6. Higher values are more restrictive, requiring PC1 to explain a larger portion of variance.
-#' @param expression_col Character string specifying the name of the expression column in `long_df`. Default is "counts".
-#' @param loading_threshold Numeric value specifying the loading threshold to detect antagonist patterns. Default is 0.5. Lower values are more restrictive, identifying more subtle antagonistic patterns.
-#' @param antagonist_threshold Numeric value specifying the threshold for detecting antagonist patterns. Default is 0.5. Lower values are more restrictive, identifying more subtle antagonistic patterns, while higher values are less restrictive.
-#' @return Logical value: TRUE if the pathway should be kept (no antagonist pattern detected), FALSE otherwise.
-#' @importFrom stats prcomp
-#' @examples
-#' \dontrun{
-#'   # Assuming 'long_df' is available and transform_smooth_values function is defined
-#'   should_keep_pathway <- filter_pathway_by_pca(long_df, dose_col = "Dose", pca_threshold = 0.7, expression_col = "counts", loading_threshold = 0.5)
-#'   if (should_keep_pathway) {
-#'     # Proceed with further analysis
-#'   }
-#' }
-filter_pathway_by_pca <- function(long_df, dose_col = "Dose", pca_threshold = 0.7, expression_col = "counts", loading_threshold = 0.6, antagonist_threshold = 2) {
-  # Ensure the transform_smooth_values function is available and works correctly
-  pathway_data <- transform_smooth_values(long_df, expression_col = expression_col, dose_col = dose_col)
-
-  # Perform PCA on the transposed data
-  pca_results <- prcomp(t(pathway_data), scale. = TRUE)
-
-  # Calculate the variance explained by each principal component
-  variance_explained <- (pca_results$sdev^2) / sum(pca_results$sdev^2)
-
-  # Assess the variance explained by the first principal component (PC1)
-  pc1_variance <- variance_explained[1]
-
-  # Check if PC1 explains a significant portion of variance
-  if (pc1_variance > pca_threshold) {
-    # Check loadings for antagonist patterns
-    pc1_loadings <- pca_results$rotation[, 1]
-    positive_loadings <- sum(pc1_loadings[pc1_loadings > loading_threshold])
-    negative_loadings <- sum(abs(pc1_loadings[pc1_loadings < -loading_threshold]))
-
-    # Calculate antagonist score
-    antagonist_score <- abs(positive_loadings - negative_loadings) / (positive_loadings + negative_loadings + 1e-10)
-
-    # Determine if there are significant antagonist patterns in loadings
-    if (antagonist_score < antagonist_threshold) {
-      cat("Skipping pathway: Antagonist pattern detected in PCA loadings\n")
-      return(FALSE)
-    }
-  }
-
-  cat("Keeping pathway: No significant antagonist pattern detected in PCA\n")
-  return(TRUE)
-}
-
-
-
-
 
 #' Cluster Original TCD Values
 #'
@@ -168,28 +109,28 @@ filter_pathway_by_pca <- function(long_df, dose_col = "Dose", pca_threshold = 0.
 cluster_original_tcds <- function(original_tcds, method = "kmeans") {
   unique_tcds <- unique(original_tcds)  # Ensure no duplicate points
 
-  # Handle cases where the number of unique TCDs is less than 3
-  if (length(unique_tcds) < 4) {
+  # # Handle cases where the number of unique TCDs is less than 3
+  # if (length(unique_tcds) < 4) {
     k <- length(unique_tcds)  # Number of clusters equals the number of unique TCDs
     clustering <- setNames(seq_along(unique_tcds), unique_tcds)  # Create a named vector with cluster IDs
-    return(list(
-      k = k,
-      clustering = clustering
-    ))
-  }
-
-  # Perform clustering if the number of unique TCDs is 3 or more
-  if (method == "kmeans") {
-    k <- min(length(unique_tcds), 3)  # Use up to 3 clusters
-    clustering <- kmeans(unique_tcds, centers = k, nstart = 25)
-
-  } else if (method == "gmm") {
-    clustering <- Mclust(unique_tcds)
-    k <- clustering$G  # Number of clusters in GMM
-
-  } else {
-    stop("Unsupported clustering method. Use 'kmeans' or 'gmm'.")
-  }
+  #   return(list(
+  #     k = k,
+  #     clustering = clustering
+  #   ))
+  # }
+  #
+  # # Perform clustering if the number of unique TCDs is 3 or more
+  # if (method == "kmeans") {
+  #   k <- min(length(unique_tcds), 3)  # Use up to 3 clusters
+  #   clustering <- kmeans(unique_tcds, centers = k, nstart = 25)
+  #
+  # } else if (method == "gmm") {
+  #   clustering <- Mclust(unique_tcds)
+  #   k <- clustering$G  # Number of clusters in GMM
+  #
+  # } else {
+  #   stop("Unsupported clustering method. Use 'kmeans' or 'gmm'.")
+  # }
 
   return(list(
     k = k,

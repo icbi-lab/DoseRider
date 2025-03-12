@@ -16,41 +16,86 @@ DoseRiderParallel(
   method = "fdr",
   num_cores = 5,
   modelType = "LMM",
-  FilterPathway = FALSE,
-  pca_threshold = 0.6,
+  FilterPathway = T,
+  filters = c("correlation"),
+  filter_params = list(),
   log_transform = F,
-  models = c("linear", "non_linear_fixed", "non_linear_mixed")
+  models = c("linear", "non_linear_fixed", "non_linear_mixed"),
+  spline_knots = 2,
+  knot_method = "quantile",
+  manual_knots = NULL
 )
 }
 \arguments{
-\item{se}{The input SummarizedExperiment object or matrix/data frame with metadata.}
+\item{se}{A `SummarizedExperiment` object or a matrix/data frame containing gene expression data.}
 
-\item{gmt}{The gene set collection as a list with gene sets.}
+\item{gmt}{A list of gene sets, where each entry contains a list of gene names.}
 
-\item{dose_col}{The name of the column in the metadata representing the dose information.}
+\item{dose_col}{A string specifying the column name representing dose information.}
 
-\item{sample_col}{The name of the column in the metadata representing the sample information.}
+\item{sample_col}{A string specifying the column name representing sample information.}
 
-\item{covariates}{The name of the column in the metadata representing the covariate information (optional).}
+\item{covariates}{Optional. A character vector specifying additional covariate column(s) in `se`. Default is an empty vector.}
 
-\item{omic}{The type of omic data used (default is "rnaseq").}
+\item{omic}{A string specifying the type of omics data. Default is `"rnaseq"`.}
 
-\item{minGSsize}{The minimum gene set size for filtering (default is 5).}
+\item{minGSsize}{An integer specifying the minimum gene set size for analysis. Default is `5`.}
 
-\item{maxGSsize}{The maximum gene set size for filtering (default is 300).}
+\item{maxGSsize}{An integer specifying the maximum gene set size for analysis. Default is `300`.}
 
-\item{method}{The p-value adjustment method for FDR correction (default is "fdr").}
+\item{method}{A string specifying the method for multiple testing adjustment. Default is `"fdr"`.}
 
 \item{num_cores}{The number of cores to use for parallel processing (default is 5).}
 
-\item{modelType}{Type of model to be used for analysis, "LMM" for Linear Mixed Models or "GAMM"
-for Generalized Additive Mixed Models. Defaults to "LMM".}
+\item{modelType}{A string specifying the type of model to fit for each gene set. Options:
+\itemize{
+  \item `"LMM"`: Linear Mixed Model
+  \item `"GAMM"`: Generalized Additive Mixed Model
+}
+Default is `"LMM"`.}
 
-\item{FilterPathway}{Boolean, if TRUE the function will apply PCA filtering to detect antagonist patterns. Defaults to FALSE.}
+\item{FilterPathway}{Logical. Whether to apply pathway-level filtering. Default is `FALSE`.}
 
-\item{pca_threshold}{Numeric value specifying the variance threshold for PC1 to filter pathways. Default is 0.6.}
+\item{filters}{A character vector specifying the filtering methods to apply. Options:
+\itemize{
+  \item `"pca"`: Principal Component Analysis (PCA)-based filtering to detect antagonistic patterns.
+  \item `"variance"`: Variance-based filtering to remove gene sets with low expression variability.
+  \item `"correlation"`: Correlation-based filtering to remove pathways with highly antagonistic gene expression patterns.
+}}
 
-\item{log_transform}{Logical, whether to log10 transform the dose values. Default is FALSE.}
+\item{filter_params}{A named list of filter-specific parameters. Available options:
+\itemize{
+  \item **For PCA Filtering (`"pca"`)**:
+    \itemize{
+      \item `pca_threshold` (numeric): Variance threshold for PC1 to filter pathways. Default: `0.6`.
+      \item `loading_threshold` (numeric): Threshold to detect antagonistic patterns based on PCA loadings. Default: `0.6`.
+      \item `antagonist_threshold` (numeric): Defines when a pathway is considered antagonistic. Default: `2.0`.
+    }
+  \item **For Variance Filtering (`"variance"`)**:
+    \itemize{
+      \item `variance_percentile` (numeric): Percentile threshold for gene variance filtering. Default: `0.2` (removes genes in the lowest 20% of variance).
+    }
+  \item **For Correlation Filtering (`"correlation"`)**:
+    \itemize{
+      \item `correlation_threshold` (numeric): Proportion of negatively correlated genes required to exclude a pathway. Default: `0.5`.
+      \item `negative_corr_cutoff` (numeric): Correlation coefficient threshold below which genes are considered antagonistic. Default: `-0.3`.
+    }
+}}
+
+\item{log_transform}{Logical. Whether to log10 transform the dose values. Default is `FALSE`.}
+
+\item{spline_knots}{An integer specifying the number of internal knots for the spline function. Default is `2`.
+The number of knots should be lower than the number of unique dose values.}
+
+\item{knot_method}{A string specifying the method for selecting spline knots. Options:
+\itemize{
+  \item `"quantile"` (default): Selects knots based on percentiles of the dose distribution.
+  \item `"geometric"`: Places knots at logarithmically spaced intervals.
+  \item `"manual"`: Uses user-defined knots from the `manual_knots` parameter.
+}}
+
+\item{manual_knots}{A numeric vector specifying custom knot positions (used only if `knot_method = "manual"`).
+If `NULL`, this option is ignored.}
 }
 \value{
 A list containing the results of the DoseRider analysis for each gene set.

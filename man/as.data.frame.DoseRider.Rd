@@ -4,7 +4,7 @@
 \alias{as.data.frame.DoseRider}
 \title{Convert a DoseRider Object to a Data Frame}
 \usage{
-\method{as.data.frame}{DoseRider}(object)
+as.data.frame.DoseRider(object)
 }
 \arguments{
 \item{object}{A DoseRider object containing results from dose-response analysis.}

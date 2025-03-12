@@ -10,7 +10,8 @@ fit_model_compute_bmd(
   omic = "rnaseq",
   clusterResults = FALSE,
   dose_col,
-  z = 1
+  z = 1,
+  keep_min_bmd = TRUE
 )
 }
 \arguments{
