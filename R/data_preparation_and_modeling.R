@@ -73,11 +73,12 @@ prepare_data <- function(se, geneset, dose_col, sample_col, omic = "rnaseq",
     # Prepare data for glmmTMB, including size factors and dispersions
     common_genes <- intersect(geneset, rownames(se))
 
-    if (length(common_genes) > 0) {
+    if (length(common_genes) > 3) {
       long_df <- suppressWarnings(as.data.frame(reshape::melt(t(assay(se)[common_genes,]), as.is = TRUE), warning = FALSE))
       colnames(long_df) <- c(sample_col, "gene", "counts")
 
       if (omic == "rnaseq") {
+        se <- estimate_model_parameters(se)
         long_df$size_factor <- colData(se)$size_factors[match(long_df[[sample_col]], rownames(colData(se)))]
         long_df$theta <- rowData(se)$theta[match(long_df$gene, rownames(rowData(se)))]
         long_df$dispersion <- rowData(se)$dispersions[match(long_df$gene, rownames(rowData(se)))]

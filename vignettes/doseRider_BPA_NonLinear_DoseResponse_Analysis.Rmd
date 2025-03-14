@@ -28,7 +28,7 @@ Data from PRJNA869442 (GSE211183) has been preprocessed for this analysis. For t
 ```{r}
 # Load preprocessed data
 data("bpaf_data")
-bpaf_data <- estimate_model_parameters(bpaf_data)
+# bpaf_data <- estimate_model_parameters(bpaf_data)
 ```
 
 
@@ -58,7 +58,7 @@ default_params <- list(
 
 # Run doseRider analysis
 dose_rider_results <- DoseRiderParallel(
-  se = bpaf_data, 
+  se = se, 
   gmt = gmt, 
   dose_col = "Dose", 
   omic = "rnaseq", 
@@ -76,6 +76,7 @@ dose_rider_results <- DoseRiderParallel(
   knot_method = "geometric",
   
 )
+
 
 ```
 

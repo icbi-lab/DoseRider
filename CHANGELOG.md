@@ -4,6 +4,13 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](http://keepachangelog.com/) and this project adheres to [Semantic Versioning](http://semver.org/).
 
+## [Unreleased] - 2025-03-14  
+
+### **Fixed**  
+- **Improved Robustness in `prepare_data()` for `DoseRider()`**  
+  - Added a new check to prevent spline fitting errors when the number of genes is **less than one**, ensuring stability in dose-response modeling.  
+  - Addressed an issue where **`theta` values were sometimes missing**, causing downstream errors. Now, `prepare_data()` automatically computes `theta` using the `se` object by calling the `estimate_parameters()` function.
+
 ## [Unreleased] - 2025-03-12  
 
 ### **Added**  
