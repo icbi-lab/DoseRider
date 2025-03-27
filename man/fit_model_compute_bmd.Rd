@@ -11,7 +11,10 @@ fit_model_compute_bmd(
   clusterResults = FALSE,
   dose_col,
   z = 1,
-  keep_min_bmd = TRUE
+  keep_min_bmd = TRUE,
+  interp_knots = NULL,
+  bdd_knots = NULL,
+  spline_degree = NULL
 )
 }
 \arguments{

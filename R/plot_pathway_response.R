@@ -31,7 +31,8 @@
 #' @importFrom stats predict
 smooth_pathway_trend <- function(model, long_df, dose_col = "dose", sample_col = "sample", omic = "rnaseq",
                                  random_effects = TRUE, covariates_cols = NULL, gene_subset = NULL,
-                                 dose_points = 25, sample_subset_size = 10, spline_info = NULL) {
+                                 dose_points = 25, sample_subset_size = 10, interp_knots = NULL,
+                                 bdd_knots = NULL, spline_degree = NULL) {
   # Ensure necessary columns are present
   required_cols <- c(dose_col, sample_col)
   if (omic == "rnaseq") required_cols <- c(required_cols, "size_factors")
@@ -68,9 +69,9 @@ smooth_pathway_trend <- function(model, long_df, dose_col = "dose", sample_col =
   } else if (!is.null(covariates_cols)) stop("Some covariates not found in data")
 
   # Extract knot information from stored spline_info
-  interp_knots <- attr(spline_info, "knots")
-  bdd_knots <- attr(spline_info, "Boundary.knots")
-  spline_degree <- attr(spline_info, "degree")
+  interp_knots <- interp_knots
+  bdd_knots <- bdd_knots
+  spline_degree <- spline_degree
 
   # Create new data for prediction
   new_data <- expand.grid(expand_params)

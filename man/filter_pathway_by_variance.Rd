@@ -6,6 +6,7 @@
 \usage{
 filter_pathway_by_variance(
   long_df,
+  se,
   expression_col = "counts",
   variance_threshold = 0.1
 )
@@ -13,7 +14,9 @@ filter_pathway_by_variance(
 \arguments{
 \item{long_df}{Dataframe in long format with transcriptomic data.}
 
-\item{expression_col}{Character, name of the expression column. Default: "counts".}
+\item{se}{SummarizedExperiment object with full expression matrix.}
+
+\item{expression_col}{Character, name of the expression column in long_df. Default: "counts".}
 
 \item{variance_threshold}{Numeric, percentile threshold for variance filtering. Default: 0.1 (bottom 10%).}
 }

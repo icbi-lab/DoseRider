@@ -115,13 +115,16 @@ fit_lmm <- function(formula, data, omic = "base") {
 #' }
 #'
 #' @export
-create_lmm_formula <- function(response, fixed_effects, random_effects, covariates = c(), model_type = "base", omic = NULL, spline_knots = 3) {
+create_lmm_formula <- function(response, fixed_effects, random_effects, long_df, covariates = c(), model_type = "base", omic = NULL, spline_knots = 3) {
 
   # Start with the response variable
   formula <- paste(response, "~")
 
   # Use precomputed spline columns instead of calling bs() again
-  spline_terms <- paste0("CubicSpline_", seq_len(spline_knots), collapse = " + ")
+
+  spline_columns <- grep("^CubicSpline_", names(long_df), value = TRUE)
+  spline_terms <- paste(spline_columns, collapse = " + ")
+
 
   # Define model structure based on type
   if (model_type == "non_linear_mixed") {

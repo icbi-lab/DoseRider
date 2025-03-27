@@ -15,7 +15,9 @@ smooth_pathway_trend(
   gene_subset = NULL,
   dose_points = 25,
   sample_subset_size = 10,
-  spline_info = NULL
+  interp_knots = NULL,
+  bdd_knots = NULL,
+  spline_degree = NULL
 )
 }
 \arguments{

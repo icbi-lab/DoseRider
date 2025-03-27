@@ -6,6 +6,7 @@
 \usage{
 apply_pathway_filters(
   long_df,
+  se,
   filters = c("pca", "variance", "correlation"),
   filter_params = list()
 )

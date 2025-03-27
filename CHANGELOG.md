@@ -4,6 +4,18 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](http://keepachangelog.com/) and this project adheres to [Semantic Versioning](http://semver.org/).
 
+### [Unreleased]️ 2025-03-27
+
+- Improved error handling in `compute_bmd_bounds_sequential()` and `process_single_geneset()`
+- Fixed `spline_degree` validation and handling of `Inf` in TCD/BMD
+- Corrected `data.frame` construction for TCD stats
+- Centralized documentation using `@inheritParams` across functions
+
+## [Unreleased] - 2025-03-24  
+
+### **Fixed**  
+- **Modified parameters in filtering gene sets**
+
 ## [Unreleased] - 2025-03-14  
 
 ### **Fixed**  

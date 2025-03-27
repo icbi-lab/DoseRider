@@ -185,58 +185,54 @@ compute_bmd_for_gene_in_geneset <- function(dose_rider_results, gene_set_name, g
 #' bootstrap_results <- fit_model_compute_bmd(long_df_bootstrap, formula, "rnaseq", clusterResults = FALSE, dose_col = "dose")
 #' print(bootstrap_results)
 #' }
-fit_model_compute_bmd <- function(long_df, formula, omic = "rnaseq", clusterResults = FALSE, dose_col, z = 1, keep_min_bmd = TRUE) {
+fit_model_compute_bmd <- function(long_df, formula, omic = "rnaseq", clusterResults = FALSE, dose_col, z = 1, keep_min_bmd = TRUE,
+                                  interp_knots = NULL, bdd_knots = NULL, spline_degree = NULL) {
+
+  # cat("Entering fit_model_compute_bmd\n")
+  # cat("Dose column:", dose_col, "\n")
+  # cat("Unique doses in long_df:\n"); print(unique(long_df[[dose_col]]))
+  # cat("interp_knots:\n"); print(interp_knots)
+  # cat("bdd_knots:\n"); print(bdd_knots)
+  # cat("spline_degree:\n"); print(spline_degree)
 
   # Fit the model to the bootstrapped data
   model <- suppressWarnings(fit_lmm(formula, long_df, omic))
 
-  # Compute BMD depending on whether clustering is applied or not
-  if (clusterResults) {
-    # Cluster genes and compute BMD for each cluster
-    max_cluster <- length(unique(long_df$gene)) - 1
-    smooth_values <- smooth_pathway_trend(model, long_df, dose_col, "sample", omic, TRUE, dose_points = 50)
-    optimal_clusters <- optimal_clusters_silhouette(smooth_values, dose_col, max_clusters = max_cluster)
-    clusters <- optimal_clusters$Cluster
-    n_cluster <- optimal_clusters$OptimalClusters
+  long_df$predictions <- predict(model, newdata = long_df)
 
-    bmd_cluster_results <- c()
-    tcd_cluster_results <- c()
+  # Add check before calling smooth_pathway_trend
+  if (is.null(spline_degree)) {
+    cat("Warning: spline_degree is NULL\n")
+  }
+
+  # cat("Calling smooth_pathway_trend with:\n")
+  # cat(" - dose_col:", dose_col, "\n")
+  # cat(" - spline_degree:", spline_degree, "\n")
+  # cat(" - interp_knots:\n"); print(interp_knots)
+  # cat(" - bdd_knots:\n"); print(bdd_knots)
+
+  if (is.null(interp_knots) || is.null(bdd_knots) || is.null(spline_degree)) {
+    stop("Spline parameters missing: interp_knots, bdd_knots, or spline_degree is NULL.")
+  }
+
+  if (length(spline_degree) == 0 || spline_degree < 1) {
+    stop("Invalid spline_degree: must be integer >= 1.")
+  }
 
 
-    for (j in seq_len(n_cluster)) {
-      cluster_genes <- names(clusters[clusters == j])
-      smooth_cluster <- smooth_values[smooth_values$gene %in% cluster_genes, ]
-      bmd_cluster <- compute_bmd_from_main_trend(smooth_cluster, dose_col, z = z)
-      bmd_cluster_results <- c(bmd_cluster,bmd_cluster_results)
+  smooth_values <- smooth_pathway_trend(model, long_df, dose_col, "sample", omic, TRUE, dose_points = 50,
+                                        interp_knots = interp_knots, bdd_knots = bdd_knots,
+                                        spline_degree = ifelse(is.null(spline_degree), 3, spline_degree))
 
-      # Compute derivatives and identify zero points
-      derivatives <- compute_derivatives(smooth_cluster, dose_var = dose_col)
-      tcd_cluster_results <- c(tcd_cluster_results, derivatives)
+  bmd_all_genes <- compute_bmd_from_main_trend(smooth_values, dose_col, z = 1)
 
-      if (keep_min_bmd){
-        bmd_cluster_results <- min(bmd_cluster_results)
-      }
+  derivatives <- compute_derivatives(smooth_values, dose_var = dose_col)
+  derivatives <- c(derivatives$zero_points_first_deriv, derivatives$zero_points_second_deriv)
+  derivatives <- derivatives[is.finite(derivatives)]
 
-    }
-
-    return(list("bmd"=bmd_cluster_results,"tcd"=tcd_cluster_results))
-
-  } else {
-    # Compute BMD for the entire gene set
-    long_df$predictions <- predict(model, newdata = long_df)
-    smooth_values <- smooth_pathway_trend(model, long_df, dose_col, "sample", omic, TRUE, dose_points = 50)
-    bmd_all_genes <- compute_bmd_from_main_trend(smooth_values, dose_col, z = 1)
-    # Compute derivatives and identify zero points
-    derivatives <- compute_derivatives(smooth_values, dose_var = dose_col)
-    derivatives <- c(derivatives$zero_points_first_deriv, derivatives$zero_points_second_deriv)
-
-    if (keep_min_bmd){
-      bmd_all_genes <- min(bmd_all_genes)
-    }
-
-    return(list("bmd"=bmd_all_genes,"tcd"=derivatives))
-    }
+  return(list("bmd" = min(bmd_all_genes), "tcd" = min(derivatives)))
 }
+
 
 
 #' Extract Benchmark Dose (BMD) Values for a Pathway
@@ -453,96 +449,96 @@ cluster_tcd_values <- function(tcd_values, original_tcds, k = NULL, method = "km
 #' @param z A parameter passed to the model fitting function.
 #' @return A data frame with BMD bounds and TCD cluster statistics for the gene set.
 process_single_geneset <- function(geneset, geneset_name, dose_col, sample_col, covariates, omic,
-                                   n_bootstrap, ci_level, clusterResults, z, keep_min_bmd = T) {
+                                   n_bootstrap, ci_level, clusterResults, z, keep_min_bmd = TRUE) {
+  cat("Processing geneset:", geneset_name, "\n")
+
   long_df <- geneset$Raw_Values[[1]]
   best_model <- geneset$best_model
   cluster <- geneset$ClusterAssignments
   cluster_counts <- table(cluster)
   max_cluster <- names(which.max(cluster_counts))
 
-  formula <- doseRider:::create_lmm_formula("counts", dose_col, "gene", covariates, best_model, omic)
+  interp_knots <- geneset$Knots
+  bdd_knots <- geneset$Boundary_Knots
+  spline_degree <- geneset$Degree
+
+  cat("Spline parameters:\n")
+  print(list(interp_knots = interp_knots, bdd_knots = bdd_knots, spline_degree = spline_degree))
+
+  formula <- doseRider:::create_lmm_formula("counts", dose_col, "gene", long_df, covariates, best_model, omic)
+  cat("Model formula created:\n"); print(formula)
 
   if (clusterResults) {
-    # Subset the cluster to get the genes belonging to the max_cluster
+    cat("Clustering enabled. Selecting genes from dominant cluster:", max_cluster, "\n")
     genes_in_max_cluster <- names(cluster[cluster == max_cluster])
     cluster_name <- paste0("Cluster ", max_cluster)
-    original_tcds <- unlist(geneset$ClusterSpecificResults[cluster_name][[1]]$Derivative)
-    k <- cluster_original_tcds(original_tcds)$k
-
-    # Filter long_df to include only the genes in the max_cluster
+    original_tcds <- unlist(geneset$ClusterSpecificResults[[cluster_name]]$Derivative)
     long_df <- long_df[long_df$gene %in% genes_in_max_cluster, ]
   } else {
+    cat("Clustering disabled. Using all genes.\n")
     max_cluster <- NA
-    original_tcds <- unlist(geneset$ClusterSpecificResults["AllGenes"][[1]]$Derivative)
-    k <- cluster_original_tcds(original_tcds)$k
+    original_tcds <- unlist(geneset$ClusterSpecificResults[["AllGenes"]]$Derivative)
   }
 
-  # Perform bootstrap sampling
+  cat("Beginning bootstrap...\n")
   bootstrap_results <- replicate(n_bootstrap, {
-    #set.seed(42 + seq_len(n_bootstrap))
-
-    bootstrap_indices <- sample.int(n = nrow(long_df), size = nrow(long_df) * 0.6, replace = TRUE)
+    bootstrap_indices <- sample.int(n = nrow(long_df), size = nrow(long_df) * 0.8, replace = TRUE)
     long_df_bootstrap <- long_df[bootstrap_indices, , drop = FALSE]
 
-    # Call fit_model_compute_bmd and extract both bmd and tcd results
-    result <- suppressMessages(doseRider:::fit_model_compute_bmd(long_df = long_df_bootstrap, formula = formula,
-                                                                 omic = omic, clusterResults = clusterResults, dose_col = dose_col, z = z, keep_min_bmd = keep_min_bmd))
+    cat("Bootstrap sample - nrow:", nrow(long_df_bootstrap), "\n")
+    cat("Unique doses:", unique(long_df_bootstrap[[dose_col]]), "\n")
+
+    result <-
+      fit_model_compute_bmd(
+        long_df = long_df_bootstrap,
+        formula = formula,
+        omic = omic,
+        clusterResults = clusterResults,
+        dose_col = dose_col,
+        z = z,
+        keep_min_bmd = keep_min_bmd,
+        interp_knots = interp_knots,
+        bdd_knots = bdd_knots,
+        spline_degree = spline_degree
+      )
+
     return(result)
   })
 
-  # Extract BMD and TCD values from bootstrap results
+  cat("Finished bootstrap. Extracting BMD and TCD values.\n")
+
   bmd_values <- unlist(bootstrap_results[1, ])
   tcd_values <- unlist(bootstrap_results[2, ])
 
-  # Remove NA values from BMD calculations
   bmd_values <- na.omit(bmd_values)
+  bmd_values <- bmd_values[is.finite(bmd_values)]
+
   tcd_values <- na.omit(tcd_values)
+  tcd_values <- tcd_values[is.finite(tcd_values)]
 
+
+  cat("Computing BMD statistics...\n")
   bmd_df <- compute_bmd_statistics(bmd_values, ci_level = ci_level)
-  k <- if_else(k==0, 3, k)
-  tcd_df <- tryCatch(
-    {
-      # Attempt to run the function
-      cluster_bootstrap_tcds(tcd_values = tcd_values, k = k, ci_level = ci_level)
-    },
-    error = function(e) {
-      # Handle the error, e.g., print error message or take alternative action
-      message("Error in cluster_bootstrap_tcds: ", e$message)
-      return(NULL) # Return NULL or any default value to handle downstream analysis
-    }
-  )
 
-  # Create a data frame with the results
+  cat("Computing TCD statistics...\n")
+  tcd_df <- compute_bmd_statistics(tcd_values, ci_level = ci_level)
+
   result <- data.frame(
     Geneset = geneset_name,
-    Lower_Bound = bmd_df$lower_bound,
-    Upper_Bound = bmd_df$upper_bound,
+    Lower_Bound_BMD = bmd_df$lower_bound,
+    Upper_Bound_BMD = bmd_df$upper_bound,
     Mean_BMD = bmd_df$mean_bmd,
     Median_BMD = bmd_df$median_bmd,
+    Lower_Bound_TCD = tcd_df$lower_bound,
+    Upper_Bound_TCD = tcd_df$upper_bound,
+    Mean_TCD = tcd_df$mean_bmd,
+    Median_TCD = tcd_df$median_bmd,
     Best_Model = best_model,
     stringsAsFactors = FALSE
   )
 
-  # Loop through a fixed number of clusters (1 to 4)
-  for (i in 1:4) {
-    if (!is.null(tcd_df) && i <= nrow(tcd_df)) {
-      # Extract data for existing clusters
-      result[[paste0("Cluster", i, "_Mean")]] <- round(as.numeric(tcd_df[i, "Cluster_Mean"]), 3)
-      result[[paste0("Cluster", i, "_SD")]] <- ifelse(!is.na(tcd_df[i, "Cluster_SD"]),
-                                                      round(as.numeric(tcd_df[i, "Cluster_SD"]), 3), NA)
-      result[[paste0("Cluster", i, "_Size")]] <- as.numeric(tcd_df[i, "Cluster_Size"])
-      result[[paste0("Cluster", i, "_CI_Lower")]] <- round(as.numeric(tcd_df[i, "CI_Lower"]), 3)
-      result[[paste0("Cluster", i, "_CI_Upper")]] <- round(as.numeric(tcd_df[i, "CI_Upper"]), 3)
-    } else {
-      # Ensure columns exist with NA values for missing or non-existent clusters
-      result[[paste0("Cluster", i, "_Mean")]] <- NA
-      result[[paste0("Cluster", i, "_SD")]] <- NA
-      result[[paste0("Cluster", i, "_Size")]] <- NA
-      result[[paste0("Cluster", i, "_CI_Lower")]] <- NA
-      result[[paste0("Cluster", i, "_CI_Upper")]] <- NA
-    }
-  }
 
+  cat("Finished processing geneset:", geneset_name, "\n")
   return(result)
 }
 
@@ -567,8 +563,9 @@ compute_bmd_bounds_parallel <- function(dose_rider_results, dose_col, sample_col
   bmd_bounds_list <- foreach(geneset_idx = seq_along(dose_rider_results), .combine = rbind, .packages = c("lme4", "doseRider", "dplyr")) %dopar% {
     geneset_name <- names(dose_rider_results)[geneset_idx]
     geneset <- dose_rider_results[[geneset_name]]
-    result <- process_single_geneset(geneset, geneset_name, dose_col, sample_col, covariates, omic, n_bootstrap, ci_level, clusterResults, z, keep_min_bmd)
-
+    if (!is.na(geneset_name)){
+      result <- process_single_geneset(geneset, geneset_name, dose_col, sample_col, covariates, omic, n_bootstrap, ci_level, clusterResults, z, keep_min_bmd)
+    }
     # Update progress bar
     setTxtProgressBar(pb, geneset_idx)
     result
@@ -588,27 +585,40 @@ compute_bmd_bounds_parallel <- function(dose_rider_results, dose_col, sample_col
 #' @param dose_rider_results A DoseRider object containing results of the analysis.
 #' @return A data frame with BMD bounds and TCD cluster statistics for all gene sets.
 #' @export
-compute_bmd_bounds_sequential <- function(dose_rider_results, dose_col, sample_col="sample", ci_level = 0.95,
+compute_bmd_bounds_sequential <- function(dose_rider_results, dose_col, sample_col = "sample", ci_level = 0.95,
                                           covariates = c(), omic = "rnaseq", n_bootstrap = 1000,
                                           clusterResults = FALSE, z = 1, keep_min_bmd = TRUE) {
   # Initialize progress bar
   pb <- txtProgressBar(min = 0, max = length(dose_rider_results), style = 3)
 
-  # Perform sequential processing
-  bmd_bounds_list <- do.call(rbind, lapply(seq_along(dose_rider_results), function(geneset_idx) {
-    print(geneset_idx)
+  bmd_bounds_raw <- lapply(seq_along(dose_rider_results), function(geneset_idx) {
+    cat("Processing geneset index:", geneset_idx, "\n")
     geneset_name <- names(dose_rider_results)[geneset_idx]
     geneset <- dose_rider_results[[geneset_name]]
-    result <- process_single_geneset(geneset, geneset_name, dose_col, sample_col, covariates, omic, n_bootstrap, ci_level, clusterResults, z, keep_min_bmd)
 
-    # Update progress bar
+    if (!is.na(geneset_name)) {
+      cat("Geneset name:", geneset_name, "\n")
+      result <- tryCatch({
+        process_single_geneset(geneset, geneset_name, dose_col, sample_col,
+                               covariates, omic, n_bootstrap, ci_level,
+                               clusterResults, z, keep_min_bmd)
+      }, error = function(e) {
+        cat("Error in geneset", geneset_name, ":", conditionMessage(e), "\n")
+        return(NULL)
+      })
+    } else {
+      cat("Skipped NA geneset name at index", geneset_idx, "\n")
+      result <- NULL
+    }
+
     setTxtProgressBar(pb, geneset_idx)
-    result
-  }))
+    return(result)
+  })
+
+  bmd_bounds_list <- do.call(rbind, Filter(Negate(is.null), bmd_bounds_raw))
 
   # Close the progress bar
   close(pb)
 
   return(bmd_bounds_list)
 }
-

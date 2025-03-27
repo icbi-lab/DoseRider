@@ -19,6 +19,24 @@ library(doseRider)
 library(DESeq2)
 library(ggplot2)
 library(dplyr)
+# Function to load data
+load_data <- function(expr_data_path, metadata_path) {
+  expr_data <- read.csv(expr_data_path, sep = "\t", header = TRUE, check.names = FALSE, fill = TRUE, row.names = 1, na.strings = "#NA")
+  metadata <- read.csv(metadata_path, sep = "\t", header = TRUE, check.names = FALSE, fill = TRUE)
+  list(expr_data = expr_data, metadata = metadata)
+}
+
+# Function to create SummarizedExperiment
+create_se <- function(data, metadata, omic, dose_col) {
+  metadata$sample <- rownames(metadata)
+  se <- SummarizedExperiment(assays = as.matrix(data), colData = metadata)
+  
+  if (omic == "rnaseq") {
+    se <- estimate_model_parameters(se)  # Skip DEA but estimate model parameters
+  } 
+  
+  return(se)
+}
 ```
 
 ### 2. Data Import
@@ -31,6 +49,22 @@ data("bpaf_data")
 # bpaf_data <- estimate_model_parameters(bpaf_data)
 ```
 
+Or loading data from the diles
+
+```{r}
+metadata_path <- system.file("extdata", "PRJNA869442_BPAF_metadata.tsv", package = "doseRider")
+expresion_path <- system.file("extdata", "PRJNA869442_BPAF_expression_data.tsv", package = "doseRider")
+
+# Load data
+data_list <- load_data(expresion_path, metadata_path)
+# Create SummarizedExperiment
+se <- create_se(data = data_list$expr_data, 
+                metadata = data_list$metadata,
+                omic = "rnaseq",
+                dose_col = "Dose")
+
+```
+
 
 ### 3. Load Gene Sets
 
@@ -39,7 +73,7 @@ Several GMT files are avalible int he DoseRider wbesite (https://doserider.i-med
 ```{r}
 # Specify the path to your GMT files
 gmt_path <- system.file("extdata", "High-Response-Toxicogenomics.gmt", package = "doseRider")
-gmt_path <- "/home/monfortl/gmt/Homo sapiens/MSigD_C2_CGP_genomics_symbols.gmt"
+#gmt_path <- "/home/monfortl/gmt/Homo sapiens/MSigD_C2_CGP_genomics_symbols.gmt"
 gmt <- read_gmt(gmt_path)
 
 ```
@@ -51,10 +85,12 @@ In this example, we utilize parallel computation across 10 cores for the doseRid
 ```{r}
 # Default filtering parameters
 default_params <- list(
-    pca = list(pca_threshold = 0.7, loading_threshold = 0.6, antagonist_threshold = 2),
+    pca = list(pca_threshold = 0.7),
     variance = list(variance_threshold = 0.1),
-    correlation = list(correlation_threshold = 0.5)
+    correlation = list(correlation_threshold = 0.4)
   )
+
+spline_knots = 2
 
 # Run doseRider analysis
 dose_rider_results <- DoseRiderParallel(
@@ -62,18 +98,18 @@ dose_rider_results <- DoseRiderParallel(
   gmt = gmt, 
   dose_col = "Dose", 
   omic = "rnaseq", 
-  minGSsize = 10, 
+  minGSsize = 50, 
   maxGSsize = 200, 
   method = "fdr", 
   covariates = c(),
   modelType = "LMM", 
   num_cores = 10,
-  filters = c("pca","correlation"),
+  filters = c("variance","pca","correlation"),
   filter_params = default_params, # If empty took the default anyway
   log_transform = T,
-  models = c("non_linear_mixed"),
-  spline_knots = 3,
-  knot_method = "geometric",
+  models = c("linear","non_linear_mixed"),
+  spline_knots = spline_knots,
+  knot_method = "quantile",
   
 )
 
@@ -103,18 +139,17 @@ In this example, `doseRider` internally computes the benchmark dose (BMD) for si
 
 ```{r}
 #Compute BMD bounds
-bmd_bounds_df <- doseRider::compute_bmd_bounds_parallel(
+bmd_bounds_df <- compute_bmd_bounds_sequential(
   dose_rider_results = dose_rider_results_filter,
   dose_col = "log_Dose",
   sample_col = "sample",
   covariates = c(),
   omic = "rnaseq",
-  n_bootstrap = 180,
-  num_cores = 10,
+  n_bootstrap = 8,
   clusterResults = T
 )
 
-knitr::kable(bmd_bounds_df, digits = 3)
+#knitr::kable(bmd_bounds_df, digits = 3)
 ```
 
 ### 6. Results and Discussion
@@ -140,7 +175,7 @@ dev.off()
 p2 <- plot_gene_set_random_effects(dose_rider_results_filter, dose_col = "log_Dose",  top = top)
 ggsave(paste0(save_path,"plot2.jpeg"), plot = p2, width = PLOT_WIDTH, height = PLOT_HEIGHT, units = units, dpi = 600)
 
-p3 <- plot_top_pathway_responses(dose_rider_results_filter, top = 4, ncol = 2,  text_size = 5, dose_col = "log_Dose", clusterResults = T, scale_values = F, center_values = T)
+p3 <- plot_top_pathway_responses(dose_rider_results_filter, top = 8, ncol = 2,  text_size = 5, dose_col = "log_Dose", clusterResults = T, scale_values = F, center_values = T)
 ggsave(paste0(save_path,"plot3.jpeg"), plot = p3, width = PLOT_WIDTH, height = PLOT_HEIGHT, units = units, dpi = 600)
 
 p4 <- plot_gene_random_effect_relationship(dose_rider_results_filter,"Estrogen signaling pathway - Homo sapiens (human)")

@@ -260,3 +260,31 @@ compute_bmd_statistics <- function(bmd_values, ci_level = 0.95) {
   ))
 }
 
+#' Compute TCD Statistics
+#'
+#' This function calculates key statistics for BMD values, including lower and upper bounds,
+#' mean, and median, based on a given confidence interval level.
+#'
+#' @param bmd_values A numeric vector of BMD values.
+#' @param ci_level Confidence interval level (default is 0.95).
+#' @return A named list containing `lower_bound`, `upper_bound`, `mean_bmd`, and `median_bmd`.
+compute_tcd_statistics <- function(tcd_values, ci_level = 0.95) {
+  if (length(bmd_values) > 0) {
+    lower_bound <- quantile(tcd_values, probs = (1 - ci_level) / 2, na.rm = TRUE)
+    upper_bound <- quantile(tcd_values, probs = 1 - (1 - ci_level) / 2, na.rm = TRUE)
+    mean_bmd <- mean(tcd_values, na.rm = TRUE)
+    median_bmd <- median(tcd_values, na.rm = TRUE)
+  } else {
+    lower_bound_tcd <- NA
+    upper_bound_tcd <- NA
+    mean_tcd <- NA
+    median_tcd <- NA
+  }
+
+  return(list(
+    lower_bound_tcd = lower_bound,
+    upper_bound_tcd = upper_bound,
+    mean_bmd_tcd = mean_bmd,
+    median_bmd_tcd = median_bmd
+  ))
+}

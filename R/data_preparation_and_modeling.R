@@ -133,6 +133,7 @@ prepare_data <- function(se, geneset, dose_col, sample_col, omic = "rnaseq",
 
       # Generate B-splines
       spline_dose <- splines::bs(long_df[[dose_col]], knots = knot_positions,
+                                 degree = 3,
                                  Boundary.knots = range(long_df[[dose_col]]), intercept = FALSE)
 
       # Convert to DataFrame

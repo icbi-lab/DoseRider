@@ -15,7 +15,7 @@ process_single_geneset(
   ci_level,
   clusterResults,
   z,
-  keep_min_bmd = T
+  keep_min_bmd = TRUE
 )
 }
 \arguments{

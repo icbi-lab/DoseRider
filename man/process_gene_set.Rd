@@ -36,6 +36,8 @@ process_gene_set(
 
 \item{gmt}{A list of gene sets, where each entry contains a list of gene names.}
 
+\item{i}{Index of gene set in GMT list to process.}
+
 \item{minGSsize}{An integer specifying the minimum gene set size for analysis. Default is `5`.}
 
 \item{maxGSsize}{An integer specifying the maximum gene set size for analysis. Default is `300`.}
@@ -91,17 +93,9 @@ The number of knots should be lower than the number of unique dose values.}
 
 \item{manual_knots}{A numeric vector specifying custom knot positions (used only if `knot_method = "manual"`).
 If `NULL`, this option is ignored.}
-
-\item{method}{A string specifying the method for multiple testing adjustment. Default is `"fdr"`.}
 }
 \value{
-A list containing results for each gene set, including:
-  \itemize{
-    \item Model metrics (e.g., AIC, BIC)
-    \item Significance tests (p-values and adjusted p-values)
-    \item Benchmark Dose (BMD) calculations
-    \item Smoothed dose-response predictions
-  }
+A list of metrics and model outputs for a single gene set.
 }
 \description{
 This function performs DoseRider analysis on gene expression data, applying either Linear Mixed Models (LMMs) or
@@ -109,26 +103,4 @@ Generalized Additive Mixed Models (GAMMs) to each gene set defined in the gene m
 It evaluates dose-response relationships in the context of gene sets and calculates various model metrics,
 significance, Benchmark Dose (BMD), and smoothing predictions.
 }
-\examples{
-\dontrun{
-# Load example data
-data("SummarizedExperiment")
-
-# Define a small gene set
-gmt <- list(geneSet1 = list(genes = c("gene1", "gene2")))
-
-# Run DoseRider with default settings (LMM model)
-results <- DoseRider(se, gmt, dose_col = "dose", sample_col = "sample",
-                     omic = "rnaseq", modelType = "LMM")
-
-# Run DoseRider using a GAMM model with geometric spline knots
-results_gamm <- DoseRider(se, gmt, dose_col = "dose", sample_col = "sample",
-                          modelType = "GAMM", knot_method = "geometric", spline_knots = 3)
-
-# Run DoseRider with manual knot selection
-manual_knot_positions <- c(0.01, 0.1, 1, 10)
-results_manual <- DoseRider(se, gmt, dose_col = "dose", sample_col = "sample",
-                            modelType = "LMM", knot_method = "manual", manual_knots = manual_knot_positions)
-}
-
-}
+\keyword{internal}

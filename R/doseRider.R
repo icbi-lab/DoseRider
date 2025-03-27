@@ -5,88 +5,10 @@
 #' It evaluates dose-response relationships in the context of gene sets and calculates various model metrics,
 #' significance, Benchmark Dose (BMD), and smoothing predictions.
 #'
-#' @param se A `SummarizedExperiment` object or a matrix/data frame containing gene expression data.
-#' @param gmt A list of gene sets, where each entry contains a list of gene names.
-#' @param dose_col A string specifying the column name representing dose information.
-#' @param sample_col A string specifying the column name representing sample information.
-#' @param covariates Optional. A character vector specifying additional covariate column(s) in `se`. Default is an empty vector.
-#' @param omic A string specifying the type of omics data. Default is `"rnaseq"`.
-#' @param minGSsize An integer specifying the minimum gene set size for analysis. Default is `5`.
-#' @param maxGSsize An integer specifying the maximum gene set size for analysis. Default is `300`.
-#' @param method A string specifying the method for multiple testing adjustment. Default is `"fdr"`.
-#' @param modelType A string specifying the type of model to fit for each gene set. Options:
-#'   \itemize{
-#'     \item `"LMM"`: Linear Mixed Model
-#'     \item `"GAMM"`: Generalized Additive Mixed Model
-#'   }
-#'   Default is `"LMM"`.
-#' @param FilterPathway Logical. Whether to apply pathway-level filtering. Default is `FALSE`.
-#' @param filters A character vector specifying the filtering methods to apply. Options:
-#'   \itemize{
-#'     \item `"pca"`: Principal Component Analysis (PCA)-based filtering to detect antagonistic patterns.
-#'     \item `"variance"`: Variance-based filtering to remove gene sets with low expression variability.
-#'     \item `"correlation"`: Correlation-based filtering to remove pathways with highly antagonistic gene expression patterns.
-#'   }
-#' @param filter_params A named list of filter-specific parameters. Available options:
-#'   \itemize{
-#'     \item **For PCA Filtering (`"pca"`)**:
-#'       \itemize{
-#'         \item `pca_threshold` (numeric): Variance threshold for PC1 to filter pathways. Default: `0.6`.
-#'         \item `loading_threshold` (numeric): Threshold to detect antagonistic patterns based on PCA loadings. Default: `0.6`.
-#'         \item `antagonist_threshold` (numeric): Defines when a pathway is considered antagonistic. Default: `2.0`.
-#'       }
-#'     \item **For Variance Filtering (`"variance"`)**:
-#'       \itemize{
-#'         \item `variance_percentile` (numeric): Percentile threshold for gene variance filtering. Default: `0.2` (removes genes in the lowest 20% of variance).
-#'       }
-#'     \item **For Correlation Filtering (`"correlation"`)**:
-#'       \itemize{
-#'         \item `correlation_threshold` (numeric): Proportion of negatively correlated genes required to exclude a pathway. Default: `0.5`.
-#'         \item `negative_corr_cutoff` (numeric): Correlation coefficient threshold below which genes are considered antagonistic. Default: `-0.3`.
-#'       }
-#'   }
-#' @param log_transform Logical. Whether to log10 transform the dose values. Default is `FALSE`.
-#' @param spline_knots An integer specifying the number of internal knots for the spline function. Default is `2`.
-#'                     The number of knots should be lower than the number of unique dose values.
-#' @param knot_method A string specifying the method for selecting spline knots. Options:
-#'   \itemize{
-#'     \item `"quantile"` (default): Selects knots based on percentiles of the dose distribution.
-#'     \item `"geometric"`: Places knots at logarithmically spaced intervals.
-#'     \item `"manual"`: Uses user-defined knots from the `manual_knots` parameter.
-#'   }
-#' @param manual_knots A numeric vector specifying custom knot positions (used only if `knot_method = "manual"`).
-#'                     If `NULL`, this option is ignored.
-#'
-#' @return A list containing results for each gene set, including:
-#'   \itemize{
-#'     \item Model metrics (e.g., AIC, BIC)
-#'     \item Significance tests (p-values and adjusted p-values)
-#'     \item Benchmark Dose (BMD) calculations
-#'     \item Smoothed dose-response predictions
-#'   }
-#'
-#' @examples
-#' \dontrun{
-#' # Load example data
-#' data("SummarizedExperiment")
-#'
-#' # Define a small gene set
-#' gmt <- list(geneSet1 = list(genes = c("gene1", "gene2")))
-#'
-#' # Run DoseRider with default settings (LMM model)
-#' results <- DoseRider(se, gmt, dose_col = "dose", sample_col = "sample",
-#'                      omic = "rnaseq", modelType = "LMM")
-#'
-#' # Run DoseRider using a GAMM model with geometric spline knots
-#' results_gamm <- DoseRider(se, gmt, dose_col = "dose", sample_col = "sample",
-#'                           modelType = "GAMM", knot_method = "geometric", spline_knots = 3)
-#'
-#' # Run DoseRider with manual knot selection
-#' manual_knot_positions <- c(0.01, 0.1, 1, 10)
-#' results_manual <- DoseRider(se, gmt, dose_col = "dose", sample_col = "sample",
-#'                             modelType = "LMM", knot_method = "manual", manual_knots = manual_knot_positions)
-#' }
-#'
+#' @inheritParams DoseRider
+#' @param i Index of gene set in GMT list to process.
+#' @return A list of metrics and model outputs for a single gene set.
+#' @keywords internal
 #' @importFrom stats p.adjust
 #' @import utils
 #' @export
@@ -130,7 +52,7 @@ process_gene_set <- function(se, dose_col, sample_col, omic, gmt, i, minGSsize =
 
   # Apply filtering if enabled
   if (FilterPathway) {
-    should_keep_pathway <- apply_pathway_filters(long_df, filters = filters, filter_params = filter_params)
+    should_keep_pathway <- apply_pathway_filters(long_df, se = se,  filters = filters, filter_params = filter_params)
     if (!should_keep_pathway) {
       return(NULL)
     }
@@ -141,20 +63,20 @@ process_gene_set <- function(se, dose_col, sample_col, omic, gmt, i, minGSsize =
 
   if (modelType == "LMM") {
     # Always fit the base (null) model
-    null_formula <- create_lmm_formula("counts", dose_col, "gene", covariates, "null", omic)
+    null_formula <- create_lmm_formula("counts", dose_col, "gene",long_df, covariates, "null", omic)
     null_results <- suppressWarnings(fit_lmm(null_formula, long_df, omic))
     fitted_models$null <- null_results
 
     # Fit the models specified by the user
     for (model in models) {
       if (model == "linear") {
-        linear_formula <- create_lmm_formula("counts", dose_col, "gene", covariates, "linear", omic,spline_knots)
+        linear_formula <- create_lmm_formula("counts", dose_col, "gene",long_df, covariates, "linear", omic,spline_knots)
         fitted_models$linear <- suppressWarnings(fit_lmm(linear_formula, long_df, omic))
       } else if (model == "non_linear_fixed") {
-        non_linear_fixed_formula <- create_lmm_formula("counts", dose_col, "gene", covariates, "non_linear_fixed", omic,spline_knots)
+        non_linear_fixed_formula <- create_lmm_formula("counts", dose_col, "gene", long_df, covariates, "non_linear_fixed", omic,spline_knots)
         fitted_models$non_linear_fixed <- suppressWarnings(fit_lmm(non_linear_fixed_formula, long_df, omic))
       } else if (model == "non_linear_mixed") {
-        non_linear_mixed_formula <- create_lmm_formula("counts", dose_col, "gene", covariates, "non_linear_mixed", omic,spline_knots)
+        non_linear_mixed_formula <- create_lmm_formula("counts", dose_col, "gene", long_df, covariates, "non_linear_mixed", omic,spline_knots)
         fitted_models$non_linear_mixed <- suppressWarnings(fit_lmm(non_linear_mixed_formula, long_df, omic))
       }
     }
@@ -202,7 +124,9 @@ process_gene_set <- function(se, dose_col, sample_col, omic, gmt, i, minGSsize =
   # Calculate smoothing values and BMD for the best model
   if (best_model_AICc != "null") {
     # Compute the smooth values for the best model
-    smooth_values <- smooth_pathway_trend(best_model, long_df, dose_col, sample_col, omic, TRUE, covariates, dose_points = 50, spline_info = spline_info)
+    smooth_values <- smooth_pathway_trend(best_model, long_df, dose_col, sample_col, omic, TRUE, covariates, dose_points = 50,
+                                          interp_knots = attr(spline_info, "knots"), bdd_knots = attr(spline_info, "Boundary.knots"),
+                                          spline_degree = attr(spline_info, "degree"))
 
     # Extract random effects based on the model type
     random_effect <- if (modelType == "LMM") extract_random_effects_lmm(best_model, dose_col) else extract_random_effects_gamm(best_model, dose_col)
@@ -324,7 +248,10 @@ process_gene_set <- function(se, dose_col, sample_col, omic, gmt, i, minGSsize =
     OptimalClusters = n_cluster,
     ClusterSpecificResults = cluster_specific_results,
     dose_col = dose_col,
-    log_transform = log_transform
+    log_transform = log_transform,
+    Knots = attr(spline_info, "knots"),
+    Boundary_Knots = attr(spline_info, "Boundary.knots"),
+    Degree = attr(spline_info, "degree")
   )
 
   return(geneset_results)
@@ -457,59 +384,11 @@ DoseRider <- function(se, gmt, dose_col = "dose", sample_col = "sample",
 #' Additive Mixed Models (GAMMs) to each gene set in the gene matrix transposed (GMT) format. It evaluates dose-response
 #' relationships in gene sets, computing various model metrics and significance.
 #'
-#' @param se A `SummarizedExperiment` object or a matrix/data frame containing gene expression data.
-#' @param gmt A list of gene sets, where each entry contains a list of gene names.
-#' @param dose_col A string specifying the column name representing dose information.
-#' @param sample_col A string specifying the column name representing sample information.
-#' @param covariates Optional. A character vector specifying additional covariate column(s) in `se`. Default is an empty vector.
-#' @param omic A string specifying the type of omics data. Default is `"rnaseq"`.
-#' @param minGSsize An integer specifying the minimum gene set size for analysis. Default is `5`.
-#' @param maxGSsize An integer specifying the maximum gene set size for analysis. Default is `300`.
-#' @param method A string specifying the method for multiple testing adjustment. Default is `"fdr"`.
-#' @param modelType A string specifying the type of model to fit for each gene set. Options:
-#'   \itemize{
-#'     \item `"LMM"`: Linear Mixed Model
-#'     \item `"GAMM"`: Generalized Additive Mixed Model
-#'   }
-#'   Default is `"LMM"`.
-#' @param FilterPathway Logical. Whether to apply pathway-level filtering. Default is `FALSE`.
-#' @param filters A character vector specifying the filtering methods to apply. Options:
-#'   \itemize{
-#'     \item `"pca"`: Principal Component Analysis (PCA)-based filtering to detect antagonistic patterns.
-#'     \item `"variance"`: Variance-based filtering to remove gene sets with low expression variability.
-#'     \item `"correlation"`: Correlation-based filtering to remove pathways with highly antagonistic gene expression patterns.
-#'   }
-#' @param filter_params A named list of filter-specific parameters. Available options:
-#'   \itemize{
-#'     \item **For PCA Filtering (`"pca"`)**:
-#'       \itemize{
-#'         \item `pca_threshold` (numeric): Variance threshold for PC1 to filter pathways. Default: `0.6`.
-#'         \item `loading_threshold` (numeric): Threshold to detect antagonistic patterns based on PCA loadings. Default: `0.6`.
-#'         \item `antagonist_threshold` (numeric): Defines when a pathway is considered antagonistic. Default: `2.0`.
-#'       }
-#'     \item **For Variance Filtering (`"variance"`)**:
-#'       \itemize{
-#'         \item `variance_percentile` (numeric): Percentile threshold for gene variance filtering. Default: `0.2` (removes genes in the lowest 20% of variance).
-#'       }
-#'     \item **For Correlation Filtering (`"correlation"`)**:
-#'       \itemize{
-#'         \item `correlation_threshold` (numeric): Proportion of negatively correlated genes required to exclude a pathway. Default: `0.5`.
-#'         \item `negative_corr_cutoff` (numeric): Correlation coefficient threshold below which genes are considered antagonistic. Default: `-0.3`.
-#'       }
-#'   }
-#' @param log_transform Logical. Whether to log10 transform the dose values. Default is `FALSE`.
-#' @param spline_knots An integer specifying the number of internal knots for the spline function. Default is `2`.
-#'                     The number of knots should be lower than the number of unique dose values.
-#' @param knot_method A string specifying the method for selecting spline knots. Options:
-#'   \itemize{
-#'     \item `"quantile"` (default): Selects knots based on percentiles of the dose distribution.
-#'     \item `"geometric"`: Places knots at logarithmically spaced intervals.
-#'     \item `"manual"`: Uses user-defined knots from the `manual_knots` parameter.
-#'   }
-#' @param manual_knots A numeric vector specifying custom knot positions (used only if `knot_method = "manual"`).
-#'                     If `NULL`, this option is ignored.
-#' @param num_cores The number of cores to use for parallel processing (default is 5).
-#'
+#' @title Parallel DoseRider Analysis
+#' @description Parallelized version of `DoseRider` for multi-core processing.
+#' @inheritParams DoseRider
+#' @param num_cores Number of CPU cores to use. Default is 5.
+#' @return A `DoseRider` object with results for each gene set.
 #' @return A list containing the results of the DoseRider analysis for each gene set.
 #' @import SummarizedExperiment
 #' @import foreach
@@ -519,14 +398,6 @@ DoseRider <- function(se, gmt, dose_col = "dose", sample_col = "sample",
 #' @importFrom stats p.adjust
 #' @importFrom utils txtProgressBar
 #' @importFrom doSNOW registerDoSNOW
-#'
-#' @examples
-#' \dontrun{
-#' data("SummarizedExperiment")
-#' gmt <- list(geneSet1 = list(genes = c("gene1", "gene2")))
-#' results <- DoseRiderParallel(se, gmt, "dose", "sample", "covariate", "rnaseq", num_cores = 4, modelType = "GAMM")
-#' }
-#'
 #' @export
 DoseRiderParallel <- function(se, gmt, dose_col = "dose", sample_col = "sample",
                               covariates = c(), omic = "rnaseq", minGSsize = 5,

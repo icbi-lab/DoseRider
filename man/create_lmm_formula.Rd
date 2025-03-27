@@ -8,6 +8,7 @@ create_lmm_formula(
   response,
   fixed_effects,
   random_effects,
+  long_df,
   covariates = c(),
   model_type = "base",
   omic = NULL,

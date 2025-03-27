@@ -8,9 +8,7 @@ filter_pathway_by_pca(
   long_df,
   dose_col = "Dose",
   pca_threshold = 0.7,
-  expression_col = "counts",
-  loading_threshold = 0.6,
-  antagonist_threshold = 2
+  expression_col = "counts"
 )
 }
 \arguments{
@@ -21,10 +19,6 @@ filter_pathway_by_pca(
 \item{pca_threshold}{Numeric value specifying the variance threshold for PC1 to filter pathways. Default is 0.6. Higher values are more restrictive, requiring PC1 to explain a larger portion of variance.}
 
 \item{expression_col}{Character string specifying the name of the expression column in `long_df`. Default is "counts".}
-
-\item{loading_threshold}{Numeric value specifying the loading threshold to detect antagonist patterns. Default is 0.5. Lower values are more restrictive, identifying more subtle antagonistic patterns.}
-
-\item{antagonist_threshold}{Numeric value specifying the threshold for detecting antagonist patterns. Default is 0.5. Lower values are more restrictive, identifying more subtle antagonistic patterns, while higher values are less restrictive.}
 }
 \value{
 Logical value: TRUE if the pathway should be kept (no antagonist pattern detected), FALSE otherwise.
@@ -37,7 +31,7 @@ and by checking for antagonist patterns in the loadings of PC1.
 \examples{
 \dontrun{
   # Assuming 'long_df' is available and transform_smooth_values function is defined
-  should_keep_pathway <- filter_pathway_by_pca(long_df, dose_col = "Dose", pca_threshold = 0.7, expression_col = "counts", loading_threshold = 0.5)
+  should_keep_pathway <- filter_pathway_by_pca(long_df, dose_col = "Dose", pca_threshold = 0.7, expression_col = "counts")
   if (should_keep_pathway) {
     # Proceed with further analysis
   }

@@ -1,0 +1,53 @@
+	title	dose.ch1	iupac.name.ch1	description	cell.line.ch1	treatment.ch1	cas.rn.ch1	Chemical	Dose	sample	size_factors
+S87_pool1	Cells, no treatment_0_87	0	N/A	S87_pool1	MCF-7	Cells, no treatment_0	N/A	Cells, no treatment	0	S87_pool1	1.0126523102291
+S88_pool1	Cells, no treatment_0_88	0	N/A	S88_pool1	MCF-7	Cells, no treatment_0	N/A	Cells, no treatment	0	S88_pool1	1.0187274581268
+S101_pool1	BTUM_0.0005_101	0.0005	1-(4-methylphenyl)sulfonyl-3-[4-[[4-[(4-methylphenyl)sulfonylcarbamoylamino]phenyl]methyl]phenyl]urea	S101_pool1	MCF-7	BTUM_0.0005	151882-81-4	BTUM	0.0005	S101_pool1	1.00474707673177
+S109_pool1	BTUM_0.001_109	0.001	1-(4-methylphenyl)sulfonyl-3-[4-[[4-[(4-methylphenyl)sulfonylcarbamoylamino]phenyl]methyl]phenyl]urea	S109_pool1	MCF-7	BTUM_0.001	151882-81-4	BTUM	0.001	S109_pool1	1.00540469861957
+S117_pool1	BTUM_0.01_117	0.01	1-(4-methylphenyl)sulfonyl-3-[4-[[4-[(4-methylphenyl)sulfonylcarbamoylamino]phenyl]methyl]phenyl]urea	S117_pool1	MCF-7	BTUM_0.01	151882-81-4	BTUM	0.01	S117_pool1	1.01114008685289
+S125_pool1	BTUM_0.1_125	0.1	1-(4-methylphenyl)sulfonyl-3-[4-[[4-[(4-methylphenyl)sulfonylcarbamoylamino]phenyl]methyl]phenyl]urea	S125_pool1	MCF-7	BTUM_0.1	151882-81-4	BTUM	0.1	S125_pool1	1.0134614434156
+S133_pool1	BTUM_0.5_133	0.5	1-(4-methylphenyl)sulfonyl-3-[4-[[4-[(4-methylphenyl)sulfonylcarbamoylamino]phenyl]methyl]phenyl]urea	S133_pool1	MCF-7	BTUM_0.5	151882-81-4	BTUM	0.5	S133_pool1	1.02022933874929
+S141_pool1	BTUM_1_141	1	1-(4-methylphenyl)sulfonyl-3-[4-[[4-[(4-methylphenyl)sulfonylcarbamoylamino]phenyl]methyl]phenyl]urea	S141_pool1	MCF-7	BTUM_1	151882-81-4	BTUM	1	S141_pool1	1.02925581004161
+S149_pool1	BTUM_5_149	5	1-(4-methylphenyl)sulfonyl-3-[4-[[4-[(4-methylphenyl)sulfonylcarbamoylamino]phenyl]methyl]phenyl]urea	S149_pool1	MCF-7	BTUM_5	151882-81-4	BTUM	5	S149_pool1	1.01918125235905
+S157_pool1	BTUM_10_157	10	1-(4-methylphenyl)sulfonyl-3-[4-[[4-[(4-methylphenyl)sulfonylcarbamoylamino]phenyl]methyl]phenyl]urea	S157_pool1	MCF-7	BTUM_10	151882-81-4	BTUM	10	S157_pool1	1.02010666395827
+S182_pool1	Cells, no treatment_0_182	0	N/A	S182_pool1	MCF-7	Cells, no treatment_0	N/A	Cells, no treatment	0	S182_pool1	1.00333645214487
+S183_pool1	Cells, no treatment_0_183	0	N/A	S183_pool1	MCF-7	Cells, no treatment_0	N/A	Cells, no treatment	0	S183_pool1	0.995649385327703
+S184_pool1	Cells, no treatment_0_184	0	N/A	S184_pool1	MCF-7	Cells, no treatment_0	N/A	Cells, no treatment	0	S184_pool1	1.01247287083221
+S279_pool1	Cells, no treatment_0_279	0	N/A	S279_pool1	MCF-7	Cells, no treatment_0	N/A	Cells, no treatment	0	S279_pool1	0.896524157347143
+S280_pool1	Cells, no treatment_0_280	0	N/A	S280_pool1	MCF-7	Cells, no treatment_0	N/A	Cells, no treatment	0	S280_pool1	0.868176862577633
+S293_pool1	BTUM_0.0005_293	0.0005	1-(4-methylphenyl)sulfonyl-3-[4-[[4-[(4-methylphenyl)sulfonylcarbamoylamino]phenyl]methyl]phenyl]urea	S293_pool1	MCF-7	BTUM_0.0005	151882-81-4	BTUM	0.0005	S293_pool1	1.02773857579229
+S301_pool1	BTUM_0.001_301	0.001	1-(4-methylphenyl)sulfonyl-3-[4-[[4-[(4-methylphenyl)sulfonylcarbamoylamino]phenyl]methyl]phenyl]urea	S301_pool1	MCF-7	BTUM_0.001	151882-81-4	BTUM	0.001	S301_pool1	1.01699837351953
+S309_pool1	BTUM_0.01_309	0.01	1-(4-methylphenyl)sulfonyl-3-[4-[[4-[(4-methylphenyl)sulfonylcarbamoylamino]phenyl]methyl]phenyl]urea	S309_pool1	MCF-7	BTUM_0.01	151882-81-4	BTUM	0.01	S309_pool1	1.00559175074083
+S317_pool1	BTUM_0.1_317	0.1	1-(4-methylphenyl)sulfonyl-3-[4-[[4-[(4-methylphenyl)sulfonylcarbamoylamino]phenyl]methyl]phenyl]urea	S317_pool1	MCF-7	BTUM_0.1	151882-81-4	BTUM	0.1	S317_pool1	1.00917306363255
+S325_pool1	BTUM_0.5_325	0.5	1-(4-methylphenyl)sulfonyl-3-[4-[[4-[(4-methylphenyl)sulfonylcarbamoylamino]phenyl]methyl]phenyl]urea	S325_pool1	MCF-7	BTUM_0.5	151882-81-4	BTUM	0.5	S325_pool1	1.01443961371449
+S333_pool1	BTUM_1_333	1	1-(4-methylphenyl)sulfonyl-3-[4-[[4-[(4-methylphenyl)sulfonylcarbamoylamino]phenyl]methyl]phenyl]urea	S333_pool1	MCF-7	BTUM_1	151882-81-4	BTUM	1	S333_pool1	1.04051807659421
+S341_pool1	BTUM_5_341	5	1-(4-methylphenyl)sulfonyl-3-[4-[[4-[(4-methylphenyl)sulfonylcarbamoylamino]phenyl]methyl]phenyl]urea	S341_pool1	MCF-7	BTUM_5	151882-81-4	BTUM	5	S341_pool1	1.02113140614326
+S349_pool1	BTUM_10_349	10	1-(4-methylphenyl)sulfonyl-3-[4-[[4-[(4-methylphenyl)sulfonylcarbamoylamino]phenyl]methyl]phenyl]urea	S349_pool1	MCF-7	BTUM_10	151882-81-4	BTUM	10	S349_pool1	1.0151542747352
+S374_pool1	Cells, no treatment_0_374	0	N/A	S374_pool1	MCF-7	Cells, no treatment_0	N/A	Cells, no treatment	0	S374_pool1	1.01920121468621
+S375_pool1	Cells, no treatment_0_375	0	N/A	S375_pool1	MCF-7	Cells, no treatment_0	N/A	Cells, no treatment	0	S375_pool1	1.0451706261945
+S376_pool1	Cells, no treatment_0_376	0	N/A	S376_pool1	MCF-7	Cells, no treatment_0	N/A	Cells, no treatment	0	S376_pool1	1.03279942073979
+S87_pool2	Cells, no treatment_0_471	0	N/A	S87_pool2	MCF-7	Cells, no treatment_0	N/A	Cells, no treatment	0	S87_pool2	1.01725229349607
+S88_pool2	Cells, no treatment_0_472	0	N/A	S88_pool2	MCF-7	Cells, no treatment_0	N/A	Cells, no treatment	0	S88_pool2	1.04387857973568
+S101_pool2	BTUM_0.0005_485	0.0005	1-(4-methylphenyl)sulfonyl-3-[4-[[4-[(4-methylphenyl)sulfonylcarbamoylamino]phenyl]methyl]phenyl]urea	S101_pool2	MCF-7	BTUM_0.0005	151882-81-4	BTUM	0.0005	S101_pool2	0.995800566934107
+S109_pool2	BTUM_0.001_493	0.001	1-(4-methylphenyl)sulfonyl-3-[4-[[4-[(4-methylphenyl)sulfonylcarbamoylamino]phenyl]methyl]phenyl]urea	S109_pool2	MCF-7	BTUM_0.001	151882-81-4	BTUM	0.001	S109_pool2	1.01934684636745
+S117_pool2	BTUM_0.01_501	0.01	1-(4-methylphenyl)sulfonyl-3-[4-[[4-[(4-methylphenyl)sulfonylcarbamoylamino]phenyl]methyl]phenyl]urea	S117_pool2	MCF-7	BTUM_0.01	151882-81-4	BTUM	0.01	S117_pool2	1.0186897141124
+S125_pool2	BTUM_0.1_509	0.1	1-(4-methylphenyl)sulfonyl-3-[4-[[4-[(4-methylphenyl)sulfonylcarbamoylamino]phenyl]methyl]phenyl]urea	S125_pool2	MCF-7	BTUM_0.1	151882-81-4	BTUM	0.1	S125_pool2	1.01808574119089
+S133_pool2	BTUM_0.5_517	0.5	1-(4-methylphenyl)sulfonyl-3-[4-[[4-[(4-methylphenyl)sulfonylcarbamoylamino]phenyl]methyl]phenyl]urea	S133_pool2	MCF-7	BTUM_0.5	151882-81-4	BTUM	0.5	S133_pool2	0.989216968459315
+S141_pool2	BTUM_1_525	1	1-(4-methylphenyl)sulfonyl-3-[4-[[4-[(4-methylphenyl)sulfonylcarbamoylamino]phenyl]methyl]phenyl]urea	S141_pool2	MCF-7	BTUM_1	151882-81-4	BTUM	1	S141_pool2	1.0165121951099
+S149_pool2	BTUM_5_533	5	1-(4-methylphenyl)sulfonyl-3-[4-[[4-[(4-methylphenyl)sulfonylcarbamoylamino]phenyl]methyl]phenyl]urea	S149_pool2	MCF-7	BTUM_5	151882-81-4	BTUM	5	S149_pool2	0.996002355112514
+S157_pool2	BTUM_10_541	10	1-(4-methylphenyl)sulfonyl-3-[4-[[4-[(4-methylphenyl)sulfonylcarbamoylamino]phenyl]methyl]phenyl]urea	S157_pool2	MCF-7	BTUM_10	151882-81-4	BTUM	10	S157_pool2	1.013103989534
+S182_pool2	Cells, no treatment_0_566	0	N/A	S182_pool2	MCF-7	Cells, no treatment_0	N/A	Cells, no treatment	0	S182_pool2	0.973216884569712
+S183_pool2	Cells, no treatment_0_567	0	N/A	S183_pool2	MCF-7	Cells, no treatment_0	N/A	Cells, no treatment	0	S183_pool2	0.983027669713373
+S184_pool2	Cells, no treatment_0_568	0	N/A	S184_pool2	MCF-7	Cells, no treatment_0	N/A	Cells, no treatment	0	S184_pool2	0.998561089829107
+S279_pool2	Cells, no treatment_0_663	0	N/A	S279_pool2	MCF-7	Cells, no treatment_0	N/A	Cells, no treatment	0	S279_pool2	0.975943839450719
+S280_pool2	Cells, no treatment_0_664	0	N/A	S280_pool2	MCF-7	Cells, no treatment_0	N/A	Cells, no treatment	0	S280_pool2	0.995490905991464
+S293_pool2	BTUM_0.0005_677	0.0005	1-(4-methylphenyl)sulfonyl-3-[4-[[4-[(4-methylphenyl)sulfonylcarbamoylamino]phenyl]methyl]phenyl]urea	S293_pool2	MCF-7	BTUM_0.0005	151882-81-4	BTUM	0.0005	S293_pool2	0.984942823251038
+S301_pool2	BTUM_0.001_685	0.001	1-(4-methylphenyl)sulfonyl-3-[4-[[4-[(4-methylphenyl)sulfonylcarbamoylamino]phenyl]methyl]phenyl]urea	S301_pool2	MCF-7	BTUM_0.001	151882-81-4	BTUM	0.001	S301_pool2	0.972220167912057
+S309_pool2	BTUM_0.01_693	0.01	1-(4-methylphenyl)sulfonyl-3-[4-[[4-[(4-methylphenyl)sulfonylcarbamoylamino]phenyl]methyl]phenyl]urea	S309_pool2	MCF-7	BTUM_0.01	151882-81-4	BTUM	0.01	S309_pool2	0.99475435733331
+S317_pool2	BTUM_0.1_701	0.1	1-(4-methylphenyl)sulfonyl-3-[4-[[4-[(4-methylphenyl)sulfonylcarbamoylamino]phenyl]methyl]phenyl]urea	S317_pool2	MCF-7	BTUM_0.1	151882-81-4	BTUM	0.1	S317_pool2	0.978055781812541
+S325_pool2	BTUM_0.5_709	0.5	1-(4-methylphenyl)sulfonyl-3-[4-[[4-[(4-methylphenyl)sulfonylcarbamoylamino]phenyl]methyl]phenyl]urea	S325_pool2	MCF-7	BTUM_0.5	151882-81-4	BTUM	0.5	S325_pool2	1.00870316199877
+S333_pool2	BTUM_1_717	1	1-(4-methylphenyl)sulfonyl-3-[4-[[4-[(4-methylphenyl)sulfonylcarbamoylamino]phenyl]methyl]phenyl]urea	S333_pool2	MCF-7	BTUM_1	151882-81-4	BTUM	1	S333_pool2	0.962416803851943
+S341_pool2	BTUM_5_725	5	1-(4-methylphenyl)sulfonyl-3-[4-[[4-[(4-methylphenyl)sulfonylcarbamoylamino]phenyl]methyl]phenyl]urea	S341_pool2	MCF-7	BTUM_5	151882-81-4	BTUM	5	S341_pool2	0.976031856161469
+S349_pool2	BTUM_10_733	10	1-(4-methylphenyl)sulfonyl-3-[4-[[4-[(4-methylphenyl)sulfonylcarbamoylamino]phenyl]methyl]phenyl]urea	S349_pool2	MCF-7	BTUM_10	151882-81-4	BTUM	10	S349_pool2	0.996063226303713
+S374_pool2	Cells, no treatment_0_758	0	N/A	S374_pool2	MCF-7	Cells, no treatment_0	N/A	Cells, no treatment	0	S374_pool2	0.969429867395392
+S375_pool2	Cells, no treatment_0_759	0	N/A	S375_pool2	MCF-7	Cells, no treatment_0	N/A	Cells, no treatment	0	S375_pool2	0.958975177966508
+S376_pool2	Cells, no treatment_0_760	0	N/A	S376_pool2	MCF-7	Cells, no treatment_0	N/A	Cells, no treatment	0	S376_pool2	0.991542681678194

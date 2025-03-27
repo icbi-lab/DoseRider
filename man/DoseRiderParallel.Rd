@@ -2,7 +2,7 @@
 % Please edit documentation in R/doseRider.R
 \name{DoseRiderParallel}
 \alias{DoseRiderParallel}
-\title{Perform DoseRider analysis in parallel using multiple cores.}
+\title{Parallel DoseRider Analysis}
 \usage{
 DoseRiderParallel(
   se,
@@ -45,7 +45,7 @@ DoseRiderParallel(
 
 \item{method}{A string specifying the method for multiple testing adjustment. Default is `"fdr"`.}
 
-\item{num_cores}{The number of cores to use for parallel processing (default is 5).}
+\item{num_cores}{Number of CPU cores to use. Default is 5.}
 
 \item{modelType}{A string specifying the type of model to fit for each gene set. Options:
 \itemize{
@@ -98,18 +98,17 @@ The number of knots should be lower than the number of unique dose values.}
 If `NULL`, this option is ignored.}
 }
 \value{
+A `DoseRider` object with results for each gene set.
+
 A list containing the results of the DoseRider analysis for each gene set.
 }
 \description{
+Parallelized version of `DoseRider` for multi-core processing.
+}
+\details{
+Perform DoseRider analysis in parallel using multiple cores.
+
 This function conducts DoseRider analysis in parallel, applying either Linear Mixed Models (LMMs) or Generalized
 Additive Mixed Models (GAMMs) to each gene set in the gene matrix transposed (GMT) format. It evaluates dose-response
 relationships in gene sets, computing various model metrics and significance.
-}
-\examples{
-\dontrun{
-data("SummarizedExperiment")
-gmt <- list(geneSet1 = list(genes = c("gene1", "gene2")))
-results <- DoseRiderParallel(se, gmt, "dose", "sample", "covariate", "rnaseq", num_cores = 4, modelType = "GAMM")
-}
-
 }
