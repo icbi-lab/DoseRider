@@ -119,6 +119,7 @@ prepare_data <- function(se, geneset, dose_col, sample_col, omic = "rnaseq",
             # Convert knots back to log10 scale
             knot_positions <- log10(raw_knots)
           } else {
+            raw_doses <- unique_doses
             knot_positions <- exp(seq(log(min(raw_doses[unique_doses > 0])),
                                       log(max(unique_doses)), length.out = nk))
 
