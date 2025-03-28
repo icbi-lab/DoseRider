@@ -463,8 +463,8 @@ plot_bmd_confidence_intervals <- function(bmd_bounds_df, top = 10) {
   bmd_bounds_df$Geneset <- unlist(lapply(bmd_bounds_df$Geneset, function(x){str_wrap(gsub("_", " ", x), 35)}))
 
   # Create Bubble Plot
-  bmd_plot <- ggplot(bmd_bounds_df, aes(x = Mean_BMD, y = reorder(Geneset, Mean_BMD), fill = Best_Model)) +
-    geom_errorbarh(aes(xmin = Lower_Bound, xmax = Upper_Bound), height = 0.2, color = "black", size = 1) +
+  bmd_plot <- ggplot(bmd_bounds_df, aes(x = Median_BMD, y = reorder(Geneset, Median_BMD), fill = Best_Model)) +
+    geom_errorbarh(aes(xmin = Lower_Bound_BMD, xmax = Upper_Bound_BMD), height = 0.2, color = "black", size = 1) +
     geom_point(shape = 21, size = 3) +
     scale_fill_manual(values = c("non_linear_mixed" = "orange","non_linear_fixed" = "blue", "linear" = "green", "null" = "red"), name = "Best Model") +
     labs(x = "Benchmark Dose (BMD)", y = "") +
@@ -497,35 +497,14 @@ plot_bmd_confidence_intervals <- function(bmd_bounds_df, top = 10) {
 #' @export
 plot_tcd1_confidence_intervals <- function(tcd_df, fontsize = 12) {
   # Extract cluster columns
-  cluster_cols <- grep("Cluster\\d+_Mean", names(tcd_df), value = TRUE)
-  ci_lower_cols <- grep("Cluster\\d+_CI_Lower", names(tcd_df), value = TRUE)
-  ci_upper_cols <- grep("Cluster\\d+_CI_Upper", names(tcd_df), value = TRUE)
-
-  # Reshape data to long format for ggplot
-  plot_data <- do.call(rbind, lapply(1:nrow(tcd_df), function(i) {
-    geneset <- tcd_df$Geneset[i]
-    clusters <- seq_along(cluster_cols)
-    data.frame(
-      Geneset = geneset,
-      Cluster = clusters,
-      Median = sapply(clusters, function(j) tcd_df[i, cluster_cols[j]]),
-      CI_Lower = sapply(clusters, function(j) tcd_df[i, ci_lower_cols[j]]),
-      CI_Upper = sapply(clusters, function(j) tcd_df[i, ci_upper_cols[j]])
-    )
-  }))
 
   # Filter out rows with NA medians
-  plot_data <- plot_data[!is.na(plot_data$Median),]
-
-  # Select the cluster with the lowest median TCD1 for each pathway
-  plot_data <- do.call(rbind, lapply(split(plot_data, plot_data$Geneset), function(df) {
-    df[which.min(df$Median), ]
-  }))
+  plot_data <- tcd_df[!is.na(tcd_df$Median_TCD),]
 
   # Plot the TCD1 medians and confidence intervals
-  tcd1_plot <- ggplot(plot_data, aes(x = Median, y = reorder(Geneset, Median))) +
-    geom_errorbarh(aes(xmin = CI_Lower, xmax = CI_Upper), height = 0.3, size = 0.8, color = "black") +
-    geom_point(size = 3, shape = 21, fill = "orange", color = "black") +
+  tcd1_plot <- ggplot(plot_data, aes(x = Median_TCD, y = reorder(Geneset, Median_TCD))) +
+    geom_errorbarh(aes(xmin = Lower_Bound_TCD, xmax = Upper_Bound_TCD), height = 0.3, size = 0.8, color = "black") +
+    geom_point(size = 3, shape = 21, fill = "blue", color = "black") +
     labs(x = "Log Dose (TCD1)", y = "") +
     theme_bw() +
     theme(
