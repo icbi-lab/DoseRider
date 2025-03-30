@@ -522,43 +522,51 @@ plot_tcd1_confidence_intervals <- function(tcd_df, fontsize = 12) {
 #' @param tcd_range_output A list containing the output from `get_tcd_range` function,
 #' which includes `x` (TCD values), `y` (density), and `tcd` (zero points).
 #' @param fontsize Numeric. Font size for the plot text.
+#' @param log_bmd Logical. Whether to display the x-axis on log scale (log10(TCD)).
 #'
 #' @return A ggplot object visualizing the density of TCD values with zero points marked.
 #' @import ggplot2
-#' @examples
-#' \dontrun{
-#' tcd_range_output <- get_tcd_range(dose_rider_results)
-#' plot_tcd_density(tcd_range_output, fontsize = 12)
-#' }
-#'
 #' @export
-plot_tcd_density <- function(tcd_range_output, fontsize = 12) {
+plot_tcd_density <- function(tcd_range_output, fontsize = 12, log_bmd = TRUE) {
   # Convert the list to a dataframe for plotting
   data_to_plot <- data.frame(x = tcd_range_output$x, y = tcd_range_output$y)
   zero_points <- tcd_range_output$tcd
 
-  # Create the plot
+  # Format label based on log scale
+  if (log_bmd) {
+    labels <- paste0("TCD: ", signif(10^zero_points, 3))
+    xlabel <- "log10(TCD)"
+  } else {
+    labels <- paste0("TCD: ", signif(zero_points, 3))
+    xlabel <- "TCD"
+  }
+
+  # Create the base plot
   p <- ggplot(data_to_plot, aes(x = x, y = y)) +
     geom_line() +
     geom_vline(xintercept = zero_points, color = "blue", linetype = "dashed") +
-    annotate(
-      "text",
-      x = zero_points,
-      y = max(data_to_plot$y) * 0.7,
-      label = paste0("TCD: ", round(10**(zero_points), 2)),
-      color = "blue",
-      angle = 90,
-      vjust = -0.5
-    ) +
-    labs(x = "TCD", y = "Density", title = "TCD Density") +
+    annotate("text",
+             x = zero_points,
+             y = max(data_to_plot$y) * 0.7,
+             label = labels,
+             color = "blue",
+             angle = 90,
+             vjust = -0.5,
+             size = fontsize / 3.5) +  # approximate ggplot fontsize scaling
+    labs(x = xlabel, y = "Density", title = "TCD Density") +
     theme_bw() +
     theme(
       axis.text.x = element_text(angle = 45, hjust = 1),
       legend.position = "none"
-    ) +
-    theme_dose_rider(text_size = fontsize, fix_ratio = FALSE)
+    )
+
+  # Apply custom theme if available
+  if ("theme_dose_rider" %in% ls("package:doseRider")) {
+    p <- p + doseRider::theme_dose_rider(text_size = fontsize, fix_ratio = FALSE)
+  }
 
   return(p)
 }
+
 
 
