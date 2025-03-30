@@ -506,12 +506,9 @@ plot_tcd1_confidence_intervals <- function(tcd_df, fontsize = 12) {
     geom_errorbarh(aes(xmin = Lower_Bound_TCD, xmax = Upper_Bound_TCD), height = 0.3, size = 0.8, color = "black") +
     geom_point(size = 3, shape = 21, fill = "blue", color = "black") +
     labs(x = "Log Dose (TCD1)", y = "") +
-    theme_bw() +
-    theme(
-      axis.text.x = element_text(angle = 45, hjust = 1),
-      legend.position = "none"
-    ) +
-    theme_dose_rider(fix_ratio = FALSE, text_size = fontsize)
+    theme_minimal() +
+    theme(axis.text.x = element_text(angle = 45, hjust = 1)) +
+    theme_dose_rider(fix_ratio = F)
 
   return(tcd1_plot)
 }
