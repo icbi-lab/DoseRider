@@ -155,58 +155,77 @@ bmd_bounds_df <- compute_bmd_bounds_parallel(
 
 ### 6. Results and Discussion
 
-Generate and save plots based on the analysis.
+Generate and save plots based on the DoseRider analysis.
 
 ```{r}
-# Define plotting parameters
+# Set plotting parameters and output path
 top <- 10
-setwd("~/doseRider")
 save_path <- "~/doseRider/plots/"
 dir.create(save_path, showWarnings = FALSE)
 PLOT_WIDTH <- 11
 PLOT_HEIGHT <- 11
 units <- "cm"
-
-# Generate and save plots
-p1 <- dose_response_heatmap(dose_rider_results_filter, dose_col = "Dose", top = top)
-jpeg(file=paste0(save_path,"plot1.jpeg"), width = PLOT_WIDTH , height = PLOT_HEIGHT, units = units, res = 600)
-plot(p1, heatmap_legend_side = "bottom", annotation_legend_side = "bottom", padding = unit(c(1, 1, 1, 1), "cm"))
-dev.off()
-
-p2 <- plot_gene_set_random_effects(dose_rider_results_filter, dose_col = "log_Dose",  top = top)
-ggsave(paste0(save_path,"plot2.jpeg"), plot = p2, width = PLOT_WIDTH, height = PLOT_HEIGHT, units = units, dpi = 600)
-
-p3 <- plot_top_pathway_responses(dose_rider_results_filter, top = 8, ncol = 2,  text_size = 5, dose_col = "log_Dose", clusterResults = T, scale_values = F, center_values = T)
-ggsave(paste0(save_path,"plot3.jpeg"), plot = p3, width = PLOT_WIDTH, height = PLOT_HEIGHT, units = units, dpi = 600)
-
-p4 <- plot_gene_random_effect_relationship(dose_rider_results_filter,"Estrogen signaling pathway - Homo sapiens (human)")
-ggsave(paste0(save_path,"plot4.jpeg"), plot = p4, width = PLOT_WIDTH , height = PLOT_HEIGHT, units = units, dpi = 600)
-
-p5 <- plot_dotplot_top_pathways(dose_rider_results_filter, top = top)
-ggsave(paste0(save_path,"plot5.jpeg"), plot = p5, width = PLOT_WIDTH, height = PLOT_HEIGHT, units = units, dpi = 600)
-
-p6 <- create_gene_heatmap(dose_rider_results_filter, dose_col = "Dose", gene_set_name = "Estrogen signaling pathway - Homo sapiens (human)")
-jpeg(file=paste0(save_path,"plot6.jpeg"), width = PLOT_WIDTH, height = PLOT_HEIGHT, units = units, res = 600)
-plot(p6, heatmap_legend_side = "bottom", annotation_legend_side = "bottom", padding = unit(c(1, 1, 1, 1), "cm"))
-dev.off()
-
-data_bmd <- get_bmd_range(dose_rider_results = dose_rider_results_filter)
-data_tcd <- get_tcd_range(dose_rider_results = dose_rider_results_filter)
-
-p7 <- plot_bmd_density_and_peaks(data_bmd)
-ggsave(paste0(save_path,"plot7.jpeg"), plot = p7, width = PLOT_WIDTH, height = PLOT_HEIGHT, units = units, dpi = 600)
-data_bmd <- get_tcd_range(dose_rider_results = dose_rider_results)
-
-p8 <- plot_tcd_density(data_tcd)
-ggsave(paste0(save_path,"plot8.jpeg"), plot = p8, width = PLOT_WIDTH, height = PLOT_HEIGHT, units = units, dpi = 600)
-
-p10 <- plot_bmd_confidence_intervals(head(bmd_bounds_df, 20))
-ggsave(paste0(save_path,"plot10.jpeg"), plot = p10, width = PLOT_WIDTH, height = PLOT_HEIGHT, units = units, dpi = 600)
-
-p11 <- plot_tcd1_confidence_intervals(bmd_bounds_df)
-ggsave(paste0(save_path,"plot11.jpeg"), plot = p11, width = PLOT_WIDTH, height = PLOT_HEIGHT, units = units, dpi = 600)
-
 ```
+
+
+
+#### 6.1 Dataset-Level Visualizations
+
+```{r}
+# 1. Dotplot of Top Pathways
+p1 <- plot_dotplot_top_pathways(dose_rider_results_filter, top = top)
+ggsave(paste0(save_path, "plot1_dotplot_top_pathways.jpeg"), plot = p1, width = PLOT_WIDTH, height = PLOT_HEIGHT, units = units, dpi = 600)
+
+# 2. Dose Response Heatmap
+p2 <- dose_response_heatmap(dose_rider_results_filter, dose_col = "Dose", top = top)
+jpeg(file = paste0(save_path, "plot2_dose_response_heatmap.jpeg"), width = PLOT_WIDTH, height = PLOT_HEIGHT, units = units, res = 600)
+plot(p2, heatmap_legend_side = "bottom", annotation_legend_side = "bottom", padding = grid::unit(c(1, 1, 1, 1), "cm"))
+dev.off()
+
+# 3. Gene Set Random Effects
+p3 <- plot_gene_set_random_effects(dose_rider_results_filter, dose_col = "log_Dose", top = top)
+ggsave(paste0(save_path, "plot3_gene_set_random_effects.jpeg"), plot = p3, width = PLOT_WIDTH, height = PLOT_HEIGHT, units = units, dpi = 600)
+
+# 4. Top Pathway Responses
+p4 <- plot_top_pathway_responses(dose_rider_results_filter, top = 8, ncol = 2, text_size = 5, dose_col = "log_Dose", clusterResults = TRUE, scale_values = FALSE, center_values = TRUE)
+ggsave(paste0(save_path, "plot4_top_pathway_responses.jpeg"), plot = p4, width = PLOT_WIDTH, height = PLOT_HEIGHT, units = units, dpi = 600)
+
+# 5. BMD Density and Peaks
+data_bmd <- get_bmd_range(dose_rider_results = dose_rider_results_filter)
+p5 <- plot_bmd_density_and_peaks(data_bmd)
+ggsave(paste0(save_path, "plot5_bmd_density_and_peaks.jpeg"), plot = p5, width = PLOT_WIDTH, height = PLOT_HEIGHT, units = units, dpi = 600)
+
+# 6. TCD Density and Peaks
+data_tcd <- get_tcd_range(dose_rider_results = dose_rider_results_filter)
+p6 <- plot_tcd_density(data_tcd)
+ggsave(paste0(save_path, "plot6_tcd_density_and_peaks.jpeg"), plot = p6, width = PLOT_WIDTH, height = PLOT_HEIGHT, units = units, dpi = 600)
+
+# 7. BMD Confidence Intervals
+p7 <- plot_bmd_confidence_intervals(head(bmd_bounds_df, 20))
+ggsave(paste0(save_path, "plot7_bmd_confidence_intervals.jpeg"), plot = p7, width = PLOT_WIDTH, height = PLOT_HEIGHT, units = units, dpi = 600)
+
+# 8. TCD Confidence Intervals
+p8 <- plot_tcd1_confidence_intervals(bmd_bounds_df)
+ggsave(paste0(save_path, "plot8_tcd_confidence_intervals.jpeg"), plot = p8, width = PLOT_WIDTH, height = PLOT_HEIGHT, units = units, dpi = 600)
+```
+
+---
+
+#### Pathway-Level Visualizations
+
+```{r} 
+# 9. Gene Random Effect Relationship (example pathway)
+p9 <- plot_gene_random_effect_relationship(dose_rider_results, "PI3K-Akt signaling pathway - Homo sapiens (human)")
+ggsave(paste0(save_path, "plot9_gene_random_effect_relationship.jpeg"), plot = p9, width = PLOT_WIDTH, height = PLOT_HEIGHT, units = units, dpi = 600)
+
+# 10. Gene-Level Heatmap (example pathway)
+p10 <- create_gene_heatmap(dose_rider_results_filter, dose_col = "Dose", gene_set_name = "PI3K-Akt signaling pathway - Homo sapiens (human)")
+jpeg(file = paste0(save_path, "plot10_gene_heatmap.jpeg"), width = PLOT_WIDTH, height = PLOT_HEIGHT, units = units, res = 600)
+plot(p10, heatmap_legend_side = "bottom", annotation_legend_side = "bottom", padding = grid::unit(c(1, 1, 1, 1), "cm"))
+dev.off()
+```
+
+
 
 
 
