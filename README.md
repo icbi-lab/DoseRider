@@ -16,6 +16,18 @@ DoseRider enhances toxicogenomics by employing mixed models with cubic splines f
 - **Visualization Tools:** Multiple built-in plotting functions to visualize dose-response trends and model outputs.
 - **Customizable Gene Sets:** Filter and analyze custom or preprocessed gene sets.
 
+
+---
+
+## Citation
+
+If you use **DoseRider** in your research, please cite:
+
+> Monfort-Lanzas, P., Gostner, J. M., & Hackl, H. (2025). *Modeling omics dose-response at the pathway level with doserider*. Computational and Structural Biotechnology Journal, 27, 1440–1448. https://doi.org/10.1016/j.csbj.2025.04.004
+
+---
+
+
 ## Installation
 
 To install the latest development version from GitHub:

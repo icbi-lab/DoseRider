@@ -4,6 +4,13 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](http://keepachangelog.com/) and this project adheres to [Semantic Versioning](http://semver.org/).
 
+### [Unreleased] 2025-04-14
+
+- Updated `prepare_data()` to support both `SummarizedExperiment` and `ExpressionSet` objects
+- Conditional handling of RNA-seq-specific preprocessing (size factors, dispersions) restricted to `SummarizedExperiment`
+- Enhanced metadata extraction and assay handling for broader compatibility
+
+
 ### [Unreleased]️ 2025-03-27
 
 - Improved error handling in `compute_bmd_bounds_sequential()` and `process_single_geneset()`
